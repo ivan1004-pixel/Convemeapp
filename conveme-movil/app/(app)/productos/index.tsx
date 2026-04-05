@@ -199,7 +199,7 @@ export default function ProductosScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="🛍️"
+            icon="shopping"
             title="Sin productos"
             message={
               search

@@ -215,7 +215,7 @@ export default function TamanosScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="📏"
+            icon="ruler"
             title="Sin tamaños"
             message={search ? 'No hay tamaños que coincidan.' : 'Aún no hay tamaños registrados.'}
             actionLabel={!search ? 'Crear tamaño' : undefined}

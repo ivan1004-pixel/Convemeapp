@@ -143,7 +143,7 @@ export default function ClienteDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Eliminar cliente"
         >
-          <Text style={styles.deleteIcon}>🗑️</Text>
+          <Text style={styles.deleteIcon}>X</Text>
         </Pressable>
       </View>
 
@@ -190,7 +190,7 @@ export default function ClienteDetailScreen() {
                   ]}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.quickActionIcon}>✉️</Text>
+                  <Text style={styles.quickActionIcon}>@</Text>
                   <Text style={[styles.quickActionText, { color: Colors.primary }]}>Email</Text>
                 </Pressable>
               )}
@@ -204,7 +204,7 @@ export default function ClienteDetailScreen() {
                   ]}
                   accessibilityRole="button"
                 >
-                  <Text style={styles.quickActionIcon}>📞</Text>
+                  <Text style={styles.quickActionIcon}>#</Text>
                   <Text style={[styles.quickActionText, { color: Colors.success }]}>Llamar</Text>
                 </Pressable>
               )}

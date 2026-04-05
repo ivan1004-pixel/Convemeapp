@@ -72,7 +72,7 @@ function EscuelaCard({
           </View>
           {location ? (
             <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              📍 {location}
+              {location}
             </Text>
           ) : null}
         </View>

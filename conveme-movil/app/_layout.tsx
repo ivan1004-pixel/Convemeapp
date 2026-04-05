@@ -20,8 +20,10 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      if (!isAuthenticated) {
-        router.replace('/auth/login');
+      if (isAuthenticated) {
+        router.replace('/(app)');
+      } else {
+        router.replace('/auth/splash');
       }
     }
   }, [fontsLoaded, fontError, isAuthenticated]);

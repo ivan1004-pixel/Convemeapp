@@ -60,7 +60,7 @@ function CorteCard({
         <Text style={[styles.cardDate, { color: theme.muted }]}>{formatDate(item.fecha_corte)}</Text>
       </View>
       <Text style={[styles.vendedor, { color: theme.text }]}>
-        👤 {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
+        {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
       </Text>
       <View style={styles.amountsRow}>
         <View style={styles.amountItem}>
@@ -89,7 +89,7 @@ function CorteCard({
       </View>
       {item.observaciones ? (
         <Text style={[styles.observaciones, { color: theme.muted }]} numberOfLines={1}>
-          📝 {item.observaciones}
+          {item.observaciones}
         </Text>
       ) : null}
     </Pressable>

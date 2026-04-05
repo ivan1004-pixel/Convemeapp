@@ -70,15 +70,15 @@ function VentaCard({
       </Text>
       <View style={styles.cardFooter}>
         <Text style={[styles.cardMeta, { color: theme.muted }]}>
-          👤 {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
+          {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
         </Text>
         <Text style={[styles.cardMeta, { color: theme.muted }]}>
-          📅 {formatDate(item.fecha_venta)}
+          {formatDate(item.fecha_venta)}
         </Text>
       </View>
       {item.metodo_pago && (
         <Text style={[styles.cardMethod, { color: theme.muted }]}>
-          💳 {item.metodo_pago}
+          {item.metodo_pago}
         </Text>
       )}
     </Pressable>
@@ -200,7 +200,7 @@ export default function VentasScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="💰"
+            icon="cash-multiple"
             title="Sin ventas"
             message={
               search ? 'No hay ventas que coincidan con tu búsqueda.' : 'Aún no hay ventas registradas.'

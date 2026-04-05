@@ -48,7 +48,7 @@ function ComprobanteCard({
     >
       <View style={styles.cardHeader}>
         <Text style={[styles.cardDate, { color: theme.muted }]}>
-          📅 {formatDate(item.fecha_corte)}
+          {formatDate(item.fecha_corte)}
         </Text>
         <Badge
           text={isPendiente ? 'Pendiente' : 'Liquidado'}
@@ -76,7 +76,7 @@ function ComprobanteCard({
         </View>
       </View>
       <Text style={[styles.cardMeta, { color: theme.muted }]}>
-        👤 {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
+        {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
       </Text>
     </Pressable>
   );
@@ -177,7 +177,7 @@ export default function ComprobantesScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="🧾"
+            icon="file-document"
             title="Sin comprobantes"
             message={
               search

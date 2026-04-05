@@ -200,7 +200,7 @@ export default function AsignacionesScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="📦"
+            icon="package-variant"
             title="Sin asignaciones"
             message={
               search

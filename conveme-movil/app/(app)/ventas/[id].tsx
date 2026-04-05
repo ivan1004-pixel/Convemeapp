@@ -140,7 +140,7 @@ export default function VentaDetailScreen() {
           accessibilityRole="button"
           accessibilityLabel="Eliminar venta"
         >
-          <Text style={styles.deleteIcon}>🗑️</Text>
+          <Text style={styles.deleteIcon}>X</Text>
         </Pressable>
       </View>
 

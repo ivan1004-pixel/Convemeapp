@@ -1,14 +1,17 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
-import { useColorScheme } from '../../hooks/use-color-scheme';
+
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface EmptyStateProps {
   title?: string;
   message?: string;
-  icon?: string;
+  icon?: IconName;
+  iconColor?: string;
   actionLabel?: string;
   onAction?: () => void;
   style?: ViewStyle;
@@ -17,22 +20,24 @@ interface EmptyStateProps {
 export const EmptyState: React.FC<EmptyStateProps> = ({
   title = 'Sin resultados',
   message,
-  icon = '📭',
+  icon = 'tray-remove',
+  iconColor,
   actionLabel,
   onAction,
   style,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   return (
     <View style={[styles.container, style]}>
-      {icon && <Text style={styles.icon}>{icon}</Text>}
-      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-      {message && (
-        <Text style={[styles.message, { color: theme.muted }]}>{message}</Text>
+      {icon && (
+        <MaterialCommunityIcons
+          name={icon}
+          size={48}
+          color={iconColor ?? Colors.primary}
+          style={styles.icon}
+        />
       )}
+      <Text style={styles.title}>{title}</Text>
+      {message && <Text style={styles.message}>{message}</Text>}
       {actionLabel && onAction && (
         <Pressable
           onPress={onAction}
@@ -53,18 +58,19 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   icon: {
-    fontSize: 48,
     marginBottom: Spacing.md,
   },
   title: {
     ...Typography.h4,
     textAlign: 'center',
     marginBottom: Spacing.sm,
+    color: Colors.textLight,
   },
   message: {
     ...Typography.body,
     textAlign: 'center',
     marginBottom: Spacing.lg,
+    color: 'rgba(255,255,255,0.6)',
   },
   button: {
     marginTop: Spacing.sm,
