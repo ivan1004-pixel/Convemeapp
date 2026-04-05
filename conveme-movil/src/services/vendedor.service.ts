@@ -1,5 +1,28 @@
 import { convemeApi } from '../api/convemeApi';
 
+// Buscar vendedores por término (para dropdowns)
+export const buscarVendedores = async (search: string = '') => {
+    const query = `
+    query GetVendedores {
+        vendedores {
+            id_vendedor
+            nombre_completo
+            email
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query });
+    if (data.errors) throw new Error(data.errors[0].message);
+    const vendedores: any[] = data.data.vendedores || [];
+    if (!search.trim()) return vendedores;
+    const lower = search.toLowerCase();
+    return vendedores.filter(
+        (v) =>
+            v.nombre_completo?.toLowerCase().includes(lower) ||
+            v.email?.toLowerCase().includes(lower),
+    );
+};
+
 // 1. Obtener todos los vendedores
 export const getVendedores = async () => {
     const query = `

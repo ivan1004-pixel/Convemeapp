@@ -1,5 +1,29 @@
 import { convemeApi } from '../api/convemeApi';
 
+// Buscar productos por término (para dropdowns)
+export const buscarProductos = async (search: string = '') => {
+    const query = `
+    query GetProductos {
+        productos {
+            id_producto
+            sku
+            nombre
+            precio_unitario
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query });
+    if (data.errors) throw new Error(data.errors[0].message);
+    const productos: any[] = data.data.productos || [];
+    if (!search.trim()) return productos;
+    const lower = search.toLowerCase();
+    return productos.filter(
+        (p) =>
+            p.nombre?.toLowerCase().includes(lower) ||
+            p.sku?.toLowerCase().includes(lower),
+    );
+};
+
 export const getProductos = async () => {
     const query = `
     query {
