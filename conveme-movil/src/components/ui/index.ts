@@ -15,3 +15,5 @@ export { SafeAreaContainer } from './SafeAreaContainer';
 export { SearchBar } from './SearchBar';
 export { SkeletonLoader } from './SkeletonLoader';
 export { TextArea } from './TextArea';
+export { NeobrutalistBackground } from './NeobrutalistBackground';
+export { SalesTicket } from './SalesTicket';

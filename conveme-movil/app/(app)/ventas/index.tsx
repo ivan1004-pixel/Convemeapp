@@ -22,6 +22,7 @@ import { Badge } from '../../../src/components/ui/Badge';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Venta } from '../../../src/types';
@@ -47,40 +48,62 @@ function VentaCard({
 
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.card, borderColor: theme.border },
-        Shadows.sm,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
+    onPress={onPress}
+    onLongPress={onLongPress}
+    style={({ pressed }) => [
+      styles.card,
+      { backgroundColor: theme.card, borderColor: theme.border },
+      Shadows.sm,
+      pressed && styles.cardPressed,
+    ]}
+    accessibilityRole="button"
     >
-      <View style={styles.cardHeader}>
-        <Text style={[styles.cardId, { color: theme.muted }]}>Venta #{item.id_venta}</Text>
-        <Badge
-          text={item.estado ?? 'Pendiente'}
-          color={ESTADO_BADGE[item.estado ?? 'Pendiente'] ?? 'secondary'}
-          size="sm"
-        />
-      </View>
-      <Text style={[styles.cardAmount, { color: theme.text }]}>
-        {formatCurrency(item.monto_total)}
+    <View style={styles.cardHeader}>
+    <Text style={[styles.cardId, { color: theme.muted }]}>Venta #{item.id_venta}</Text>
+    <Badge
+    text={item.estado ?? 'Pendiente'}
+    color={ESTADO_BADGE[item.estado ?? 'Pendiente'] ?? 'secondary'}
+    size="sm"
+    />
+    </View>
+
+    <Text style={[styles.cardAmount, { color: theme.text }]}>
+    {formatCurrency(item.monto_total)}
+    </Text>
+
+    <View style={styles.cardRow}>
+    <View style={styles.cardColumn}>
+    <Text style={[styles.cardLabel, { color: theme.muted }]}>Vendedor</Text>
+    <Text style={[styles.cardValue, { color: theme.text }]}>
+    {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
+    </Text>
+    </View>
+    {item.cliente && (
+      <View style={styles.cardColumn}>
+      <Text style={[styles.cardLabel, { color: theme.muted }]}>Cliente</Text>
+      <Text style={[styles.cardValue, { color: theme.text }]}>
+      {item.cliente.nombre_completo}
       </Text>
-      <View style={styles.cardFooter}>
-        <Text style={[styles.cardMeta, { color: theme.muted }]}>
-          {item.vendedor?.nombre_completo ?? 'Sin vendedor'}
-        </Text>
-        <Text style={[styles.cardMeta, { color: theme.muted }]}>
-          {formatDate(item.fecha_venta)}
-        </Text>
       </View>
-      {item.metodo_pago && (
-        <Text style={[styles.cardMethod, { color: theme.muted }]}>
-          {item.metodo_pago}
-        </Text>
-      )}
+    )}
+    </View>
+
+    <View style={styles.cardFooter}>
+    <Text style={[styles.cardMeta, { color: theme.muted }]}>
+    {formatDate(item.fecha_venta)}
+    </Text>
+    {item.metodo_pago && (
+      <Text style={[styles.cardMeta, { color: theme.muted }]}>
+      {item.metodo_pago}
+      </Text>
+    )}
+    </View>
+
+    {item.detalles && item.detalles.length > 0 && (
+      <Text style={[styles.cardProducts, { color: theme.muted }]}>
+      {item.detalles.length} producto{item.detalles.length !== 1 ? 's' : ''}
+      </Text>
+    )}
     </Pressable>
   );
 }
@@ -130,9 +153,9 @@ export default function VentasScreen() {
     const q = search.toLowerCase();
     return ventas.filter(
       (v) =>
-        v.vendedor?.nombre_completo?.toLowerCase().includes(q) ||
-        String(v.id_venta).includes(q) ||
-        v.estado?.toLowerCase().includes(q)
+      v.vendedor?.nombre_completo?.toLowerCase().includes(q) ||
+      String(v.id_venta).includes(q) ||
+      v.estado?.toLowerCase().includes(q)
     );
   }, [ventas, search]);
 
@@ -152,86 +175,90 @@ export default function VentasScreen() {
 
   if (loading && ventas.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Ventas</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando ventas..." />
+      <NeobrutalistBackground>
+      <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+      <View style={styles.header}>
+      <Text style={[styles.title, { color: theme.text }]}>Ventas</Text>
+      </View>
+      <LoadingSpinner fullScreen message="Cargando ventas..." />
       </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Ventas</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
-      </View>
+    <NeobrutalistBackground>
+    <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
+    <View style={styles.header}>
+    <Text style={[styles.title, { color: theme.text }]}>Ventas</Text>
+    <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+    </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por vendedor, estado..."
-        />
-      </View>
+    <View style={styles.searchContainer}>
+    <SearchBar
+    value={search}
+    onChangeText={setSearch}
+    placeholder="Buscar por vendedor, estado..."
+    />
+    </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_venta)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <VentaCard
-            item={item}
-            onPress={() => router.push(`/ventas/${item.id_venta}`)}
-            onLongPress={() => setDeleteId(item.id_venta)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="cash-multiple"
-            title="Sin ventas"
-            message={
-              search ? 'No hay ventas que coincidan con tu búsqueda.' : 'Aún no hay ventas registradas.'
-            }
-            actionLabel={!search ? 'Registrar venta' : undefined}
-            onAction={!search ? () => router.push('/ventas/create') : undefined}
-          />
-        }
-        showsVerticalScrollIndicator={false}
+    <FlatList
+    data={filtered}
+    keyExtractor={(item) => String(item.id_venta)}
+    contentContainerStyle={[
+      styles.listContent,
+      filtered.length === 0 && styles.listEmpty,
+    ]}
+    renderItem={({ item }) => (
+      <VentaCard
+      item={item}
+      onPress={() => router.push(`/ventas/${item.id_venta}`)}
+      onLongPress={() => setDeleteId(item.id_venta)}
       />
-
-      <TouchableOpacity
-        style={[styles.fab, Shadows.lg]}
-        onPress={() => router.push('/ventas/create')}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel="Nueva venta"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar venta"
-        message={`¿Deseas eliminar la venta #${deleteId}? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-        destructive
+    )}
+    refreshControl={
+      <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      colors={[Colors.primary]}
+      tintColor={Colors.primary}
       />
+    }
+    ListEmptyComponent={
+      <EmptyState
+      icon="cash-multiple"
+      title="Sin ventas"
+      message={
+        search ? 'No hay ventas que coincidan con tu búsqueda.' : 'Aún no hay ventas registradas.'
+      }
+      actionLabel={!search ? 'Registrar venta' : undefined}
+      onAction={!search ? () => router.push('/ventas/create') : undefined}
+      />
+    }
+    showsVerticalScrollIndicator={false}
+    />
+
+    <TouchableOpacity
+    style={[styles.fab, Shadows.lg]}
+    onPress={() => router.push('/ventas/create')}
+    activeOpacity={0.85}
+    accessibilityRole="button"
+    accessibilityLabel="Nueva venta"
+    >
+    <Text style={styles.fabIcon}>+</Text>
+    </TouchableOpacity>
+
+    <ConfirmDialog
+    visible={deleteId !== null}
+    title="Eliminar venta"
+    message={`¿Deseas eliminar la venta #${deleteId}? Esta acción no se puede deshacer.`}
+    onConfirm={handleDelete}
+    onCancel={() => setDeleteId(null)}
+    confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+    destructive
+    />
     </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
@@ -287,6 +314,22 @@ const styles = StyleSheet.create({
     ...Typography.h4,
     marginBottom: Spacing.sm,
   },
+  cardRow: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  cardColumn: {
+    flex: 1,
+  },
+  cardLabel: {
+    ...Typography.caption,
+    marginBottom: Spacing.xs,
+  },
+  cardValue: {
+    ...Typography.bodySmall,
+    fontWeight: '500',
+  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -296,9 +339,10 @@ const styles = StyleSheet.create({
   cardMeta: {
     ...Typography.caption,
   },
-  cardMethod: {
+  cardProducts: {
     ...Typography.caption,
     marginTop: Spacing.xs,
+    fontStyle: 'italic',
   },
   fab: {
     position: 'absolute',

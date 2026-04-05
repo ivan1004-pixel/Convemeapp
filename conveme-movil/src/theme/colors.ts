@@ -1,44 +1,49 @@
-// NoManchesMx Design System
+// ConveMe Neobrutalist Design System
 export const Colors = {
-  // Brand colors
-  primary: '#5D2E8C',
-  primaryLight: '#EDE4F7',
-  secondary: '#1A1A2E',
+  // Brand colors - Neobrutalist Style
+  primary: '#0301ff',        // brand-blue
+  primaryLight: '#f88fea',   // brand-pink
+  secondary: '#ede0d1',      // brand-beige
   success: '#00D084',
-  info: '#00D9D9',
+  info: '#0301ff',
   warning: '#FFD600',
   error: '#FF4444',
-  dark: '#1A1A2E',
+  dark: '#1A1A1A',
   light: '#FFFFFF',
-  textDark: '#2C2C2C',
+  textDark: '#1A1A1A',
   textLight: '#FFFFFF',
+  
+  // Neobrutalist accent
+  pink: '#f88fea',
+  blue: '#0301ff',
+  beige: '#ede0d1',
 
   // Gradient stops
-  gradientStart: '#5D2E8C',
-  gradientEnd: '#1A1A2E',
+  gradientStart: '#f88fea',
+  gradientEnd: '#0301ff',
 
   light2: {
-    text: '#2C2C2C',
-    background: '#FFFFFF',
-    tint: '#5D2E8C',
-    icon: '#5D2E8C',
+    text: '#1A1A1A',
+    background: '#ede0d1',
+    tint: '#0301ff',
+    icon: '#0301ff',
     tabIconDefault: '#9CA3AF',
-    tabIconSelected: '#5D2E8C',
-    border: '#E5E7EB',
-    card: '#F9FAFB',
+    tabIconSelected: '#0301ff',
+    border: '#1A1A1A',
+    card: '#FFFFFF',
     muted: '#6B7280',
     surface: '#FFFFFF',
   },
   dark2: {
     text: '#FFFFFF',
-    background: '#1A1A2E',
-    tint: '#5D2E8C',
-    icon: '#00D9D9',
+    background: '#1A1A1A',
+    tint: '#f88fea',
+    icon: '#f88fea',
     tabIconDefault: '#6B7280',
-    tabIconSelected: '#00D9D9',
-    border: '#374151',
-    card: '#252540',
+    tabIconSelected: '#f88fea',
+    border: '#f88fea',
+    card: '#2A2A2A',
     muted: '#9CA3AF',
-    surface: '#252540',
+    surface: '#2A2A2A',
   },
 };

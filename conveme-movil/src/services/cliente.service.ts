@@ -22,6 +22,23 @@ export const getClientes = async () => {
     return data.data.clientes;
 };
 
+export const buscarClientes = async (termino: string) => {
+    const query = `
+    query BuscarClientes($termino: String) {
+        buscarClientes(termino: $termino) {
+            id_cliente
+            nombre_completo
+            email
+            telefono
+            direccion_envio
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query, variables: { termino } });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.buscarClientes;
+};
+
 export const createCliente = async (input: any) => {
     const query = `
     mutation CreateCliente($input: CreateClienteInput!) {
