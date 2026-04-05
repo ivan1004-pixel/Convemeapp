@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store'; // La bóveda segura de Expo
 
 export const API_URL =
 Platform.OS === 'android'
-? 'https://api-conveme.utvt.cloud:3000/graphql'
+? 'https://api-conveme.utvt.cloud/graphql'
 : 'http://localhost:3000/graphql';
 
 export const convemeApi = axios.create({

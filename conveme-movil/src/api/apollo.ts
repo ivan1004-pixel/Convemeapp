@@ -3,7 +3,7 @@ import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'https://api-conveme.utvt.cloud:3000/graphql';
+const API_URL = 'https://api-conveme.utvt.cloud/graphql';
 
 const httpLink = createHttpLink({ uri: API_URL });
 
