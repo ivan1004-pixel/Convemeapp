@@ -7,6 +7,8 @@ function TabIcon({ emoji }: { emoji: string }) {
   return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 }
 
+const HIDDEN_TAB = { tabBarButton: () => null, tabBarStyle: { display: 'none' as const } };
+
 export default function AppLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -33,9 +35,7 @@ export default function AppLayout() {
         name="index"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon emoji={focused ? '🏠' : '🏠'} />
-          ),
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" />,
         }}
       />
       <Tabs.Screen
