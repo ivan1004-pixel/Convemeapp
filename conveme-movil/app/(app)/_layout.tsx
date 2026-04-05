@@ -7,7 +7,7 @@ function TabIcon({ emoji }: { emoji: string }) {
   return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 }
 
-const HIDDEN_TAB = { tabBarButton: () => null, tabBarStyle: { display: 'none' as const } };
+const HIDDEN: { href: null } = { href: null };
 
 export default function AppLayout() {
   const colorScheme = useColorScheme();
@@ -31,41 +31,44 @@ export default function AppLayout() {
         },
       }}
     >
+      {/* ── Visible tabs ── */}
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Inicio',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" />,
-        }}
+        options={{ title: 'Inicio', tabBarIcon: () => <TabIcon emoji="🏠" /> }}
       />
       <Tabs.Screen
         name="ventas"
-        options={{
-          title: 'Ventas',
-          tabBarIcon: () => <TabIcon emoji="💰" />,
-        }}
+        options={{ title: 'Ventas', tabBarIcon: () => <TabIcon emoji="💰" /> }}
       />
       <Tabs.Screen
         name="pedidos"
-        options={{
-          title: 'Pedidos',
-          tabBarIcon: () => <TabIcon emoji="📦" />,
-        }}
+        options={{ title: 'Pedidos', tabBarIcon: () => <TabIcon emoji="📦" /> }}
       />
       <Tabs.Screen
         name="productos"
-        options={{
-          title: 'Productos',
-          tabBarIcon: () => <TabIcon emoji="🛍️" />,
-        }}
+        options={{ title: 'Productos', tabBarIcon: () => <TabIcon emoji="🛍️" /> }}
       />
       <Tabs.Screen
-        name="clientes"
-        options={{
-          title: 'Clientes',
-          tabBarIcon: () => <TabIcon emoji="👥" />,
-        }}
+        name="mas"
+        options={{ title: 'Más', tabBarIcon: () => <TabIcon emoji="☰" /> }}
       />
+
+      {/* ── Hidden from tab bar ── */}
+      <Tabs.Screen name="clientes" options={HIDDEN} />
+      <Tabs.Screen name="empleados" options={HIDDEN} />
+      <Tabs.Screen name="vendedores" options={HIDDEN} />
+      <Tabs.Screen name="eventos" options={HIDDEN} />
+      <Tabs.Screen name="escuelas" options={HIDDEN} />
+      <Tabs.Screen name="insumos" options={HIDDEN} />
+      <Tabs.Screen name="promociones" options={HIDDEN} />
+      <Tabs.Screen name="comprobantes" options={HIDDEN} />
+      <Tabs.Screen name="categorias" options={HIDDEN} />
+      <Tabs.Screen name="tamanos" options={HIDDEN} />
+      <Tabs.Screen name="asignaciones" options={HIDDEN} />
+      <Tabs.Screen name="cortes" options={HIDDEN} />
+      <Tabs.Screen name="produccion" options={HIDDEN} />
+      <Tabs.Screen name="cuentas-bancarias" options={HIDDEN} />
+      <Tabs.Screen name="perfil" options={HIDDEN} />
     </Tabs>
   );
 }
