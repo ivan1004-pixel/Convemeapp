@@ -5,7 +5,9 @@ export interface LoginResponse {
             usuario: {
                 id_usuario: number;
                 rol_id: number;
+                username: string;
             };
         };
     };
+    errors?: { message: string }[];
 }
