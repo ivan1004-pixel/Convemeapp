@@ -30,6 +30,7 @@ export const truncateText = (text: string, maxLength: number = 50): string => {
 export const getInitials = (name: string): string => {
   return name
     .split(' ')
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join('')
     .toUpperCase()
@@ -38,5 +39,7 @@ export const getInitials = (name: string): string => {
 
 export const formatPhone = (phone?: string): string => {
   if (!phone) return 'Sin teléfono';
-  return phone.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length !== 10) return phone;
+  return digits.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
 };

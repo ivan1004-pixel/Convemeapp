@@ -25,9 +25,9 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => ({
-        getItem: (name) => SecureStore.getItemAsync(name),
-        setItem: (name, value) => SecureStore.setItemAsync(name, value),
-        removeItem: (name) => SecureStore.deleteItemAsync(name),
+        getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,
+        setItem: async (name, value) => SecureStore.setItemAsync(name, value),
+        removeItem: async (name) => SecureStore.deleteItemAsync(name),
       })),
     }
   )
