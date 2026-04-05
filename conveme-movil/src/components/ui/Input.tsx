@@ -38,7 +38,12 @@ export const Input: React.FC<InputProps> = ({
           {...rest}
         />
         {isPassword && (
-          <Pressable onPress={() => setPasswordVisible(!isPasswordVisible)} style={styles.rightIcon}>
+          <Pressable
+            onPress={() => setPasswordVisible(!isPasswordVisible)}
+            style={styles.rightIcon}
+            accessibilityRole="button"
+            accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+          >
             <Text style={styles.eyeIcon}>{isPasswordVisible ? '👁' : '👁‍🗨'}</Text>
           </Pressable>
         )}

@@ -17,7 +17,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 }) => {
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.icon}>🔍</Text>
+      <Text style={styles.icon} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">🔍</Text>
       <TextInput
         style={styles.input}
         value={value}
