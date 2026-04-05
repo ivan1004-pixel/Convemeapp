@@ -6,33 +6,31 @@ import {
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getEventos, deleteEvento } from '../../../src/services/evento.service';
 import { useEventoStore } from '../../../src/store/eventoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
-import { Badge } from '../../../src/components/ui/Badge';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError, formatDate, formatCurrency } from '../../../src/utils';
 import type { Evento } from '../../../src/types';
 
-function getEventoStatus(evento: Evento): { label: string; color: 'primary' | 'success' | 'secondary' } {
+function getEventoStatus(evento: Evento): { label: string; color: string } {
   const now = new Date();
   const start = evento.fecha_inicio ? new Date(evento.fecha_inicio) : null;
   const end = evento.fecha_fin ? new Date(evento.fecha_fin) : null;
-  if (end && now > end) return { label: 'Pasado', color: 'secondary' };
-  if (start && now >= start && (!end || now <= end)) return { label: 'Activo', color: 'success' };
-  return { label: 'Próximo', color: 'primary' };
+  if (end && now > end) return { label: 'PASADO', color: '#6B7280' };
+  if (start && now >= start && (!end || now <= end)) return { label: 'EN CURSO', color: Colors.success };
+  return { label: 'PRÓXIMO', color: Colors.primary };
 }
 
 function EventoCard({
@@ -44,9 +42,6 @@ function EventoCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
   const status = getEventoStatus(item);
 
   return (
@@ -55,52 +50,58 @@ function EventoCard({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card, borderColor: theme.border },
-        Shadows.sm,
         pressed && styles.cardPressed,
       ]}
-      accessibilityRole="button"
     >
-      <View style={styles.cardContent}>
-        <View style={styles.cardInfo}>
-          <View style={styles.cardRow}>
-            <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-              {item.nombre}
+      <View style={styles.cardHeader}>
+        <Text style={styles.cardName} numberOfLines={1}>
+          {item.nombre.toUpperCase()}
+        </Text>
+        <View style={[styles.statusBadge, { backgroundColor: status.color }]}>
+          <Text style={styles.statusText}>{status.label}</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        {item.escuela && (
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="school" size={18} color={Colors.dark} />
+            <Text style={styles.cardMeta} numberOfLines={1}>
+              {item.escuela.nombre}
             </Text>
-            <Badge text={status.label} color={status.color} size="sm" />
           </View>
-          {item.escuela && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              🏫 {item.escuela.nombre}
+        )}
+        {item.municipio && (
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="map-marker" size={18} color={Colors.dark} />
+            <Text style={styles.cardMeta} numberOfLines={1}>
+              {item.municipio.nombre}, {item.municipio.estado?.nombre}
             </Text>
-          )}
-          {item.municipio && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              📍 {item.municipio.nombre}
+          </View>
+        )}
+        
+        <View style={styles.cardFooter}>
+          <View style={styles.dateBox}>
+            <MaterialCommunityIcons name="calendar-range" size={16} color={Colors.dark} />
+            <Text style={styles.cardDate}>
+              {formatDate(item.fecha_inicio)} - {formatDate(item.fecha_fin)}
             </Text>
-          )}
-          <View style={styles.cardDates}>
-            <Text style={[styles.cardDate, { color: theme.muted }]}>
-              {formatDate(item.fecha_inicio)} — {formatDate(item.fecha_fin)}
-            </Text>
-            {item.costo_stand != null && (
-              <Text style={[styles.cardCosto, { color: Colors.primary }]}>
+          </View>
+          {item.costo_stand != null && (
+            <View style={styles.costBox}>
+              <Text style={styles.cardCosto}>
                 {formatCurrency(item.costo_stand)}
               </Text>
-            )}
-          </View>
+            </View>
+          )}
         </View>
-        <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
       </View>
     </Pressable>
   );
 }
 
 export default function EventosScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const { eventos, setEventos, removeEvento } = useEventoStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -114,11 +115,11 @@ export default function EventosScreen() {
       const data = await getEventos();
       setEventos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [setEventos]);
+  }, [setEventos, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -126,15 +127,15 @@ export default function EventosScreen() {
       const data = await getEventos();
       setEventos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
-  }, [setEventos]);
+  }, [setEventos, showToast]);
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, []);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return eventos;
@@ -153,81 +154,79 @@ export default function EventosScreen() {
     try {
       await deleteEvento(deleteId);
       removeEvento(deleteId);
+      showToast('Evento eliminado con éxito', 'success');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeEvento]);
+  }, [deleteId, removeEvento, showToast]);
 
   const deleteTarget = eventos.find((e) => e.id_evento === deleteId);
 
-  if (loading && eventos.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Eventos</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando eventos..." />
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Eventos</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+        <View style={styles.headerTitleRow}>
+           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+           </TouchableOpacity>
+           <Text style={styles.title}>Eventos</Text>
+        </View>
+        <Text style={styles.count}>{filtered.length} registros</Text>
       </View>
 
-      <View style={styles.searchContainer}>
+      <View style={styles.searchSection}>
         <SearchBar
           value={search}
           onChangeText={setSearch}
           placeholder="Buscar por nombre o escuela..."
+          containerStyle={styles.searchBar}
         />
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_evento)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <EventoCard
-            item={item}
-            onPress={() => router.push(`/eventos/${item.id_evento}`)}
-            onLongPress={() => setDeleteId(item.id_evento)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            title="Sin eventos"
-            message={search ? 'No hay resultados para tu búsqueda.' : 'Aún no hay eventos registrados.'}
-            actionLabel="Agregar evento"
-            onAction={() => router.push('/eventos/create')}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {loading && !refreshing && eventos.length === 0 ? (
+        <LoadingSpinner message="Cargando..." />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_evento)}
+          contentContainerStyle={[
+            styles.listContent,
+            filtered.length === 0 && styles.listEmpty,
+          ]}
+          renderItem={({ item }) => (
+            <EventoCard
+              item={item}
+              onPress={() => router.push(`/eventos/create?id=${item.id_evento}`)}
+              onLongPress={() => setDeleteId(item.id_evento)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              title="Sin eventos"
+              message={search ? 'No hay resultados.' : 'No hay eventos registrados.'}
+              actionLabel="Agregar evento"
+              onAction={() => router.push('/eventos/create')}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/eventos/create')}
-        activeOpacity={0.85}
-        accessibilityLabel="Agregar evento"
-        accessibilityRole="button"
+        activeOpacity={0.9}
       >
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
@@ -235,14 +234,15 @@ export default function EventosScreen() {
       <ConfirmDialog
         visible={deleteId !== null}
         title="Eliminar evento"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
+        message={`¿Deseas eliminar "${deleteTarget?.nombre?.toUpperCase() ?? ''}"?`}
         confirmText="Eliminar"
-        cancelText="Cancelar"
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
         loading={deleting}
         destructive
       />
+
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
   );
 }
@@ -250,101 +250,151 @@ export default function EventosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.beige,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  backBtn: {
+    padding: Spacing.xs,
   },
   title: {
     ...Typography.h2,
+    fontWeight: '900',
+    color: '#1A1A1A',
   },
   count: {
     ...Typography.bodySmall,
+    fontWeight: '700',
+    color: 'rgba(26,26,26,0.5)',
   },
-  searchContainer: {
+  searchSection: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
+  searchBar: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.lg,
+  },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   listEmpty: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   card: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   cardPressed: {
-    opacity: 0.75,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
-  cardContent: {
+  cardHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+    gap: Spacing.xs,
   },
   cardName: {
-    ...Typography.bodyMedium,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A1A',
     flex: 1,
   },
-  cardMeta: {
-    ...Typography.bodySmall,
+  statusBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
   },
-  cardDates: {
+  statusText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  cardBody: {
+    gap: Spacing.xs,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  cardMeta: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(26,26,26,0.6)',
+  },
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 2,
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  dateBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   cardDate: {
-    ...Typography.caption,
+    fontSize: 11,
+    fontWeight: '800',
+    color: 'rgba(26,26,26,0.5)',
+  },
+  costBox: {
+    backgroundColor: Colors.warning + '22',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
   },
   cardCosto: {
-    ...Typography.bodySmall,
-    fontWeight: '600',
-  },
-  chevron: {
-    fontSize: 22,
-    fontWeight: '300',
+    fontSize: 12,
+    fontWeight: '900',
+    color: Colors.dark,
   },
   fab: {
     position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 90,
+    right: Spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 999,
   },
   fabIcon: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 32,
+    fontSize: 32,
+    color: '#ffffff',
+    fontWeight: '900',
   },
 });

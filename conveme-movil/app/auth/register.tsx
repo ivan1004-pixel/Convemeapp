@@ -9,9 +9,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { Image } from 'expo-image';
 import { Input } from '../../src/components/ui/Input';
 import { Button } from '../../src/components/ui/Button';
 import { Toast, useToast } from '../../src/components/Toast';
@@ -51,7 +51,7 @@ export default function RegisterScreen() {
     }
     setIsLoading(true);
     try {
-      await createUserService(username.trim(), password, selectedRole);
+      await createUserService(username.trim(), password, Number(selectedRole));
       setScreenState('success');
     } catch (err: any) {
       const msg: string = err?.message ?? '';
@@ -69,24 +69,26 @@ export default function RegisterScreen() {
 
   if (screenState === 'success') {
     return (
-      <LinearGradient colors={[Colors.gradientStart, Colors.gradientEnd]} style={styles.fullScreen}>
+      <View style={[styles.fullScreen, { backgroundColor: Colors.pink }]}>
         <SafeAreaView style={styles.centered}>
-          <Meme source={require('../../assets/images/memeok.png')} size={180} />
-          <Text style={styles.successTitle}>Usuario Creado</Text>
-          <Text style={styles.successMsg}>
-            El usuario fue creado exitosamente.{'\n'}Debe iniciar sesión para acceder.
-          </Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={20} color={Colors.textLight} />
-            <Text style={styles.backBtnText}>Volver</Text>
+          <Meme source={require('../../assets/images/gato.gif')} size={200} />
+          <Text style={[styles.successTitle, { color: Colors.dark }]}>¡LISTO!</Text>
+          <View style={styles.successCard}>
+            <Text style={styles.successMsg}>
+              El usuario <Text style={{ fontWeight: '900', color: Colors.primary }}>{username}</Text> fue creado exitosamente.
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.backBtnSuccess} onPress={() => router.back()}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.textLight} />
+            <Text style={styles.backBtnText}>VOLVER AL MENÚ</Text>
           </TouchableOpacity>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -97,23 +99,32 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Header */}
-          <LinearGradient
-            colors={[Colors.gradientStart, Colors.gradientEnd]}
-            style={styles.header}
-          >
+          <View style={styles.header}>
             <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.textLight} />
+              <View style={styles.backIconCircle}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+              </View>
             </TouchableOpacity>
-            <MaterialCommunityIcons name="account-plus" size={44} color="rgba(255,255,255,0.9)" />
-            <Text style={styles.headerTitle}>Crear Usuario</Text>
-            <Text style={styles.headerSubtitle}>Solo administradores</Text>
-          </LinearGradient>
+            
+            <View style={styles.gifContainer}>
+              <Image 
+                source={require('../../assets/images/gato.gif')} 
+                style={styles.headerGif}
+                contentFit="contain"
+              />
+            </View>
+            
+            <Text style={styles.headerTitle}>CREAR USUARIO</Text>
+            <View style={styles.adminBadge}>
+              <Text style={styles.adminBadgeText}>ACCESO RESTRINGIDO</Text>
+            </View>
+          </View>
 
           {/* Form */}
           <View style={styles.card}>
             <Input
-              label="Nombre de Usuario"
-              placeholder="Ej: vendedor01"
+              label="NOMBRE DE USUARIO"
+              placeholder="Ej: ivan_pixel"
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
@@ -122,10 +133,11 @@ export default function RegisterScreen() {
               leftIcon={
                 <MaterialCommunityIcons name="account-plus" size={20} color={Colors.primary} />
               }
+              containerStyle={styles.inputContainer}
             />
 
             <Input
-              label="Contraseña"
+              label="CONTRASEÑA"
               placeholder="Mínimo 4 caracteres"
               value={password}
               onChangeText={setPassword}
@@ -145,18 +157,19 @@ export default function RegisterScreen() {
                   />
                 </TouchableOpacity>
               }
+              containerStyle={styles.inputContainer}
             />
 
             {/* Role Dropdown */}
             <View style={styles.fieldGroup}>
-              <Text style={styles.fieldLabel}>Rol de Acceso</Text>
+              <Text style={styles.fieldLabel}>ROL DE ACCESO</Text>
               <TouchableOpacity
                 style={styles.dropdown}
                 onPress={() => setShowRoleMenu(!showRoleMenu)}
                 activeOpacity={0.8}
               >
                 <MaterialCommunityIcons name="shield-account" size={20} color={Colors.primary} />
-                <Text style={styles.dropdownText}>{selectedRoleLabel}</Text>
+                <Text style={styles.dropdownText}>{selectedRoleLabel.toUpperCase()}</Text>
                 <MaterialCommunityIcons
                   name={showRoleMenu ? 'chevron-up' : 'chevron-down'}
                   size={20}
@@ -180,7 +193,7 @@ export default function RegisterScreen() {
                       <MaterialCommunityIcons
                         name={role.value === 1 ? 'crown' : 'account-tie'}
                         size={18}
-                        color={selectedRole === role.value ? Colors.primary : '#6B7280'}
+                        color={selectedRole === role.value ? Colors.primary : Colors.dark}
                       />
                       <Text
                         style={[
@@ -188,10 +201,10 @@ export default function RegisterScreen() {
                           selectedRole === role.value && styles.dropdownItemTextActive,
                         ]}
                       >
-                        {role.label}
+                        {role.label.toUpperCase()}
                       </Text>
                       {selectedRole === role.value && (
-                        <MaterialCommunityIcons name="check" size={18} color={Colors.primary} />
+                        <MaterialCommunityIcons name="check-bold" size={18} color={Colors.primary} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -210,9 +223,9 @@ export default function RegisterScreen() {
             />
 
             <View style={styles.note}>
-              <MaterialCommunityIcons name="information" size={16} color={Colors.info} />
+              <MaterialCommunityIcons name="information" size={20} color={Colors.dark} />
               <Text style={styles.noteText}>
-                El nuevo usuario deberá iniciar sesión para acceder al sistema.
+                EL NUEVO USUARIO DEBERÁ INICIAR SESIÓN PARA ACCEDER AL SISTEMA.
               </Text>
             </View>
           </View>
@@ -227,125 +240,186 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.light,
+    backgroundColor: Colors.beige,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: Spacing.xl,
   },
   header: {
-    paddingTop: Spacing.xxxl,
-    paddingBottom: Spacing.xxxl,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.xs,
-    position: 'relative',
+    backgroundColor: Colors.beige,
   },
   backIcon: {
     position: 'absolute',
-    top: Spacing.xl,
-    left: Spacing.md,
-    padding: Spacing.sm,
+    top: Spacing.md,
+    left: Spacing.lg,
+    zIndex: 10,
+  },
+  backIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.light,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  gifContainer: {
+    width: 120,
+    height: 120,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.pink,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+  },
+  headerGif: {
+    width: '100%',
+    height: '100%',
   },
   headerTitle: {
     fontFamily: 'Galada',
-    fontSize: 36,
-    color: Colors.textLight,
+    fontSize: 38,
+    color: Colors.dark,
+    textAlign: 'center',
+    marginTop: Spacing.xs,
   },
-  headerSubtitle: {
-    ...Typography.bodySmall,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+  adminBadge: {
+    backgroundColor: Colors.warning,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    marginTop: Spacing.xs,
+  },
+  adminBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: Colors.dark,
+    letterSpacing: 1,
   },
   card: {
-    flex: 1,
-    borderTopLeftRadius: BorderRadius.xxl,
-    borderTopRightRadius: BorderRadius.xxl,
-    marginTop: -BorderRadius.xxl,
+    marginHorizontal: Spacing.lg,
     padding: Spacing.xl,
-    paddingTop: Spacing.xl + Spacing.sm,
     backgroundColor: Colors.light,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: BorderRadius.xxl,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
+  },
+  inputContainer: {
+    marginBottom: Spacing.md,
   },
   fieldGroup: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
   },
   fieldLabel: {
     ...Typography.label,
-    color: Colors.textDark,
+    fontWeight: '900',
+    color: Colors.dark,
     marginBottom: Spacing.xs,
+    fontSize: 14,
   },
   dropdown: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: Colors.dark,
     borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.md - 2,
+    paddingVertical: Spacing.md,
     backgroundColor: Colors.light,
     gap: Spacing.sm,
   },
   dropdownText: {
     ...Typography.body,
-    color: Colors.textDark,
+    fontWeight: '800',
+    color: Colors.dark,
     flex: 1,
   },
   dropdownMenu: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: Colors.dark,
     borderRadius: BorderRadius.lg,
-    marginTop: Spacing.xs,
+    marginTop: Spacing.sm,
     backgroundColor: Colors.light,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: Spacing.md,
     gap: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
   dropdownItemActive: {
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: `${Colors.pink}44`,
   },
   dropdownItemText: {
     ...Typography.body,
-    color: Colors.textDark,
+    fontWeight: '700',
+    color: Colors.dark,
     flex: 1,
   },
   dropdownItemTextActive: {
     color: Colors.primary,
-    fontWeight: '600',
+    fontWeight: '900',
   },
   createButton: {
-    marginTop: Spacing.sm,
-    width: '100%',
+    marginTop: Spacing.md,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    height: 60,
   },
   note: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: Spacing.xs,
-    marginTop: Spacing.lg,
-    backgroundColor: 'rgba(0,217,217,0.08)',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginTop: Spacing.xl,
+    backgroundColor: `${Colors.info}15`,
     padding: Spacing.md,
     borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    borderStyle: 'dashed',
   },
   noteText: {
-    ...Typography.bodySmall,
-    color: Colors.info,
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.dark,
     flex: 1,
+    lineHeight: 16,
   },
   fullScreen: {
     flex: 1,
@@ -355,30 +429,50 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: Spacing.xl,
-    gap: Spacing.md,
+    gap: Spacing.lg,
+  },
+  successCard: {
+    backgroundColor: Colors.light,
+    padding: Spacing.xl,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    width: '100%',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   successTitle: {
-    ...Typography.h3,
-    color: Colors.textLight,
-    marginTop: Spacing.sm,
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: -1,
   },
   successMsg: {
-    ...Typography.body,
-    color: 'rgba(255,255,255,0.8)',
+    ...Typography.h4,
+    color: Colors.dark,
     textAlign: 'center',
+    fontWeight: '700',
   },
-  backBtn: {
+  backBtnSuccess: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.xl,
+    backgroundColor: Colors.dark,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.md,
-    gap: Spacing.sm,
-    marginTop: Spacing.md,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+    borderWidth: 2,
+    borderColor: Colors.light,
+    shadowColor: '#000',
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
   backBtnText: {
     ...Typography.button,
     color: Colors.textLight,
+    fontWeight: '900',
   },
 });

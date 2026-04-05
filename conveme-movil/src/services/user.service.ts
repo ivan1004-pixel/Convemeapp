@@ -82,3 +82,23 @@ export const updateUserService = async (
 
     return data.data.updateUsuario;
 };
+
+// 🏠 CASA 4: Función para obtener TODOS los usuarios
+export const getUsuarios = async () => {
+    const query = `
+    query {
+        usuarios {
+            id_usuario
+            username
+            rol {
+                id_rol
+                nombre
+            }
+        }
+    }
+    `;
+
+    const { data } = await convemeApi.post('', { query });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.usuarios;
+};

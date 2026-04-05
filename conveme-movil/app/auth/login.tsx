@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Input } from '../../src/components/ui/Input';
 import { Button } from '../../src/components/ui/Button';
 import { Toast, useToast } from '../../src/components/Toast';
@@ -56,46 +57,40 @@ export default function LoginScreen() {
 
   if (screenState === 'network-error') {
     return (
-      <LinearGradient
-        colors={[Colors.gradientStart, Colors.gradientEnd]}
-        style={styles.fullScreen}
-      >
+      <View style={[styles.fullScreen, { backgroundColor: Colors.beige }]}>
         <SafeAreaView style={styles.centered}>
           <Meme source={require('../../assets/images/memeerror.png')} size={180} />
-          <Text style={styles.errorTitle}>Sin conexión</Text>
-          <Text style={styles.errorMsg}>
+          <Text style={[styles.errorTitle, { color: Colors.error }]}>Sin conexión</Text>
+          <Text style={[styles.errorMsg, { color: '#6B7280' }]}>
             Error de conexión. Verifica tu internet.
           </Text>
           <TouchableOpacity
-            style={styles.retryBtn}
+            style={[styles.retryBtn, { backgroundColor: Colors.error }]}
             onPress={() => setScreenState('form')}
           >
-            <MaterialCommunityIcons name="refresh" size={20} color={Colors.textLight} />
+            <MaterialCommunityIcons name="refresh" size={20} color="#FFFFFF" />
             <Text style={styles.retryText}>Intentar de nuevo</Text>
           </TouchableOpacity>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     );
   }
 
   if (screenState === 'success') {
     return (
-      <LinearGradient
-        colors={[Colors.gradientStart, Colors.gradientEnd]}
-        style={styles.fullScreen}
-      >
+      <View style={[styles.fullScreen, { backgroundColor: Colors.beige }]}>
         <SafeAreaView style={styles.centered}>
           <Meme source={require('../../assets/images/memeok.png')} size={180} />
-          <Text style={styles.successTitle}>Sesión Iniciada</Text>
-          <Text style={styles.successMsg}>Bienvenido a ConVeMe</Text>
+          <Text style={[styles.successTitle, { color: Colors.success }]}>Sesión Iniciada</Text>
+          <Text style={[styles.successMsg, { color: '#6B7280' }]}>Bienvenido a ConVeMe</Text>
         </SafeAreaView>
         <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </LinearGradient>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -105,24 +100,29 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {/* Gradient Header */}
-          <LinearGradient
-            colors={[Colors.gradientStart, Colors.gradientEnd]}
-            style={styles.header}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <MaterialCommunityIcons name="storefront" size={48} color="rgba(255,255,255,0.9)" />
-            <Text style={styles.logo}>ConVeMe</Text>
-            <Text style={styles.subtitle}>Sistema de Gestión</Text>
-          </LinearGradient>
+          {/* Brand Header */}
+          <View style={styles.brandHeader}>
+            <View style={styles.mascotaWrapper}>
+              <Image
+                source={require('../../assets/images/mascota.png')}
+                style={styles.mascota}
+                contentFit="contain"
+              />
+            </View>
+            <Image
+              source={require('../../assets/images/logon.png')}
+              style={styles.logon}
+              contentFit="contain"
+            />
+            <Text style={styles.appName}>ConVeMe</Text>
+          </View>
 
           {/* Form Card */}
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Iniciar Sesión</Text>
-            <Text style={styles.cardSubtitle}>
-              Ingresa tus credenciales para continuar
-            </Text>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Inicia Sesión</Text>
+              <View style={styles.underline} />
+            </View>
 
             <Input
               label="Usuario"
@@ -131,30 +131,30 @@ export default function LoginScreen() {
               onChangeText={setUsername}
               autoCapitalize="none"
               autoCorrect={false}
-              returnKeyType="next"
+              style={styles.inputField}
               leftIcon={
-                <MaterialCommunityIcons name="account" size={20} color={Colors.primary} />
+                <MaterialCommunityIcons name="account-circle-outline" size={22} color={Colors.primary} />
               }
             />
 
             <Input
               label="Contraseña"
-              placeholder="Ingresa tu contraseña"
+              placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
               autoCapitalize="none"
               autoCorrect={false}
-              returnKeyType="done"
               onSubmitEditing={handleLogin}
+              style={styles.inputField}
               leftIcon={
-                <MaterialCommunityIcons name="lock" size={20} color={Colors.primary} />
+                <MaterialCommunityIcons name="lock-outline" size={22} color={Colors.primary} />
               }
               rightIcon={
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <MaterialCommunityIcons
-                    name={showPassword ? 'eye-off' : 'eye'}
-                    size={20}
+                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                    size={22}
                     color={Colors.primary}
                   />
                 </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function LoginScreen() {
             />
 
             <Button
-              title="INICIAR SESIÓN"
+              title="ENTRAR AL SISTEMA"
               onPress={handleLogin}
               variant="primary"
               size="lg"
@@ -173,9 +173,9 @@ export default function LoginScreen() {
 
             <TouchableOpacity
               style={styles.helpLink}
-              onPress={() => showToast('Contacta a tu administrador para recuperar acceso.', 'info')}
+              onPress={() => showToast('Contacta a tu administrador.', 'info')}
             >
-              <Text style={styles.helpLinkText}>Problemas para acceder</Text>
+              <Text style={styles.helpLinkText}>¿Problemas con tu acceso?</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -189,67 +189,109 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.light,
+    backgroundColor: Colors.beige,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.xl,
   },
-  header: {
-    paddingTop: Spacing.xxxl,
-    paddingBottom: Spacing.xxxl,
+  brandHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.md,
     gap: Spacing.xs,
   },
-  logo: {
-    fontFamily: 'Galada',
-    fontSize: 52,
-    color: Colors.textLight,
-    letterSpacing: 1,
+  mascotaWrapper: {
+    width: 130,
+    height: 130,
+    borderRadius: 65,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 4,
+    borderColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
+    overflow: 'hidden', // Asegura que la imagen no se salga de los bordes circulares
   },
-  subtitle: {
-    ...Typography.body,
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 0.5,
+  mascota: {
+    width: 110,
+    height: 110,
+    borderRadius: 55, // Redondeamos también la imagen para evitar esquinas cuadradas
+  },
+  logon: {
+    width: 160,
+    height: 40,
+    marginBottom: -10,
+  },
+  appName: {
+    fontSize: 52, // Reducido de 62 a 52
+    fontWeight: '900',
+    color: Colors.primary,
+    textAlign: 'center',
+    letterSpacing: -1,
+    textTransform: 'uppercase',
+    // Sombras más pronunciadas para dar profundidad
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   card: {
-    flex: 1,
-    borderTopLeftRadius: BorderRadius.xxl,
-    borderTopRightRadius: BorderRadius.xxl,
-    marginTop: -BorderRadius.xxl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xxl,
     padding: Spacing.xl,
-    paddingTop: Spacing.xl + Spacing.sm,
-    backgroundColor: Colors.light,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 8,
+    marginTop: Spacing.sm,
+  },
+  cardHeader: {
+    marginBottom: Spacing.xl,
   },
   cardTitle: {
     ...Typography.h3,
-    color: Colors.textDark,
-    marginBottom: Spacing.xs,
+    color: '#1A1A1A',
+    fontWeight: '900',
+    textAlign: 'center',
   },
-  cardSubtitle: {
-    ...Typography.bodySmall,
-    color: '#6B7280',
-    marginBottom: Spacing.lg,
+  underline: {
+    height: 4,
+    width: 40,
+    backgroundColor: Colors.primary,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 4,
+  },
+  inputField: {
+    marginBottom: Spacing.md,
   },
   loginButton: {
-    marginTop: Spacing.sm,
-    width: '100%',
+    marginTop: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   helpLink: {
     alignItems: 'center',
-    marginTop: Spacing.md,
+    marginTop: Spacing.xl,
   },
   helpLinkText: {
-    ...Typography.bodySmall,
-    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+    color: 'rgba(26,26,26,0.4)',
     textDecorationLine: 'underline',
   },
   fullScreen: {
@@ -264,36 +306,41 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     ...Typography.h3,
-    color: Colors.textLight,
+    fontWeight: '900',
     marginTop: Spacing.sm,
   },
   errorMsg: {
     ...Typography.body,
-    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
+    lineHeight: 22,
   },
   retryBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.primary,
     borderRadius: BorderRadius.xl,
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.md,
     gap: Spacing.sm,
     marginTop: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
   },
   retryText: {
-    ...Typography.button,
-    color: Colors.textLight,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    fontSize: 14,
   },
   successTitle: {
     ...Typography.h3,
-    color: Colors.textLight,
+    fontWeight: '900',
     marginTop: Spacing.sm,
   },
   successMsg: {
     ...Typography.body,
-    color: 'rgba(255,255,255,0.8)',
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

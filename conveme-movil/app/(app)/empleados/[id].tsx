@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.xxl * 3,
     gap: Spacing.md,
   },
   heroCard: {

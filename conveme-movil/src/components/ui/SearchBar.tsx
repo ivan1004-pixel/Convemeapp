@@ -35,20 +35,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.surface,
-          borderColor: isFocused ? Colors.primary : theme.border,
+          backgroundColor: '#F9F4EE', // Beige claro fijo para todas las barras de búsqueda
+          borderColor: isFocused ? Colors.primary : Colors.dark,
         },
         isFocused && styles.focused,
         style,
       ]}
     >
-      <Text style={[styles.searchIcon, { color: theme.muted }]}>🔍</Text>
       <TextInput
-        style={[styles.input, { color: theme.text }]}
+        style={[styles.input, { color: Colors.dark }]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={theme.muted}
+        placeholderTextColor="rgba(26,26,26,0.5)"
         returnKeyType="search"
         clearButtonMode="never"
         onFocus={() => setIsFocused(true)}
@@ -61,7 +60,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           accessibilityLabel="Limpiar búsqueda"
           accessibilityRole="button"
         >
-          <Text style={[styles.clearIcon, { color: theme.muted }]}>✕</Text>
+          <Text style={[styles.clearIcon, { color: Colors.dark }]}>✕</Text>
         </Pressable>
       )}
     </View>

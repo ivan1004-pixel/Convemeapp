@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
-  Image,
   StyleSheet,
   Dimensions,
   FlatList,
   TouchableOpacity,
   ViewStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Colors } from '../theme/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface CarouselItem {
   id: string;
-  source: ReturnType<typeof require>;
+  source: any;
 }
 
 interface CarouselProps {
@@ -34,43 +34,22 @@ export const Carousel: React.FC<CarouselProps> = ({
 }) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!autoPlay || items.length <= 1) return;
 
-    timerRef.current = setInterval(() => {
-      setActiveIndex((prev) => {
-        const next = (prev + 1) % items.length;
-        flatListRef.current?.scrollToIndex({ index: next, animated: true });
-        return next;
-      });
+    const timer = setInterval(() => {
+      const nextIndex = (activeIndex + 1) % items.length;
+      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      setActiveIndex(nextIndex);
     }, interval);
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [autoPlay, interval, items.length]);
+    return () => clearInterval(timer);
+  }, [autoPlay, interval, items.length, activeIndex]);
 
-  const onScroll = (event: { nativeEvent: { contentOffset: { x: number } } }) => {
+  const onScroll = (event: any) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     if (index !== activeIndex) setActiveIndex(index);
-  };
-
-  const goToIndex = (index: number) => {
-    flatListRef.current?.scrollToIndex({ index, animated: true });
-    setActiveIndex(index);
-    // Reset timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setActiveIndex((prev) => {
-          const next = (prev + 1) % items.length;
-          flatListRef.current?.scrollToIndex({ index: next, animated: true });
-          return next;
-        });
-      }, interval);
-    }
   };
 
   return (
@@ -84,27 +63,25 @@ export const Carousel: React.FC<CarouselProps> = ({
         keyExtractor={(item) => item.id}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        getItemLayout={(_, index) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index })}
         renderItem={({ item }) => (
           <Image
             source={item.source}
             style={{ width: SCREEN_WIDTH, height }}
-            resizeMode="cover"
+            contentFit="cover"
+            transition={500}
           />
         )}
       />
 
-      {/* Dots */}
       <View style={styles.dots}>
         {items.map((_, index) => (
-          <TouchableOpacity
+          <View
             key={index}
-            onPress={() => goToIndex(index)}
             style={[
               styles.dot,
               {
-                backgroundColor: index === activeIndex ? Colors.primary : 'rgba(255,255,255,0.5)',
-                width: index === activeIndex ? 24 : 8,
+                backgroundColor: index === activeIndex ? Colors.primary : 'rgba(26,26,26,0.3)',
+                width: index === activeIndex ? 20 : 8,
               },
             ]}
           />
@@ -117,19 +94,22 @@ export const Carousel: React.FC<CarouselProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'relative',
+    overflow: 'hidden',
   },
   dots: {
     position: 'absolute',
-    bottom: 12,
+    bottom: 20,
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   dot: {
     height: 8,
     borderRadius: 4,
-  } as ViewStyle,
+    borderWidth: 1,
+    borderColor: 'rgba(26,26,26,0.1)',
+  },
 });

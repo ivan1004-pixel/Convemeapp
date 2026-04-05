@@ -27,8 +27,7 @@ import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Venta } from '../../../src/types';
 
-// IMPORTANTE: Asegúrate de importar tu componente SalesTicket aquí arriba
-// import { SalesTicket } from '../../../src/components/ui/SalesTicket';
+import { SalesTicket } from '../../../src/components/ui/SalesTicket';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -40,10 +39,12 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
+  const bg = '#FFFFFF'; 
+
   return (
-    <View style={rowStyles.row}>
-    <Text style={[rowStyles.label, { color: theme.muted }]}>{label}</Text>
-    <Text style={[rowStyles.value, { color: theme.text }]}>{value}</Text>
+    <View style={[rowStyles.row, { backgroundColor: bg, borderColor: 'rgba(26,26,26,0.05)' }]}>
+    <Text style={[rowStyles.label, { color: 'rgba(26,26,26,0.6)' }]}>{label}</Text>
+    <Text style={[rowStyles.value, { color: '#1A1A1A' }]}>{value}</Text>
     </View>
   );
 }
@@ -53,12 +54,19 @@ const rowStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light2.border,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
-  label: { ...Typography.bodySmall },
-  value: { ...Typography.bodySmall, fontWeight: '500', flexShrink: 1, textAlign: 'right', marginLeft: Spacing.sm },
+  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  value: { fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: 'right', marginLeft: Spacing.sm },
 });
 
 export default function VentaDetailScreen() {
@@ -181,31 +189,44 @@ export default function VentaDetailScreen() {
 
     {/* Detalles Card */}
     {venta.detalles && venta.detalles.length > 0 && (
-      <Card title={`Productos (${venta.detalles.length})`} style={styles.sectionCard}>
+      <Card
+        title={`Productos (${venta.detalles.reduce((acc, det) => acc + det.cantidad, 0)})`}
+        style={styles.sectionCard}
+      >
       {venta.detalles.map((det, i) => (
         <View
         key={i}
         style={[
           styles.detalleRow,
-          i < venta.detalles!.length - 1 && {
-            borderBottomWidth: StyleSheet.hairlineWidth,
-            borderBottomColor: theme.border,
-          },
+          { 
+            backgroundColor: '#FFFFFF', 
+            borderColor: 'rgba(26,26,26,0.05)', 
+            borderWidth: 1, 
+            borderRadius: BorderRadius.lg, 
+            marginBottom: Spacing.sm, 
+            paddingHorizontal: Spacing.md,
+            paddingVertical: Spacing.md,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 5,
+            elevation: 2,
+          }
         ]}
         >
         <View style={styles.detalleInfo}>
-        <Text style={[styles.detalleName, { color: theme.text }]}>
+        <Text style={[styles.detalleName, { color: '#1A1A1A' }]}>
         {det.producto?.nombre ?? 'Producto'}
         </Text>
-        <Text style={[styles.detalleSku, { color: theme.muted }]}>
+        <Text style={[styles.detalleSku, { color: 'rgba(26,26,26,0.5)' }]}>
         SKU: {det.producto?.sku ?? '-'}
         </Text>
         </View>
         <View style={styles.detalleRight}>
-        <Text style={[styles.detalleCantidad, { color: theme.text }]}>
+        <Text style={[styles.detalleCantidad, { color: Colors.blue, fontWeight: '700' }]}>
         ×{det.cantidad}
         </Text>
-        <Text style={[styles.detallePrecio, { color: Colors.primary }]}>
+        <Text style={[styles.detallePrecio, { color: Colors.success, fontWeight: '700' }]}>
         {formatCurrency(det.precio_unitario)}
         </Text>
         </View>
@@ -260,9 +281,7 @@ export default function VentaDetailScreen() {
     contentContainerStyle={styles.ticketScrollContent}
     showsVerticalScrollIndicator={false}
     >
-    {/* NOTA: Asegúrate de importar SalesTicket arriba */}
-    {/* <SalesTicket venta={venta} /> */}
-    <Text style={{color: 'white'}}>Ticket temporal</Text>
+    <SalesTicket venta={venta} />
     </ScrollView>
 
     {/* Botón cerrar */}
@@ -331,7 +350,7 @@ const styles = StyleSheet.create({
   // Estilos del modal del ticket
   ticketModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(26, 26, 26, 0.85)',
+    backgroundColor: 'rgba(237, 224, 209, 0.95)', // Beige con opacidad alta en lugar de negro
                                  justifyContent: 'center',
                                  alignItems: 'center',
                                  padding: Spacing.lg,

@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
@@ -113,11 +114,11 @@ export default function MasScreen() {
       onPress={() => router.push(item.route as never)}
       activeOpacity={0.7}
     >
-      <View style={[styles.iconWrap, { backgroundColor: `${item.iconColor ?? Colors.primary}22` }]}>
+      <View style={[styles.iconWrap, { backgroundColor: `${item.iconColor ?? Colors.primary}22`, borderWidth: 1, borderColor: item.iconColor ?? Colors.primary }]}>
         <MaterialCommunityIcons name={item.icon} size={20} color={item.iconColor ?? Colors.primary} />
       </View>
       <Text style={styles.itemTitle}>{item.title}</Text>
-      <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(255,255,255,0.3)" />
+      <MaterialCommunityIcons name="chevron-right" size={20} color={Colors.dark} />
     </TouchableOpacity>
   );
 
@@ -130,7 +131,12 @@ export default function MasScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>{isAdmin ? 'Administración' : 'Más'}</Text>
+        <Image
+          source={require('../../../assets/images/logon.png')}
+          style={styles.logoImage}
+          contentFit="contain"
+        />
+        <Text style={styles.titleText}>{isAdmin ? 'Administración' : 'Más opciones'}</Text>
       </View>
       <SectionList
         sections={sections}
@@ -141,10 +147,10 @@ export default function MasScreen() {
         contentContainerStyle={styles.list}
         ListFooterComponent={
           <TouchableOpacity style={styles.logoutRow} onPress={logout} activeOpacity={0.8}>
-            <View style={[styles.iconWrap, { backgroundColor: `${Colors.error}22` }]}>
+            <View style={[styles.iconWrap, { backgroundColor: `${Colors.error}22`, borderWidth: 1, borderColor: Colors.error }]}>
               <MaterialCommunityIcons name="logout" size={20} color={Colors.error} />
             </View>
-            <Text style={[styles.itemTitle, { color: Colors.error }]}>Cerrar Sesión</Text>
+            <Text style={[styles.itemTitle, { color: Colors.error, fontWeight: '900' }]}>Cerrar Sesión</Text>
           </TouchableOpacity>
         }
       />
@@ -155,59 +161,88 @@ export default function MasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark,
+    backgroundColor: Colors.beige,
   },
   header: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
+    alignItems: 'center',
   },
-  title: {
-    fontFamily: 'Galada',
-    fontSize: 28,
-    color: Colors.textLight,
+  logoImage: {
+    width: 150,
+    height: 50,
+    marginBottom: Spacing.xs,
+  },
+  titleText: {
+    ...Typography.h4,
+    color: Colors.dark,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
   list: {
     paddingBottom: Spacing.xxl,
   },
   sectionHeader: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.xs,
   },
   sectionTitle: {
     ...Typography.caption,
-    fontWeight: '700',
-    letterSpacing: 1,
-    color: 'rgba(255,255,255,0.4)',
+    fontWeight: '900',
+    letterSpacing: 2,
+    color: Colors.dark,
+    opacity: 0.6,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.lg,
+    marginVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: '#F9F4EE',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
     gap: Spacing.md,
+    // Shadow neobrutalista
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
   iconWrap: {
     width: 36,
     height: 36,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   itemTitle: {
     ...Typography.body,
-    color: Colors.textLight,
+    color: Colors.dark,
     flex: 1,
+    fontWeight: '700',
   },
   logoutRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
+    marginHorizontal: Spacing.lg,
+    marginTop: Spacing.xl,
+    paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
+    backgroundColor: '#F9F4EE',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 2,
+    borderColor: Colors.error,
     gap: Spacing.md,
-    marginTop: Spacing.md,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
 });

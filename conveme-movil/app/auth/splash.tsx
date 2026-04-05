@@ -28,38 +28,30 @@ const CARRUSEL_ITEMS = [
 ];
 
 export default function SplashScreen() {
-  const handleCrearUsuario = () => {
-    Alert.alert(
-      'Acceso Restringido',
-      'Solo el administrador puede crear usuarios. Contacta a tu administrador.',
-      [{ text: 'Entendido', style: 'default' }],
-    );
-  };
-
   return (
     <View style={styles.root}>
       {/* Carrusel de fondo */}
-      <Carousel items={CARRUSEL_ITEMS} height={SCREEN_WIDTH * 0.65} autoPlay interval={3500} />
+      <Carousel items={CARRUSEL_ITEMS} height={SCREEN_WIDTH * 1.0} autoPlay interval={4000} />
 
-      {/* Gradient overlay + content */}
-      <LinearGradient
-        colors={['transparent', Colors.gradientStart, Colors.gradientEnd]}
-        locations={[0, 0.35, 1]}
-        style={styles.gradient}
-      >
+      {/* Contenido con fondo beige neobrutalista */}
+      <View style={styles.contentContainer}>
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
           {/* Logo + Mascota */}
           <View style={styles.brandRow}>
             <View style={styles.mascotaWrap}>
               <Image
-                source={require('../../assets/images/mascota.jpg')}
+                source={require('../../assets/images/mascota.png')}
                 style={styles.mascota}
                 contentFit="cover"
               />
             </View>
             <View style={styles.brandText}>
-              <Text style={styles.appName}>ConVeMe</Text>
-              <Text style={styles.tagline}>Gestión NoManches Mx</Text>
+              <Image
+                source={require('../../assets/images/logon.png')}
+                style={{ width: 180, height: 60 }}
+                contentFit="contain"
+              />
+              <Text style={styles.tagline}>Bienvenido Nomancherito</Text>
             </View>
           </View>
 
@@ -70,26 +62,16 @@ export default function SplashScreen() {
               onPress={() => router.push('/auth/login')}
               activeOpacity={0.85}
             >
-              <MaterialCommunityIcons name="login" size={22} color={Colors.textLight} />
+              <MaterialCommunityIcons name="login" size={24} color={Colors.light} />
               <Text style={styles.btnPrimaryText}>INICIAR SESIÓN</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.btnSecondary}
-              onPress={handleCrearUsuario}
-              activeOpacity={0.75}
-            >
-              <MaterialCommunityIcons name="account-plus" size={22} color={Colors.primary} />
-              <Text style={styles.btnSecondaryText}>CREAR USUARIO</Text>
-            </TouchableOpacity>
-
-            <View style={styles.adminNote}>
-              <MaterialCommunityIcons name="shield-lock" size={14} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.adminNoteText}>Registro solo para administradores</Text>
+            <View style={styles.footerNote}>
+              <Text style={styles.footerNoteText}>ConveMe v1.0 • Sistema de Gestión de Ventas</Text>
             </View>
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
     </View>
   );
 }
@@ -97,15 +79,17 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: Colors.gradientEnd,
+    backgroundColor: Colors.beige,
   },
-  gradient: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'flex-end',
+  contentContainer: {
+    flex: 1,
+    backgroundColor: Colors.beige,
+    borderTopWidth: 4,
+    borderColor: Colors.dark,
+    marginTop: -20,
+    borderTopLeftRadius: BorderRadius.xxl,
+    borderTopRightRadius: BorderRadius.xxl,
+    paddingTop: Spacing.xl,
   },
   safeArea: {
     paddingHorizontal: Spacing.lg,
@@ -114,83 +98,68 @@ const styles = StyleSheet.create({
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxl,
     gap: Spacing.md,
+    justifyContent: 'center',
   },
   mascotaWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     overflow: 'hidden',
     borderWidth: 3,
-    borderColor: Colors.primary,
+    borderColor: Colors.dark,
+    backgroundColor: Colors.pink,
   },
   mascota: {
-    width: 72,
-    height: 72,
+    width: 80,
+    height: 80,
   },
   brandText: {
-    flex: 1,
-  },
-  appName: {
-    fontFamily: 'Galada',
-    fontSize: 42,
-    color: Colors.textLight,
-    lineHeight: 46,
+    alignItems: 'center',
   },
   tagline: {
-    ...Typography.bodySmall,
-    color: 'rgba(255,255,255,0.7)',
-    letterSpacing: 1,
+    ...Typography.caption,
+    fontWeight: '900',
+    color: Colors.dark,
+    letterSpacing: 2,
     textTransform: 'uppercase',
+    marginTop: -5,
   },
   buttons: {
-    gap: Spacing.sm,
+    gap: Spacing.md,
+    marginTop: Spacing.lg,
   },
   btnPrimary: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.blue,
     borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: Spacing.sm,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 6,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    // Neobrutalist shadow
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
   btnPrimaryText: {
     ...Typography.button,
-    color: Colors.textLight,
-    letterSpacing: 1.5,
+    color: Colors.light,
+    fontWeight: '900',
+    letterSpacing: 2,
   },
-  btnSecondary: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.md,
-    flexDirection: 'row',
+  footerNote: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    marginTop: Spacing.md,
   },
-  btnSecondaryText: {
-    ...Typography.button,
-    color: Colors.primary,
-    letterSpacing: 1.5,
-  },
-  adminNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    marginTop: Spacing.xs,
-  },
-  adminNoteText: {
+  footerNoteText: {
     ...Typography.caption,
-    color: 'rgba(255,255,255,0.5)',
+    color: 'rgba(26,26,26,0.5)',
+    fontWeight: '600',
   },
 });

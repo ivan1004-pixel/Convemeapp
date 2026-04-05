@@ -30,3 +30,22 @@ export const getMunicipiosPorEstado = async (estado_id: number) => {
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.municipiosPorEstado;
 };
+
+export const getMunicipios = async () => {
+    const query = `
+    query {
+        municipios {
+            id_municipio
+            nombre
+            estado {
+                id_estado
+                nombre
+            }
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.municipios;
+};
+

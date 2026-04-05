@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getEmpleados, deleteEmpleado } from '../../../src/services/empleado.service';
 import { useEmpleadoStore } from '../../../src/store/empleadoStore';
 import { Colors } from '../../../src/theme/colors';
@@ -18,15 +19,13 @@ import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Shadows } from '../../../src/theme/shadows';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
-import { Avatar } from '../../../src/components/ui/Avatar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
-import { parseGraphQLError, getInitials } from '../../../src/utils';
+import { parseGraphQLError } from '../../../src/utils';
 import type { Empleado } from '../../../src/types';
-
-const AVATAR_SIZE = 44;
 
 function EmpleadoCard({
   item,
@@ -37,50 +36,51 @@ function EmpleadoCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card, borderColor: theme.border },
-        Shadows.sm,
         pressed && styles.cardPressed,
       ]}
       accessibilityRole="button"
     >
-      <View style={styles.cardContent}>
-        <Avatar name={item.nombre_completo} size={AVATAR_SIZE} />
-        <View style={styles.cardInfo}>
-          <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-            {item.nombre_completo}
-          </Text>
-          {item.puesto && (
-            <Text style={[styles.cardMeta, { color: Colors.primary }]} numberOfLines={1}>
-              {item.puesto}
-            </Text>
-          )}
-          {item.email && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              ✉️ {item.email}
-            </Text>
-          )}
+      <View style={styles.cardHeader}>
+        <View style={styles.avatarContainer}>
+          <MaterialCommunityIcons name="account-tie" size={32} color={Colors.primary} />
         </View>
-        <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.cardName}>{item.nombre_completo}</Text>
+          <Text style={styles.cardPuesto}>{item.puesto?.toUpperCase() ?? 'EMPLEADO'}</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(26,26,26,0.3)" />
+      </View>
+
+      <View style={styles.cardContent}>
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="email-outline" size={16} color="rgba(26,26,26,0.5)" />
+          <Text style={styles.infoText}>{item.email}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="phone-outline" size={16} color="rgba(26,26,26,0.5)" />
+          <Text style={styles.infoText}>{item.telefono || 'Sin teléfono'}</Text>
+        </View>
+        {item.municipio && (
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={16} color="rgba(26,26,26,0.5)" />
+            <Text style={styles.infoText}>
+              {item.municipio.nombre}, {item.municipio.estado?.nombre}
+            </Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
 }
 
 export default function EmpleadosScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const { empleados, setEmpleados, removeEmpleado } = useEmpleadoStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -94,7 +94,7 @@ export default function EmpleadosScreen() {
       const data = await getEmpleados();
       setEmpleados(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
@@ -106,7 +106,7 @@ export default function EmpleadosScreen() {
       const data = await getEmpleados();
       setEmpleados(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
@@ -122,7 +122,8 @@ export default function EmpleadosScreen() {
     return empleados.filter(
       (e) =>
         e.nombre_completo.toLowerCase().includes(q) ||
-        e.email?.toLowerCase().includes(q)
+        e.email?.toLowerCase().includes(q) ||
+        e.puesto?.toLowerCase().includes(q)
     );
   }, [empleados, search]);
 
@@ -132,8 +133,9 @@ export default function EmpleadosScreen() {
     try {
       await deleteEmpleado(deleteId);
       removeEmpleado(deleteId);
+      showToast('Empleado eliminado correctamente', 'success');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
@@ -142,64 +144,58 @@ export default function EmpleadosScreen() {
 
   const deleteTarget = empleados.find((e) => e.id_empleado === deleteId);
 
-  if (loading && empleados.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Empleados</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando empleados..." />
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Empleados</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+        <Text style={styles.title}>Empleados</Text>
+        <Text style={styles.count}>{filtered.length} registros</Text>
       </View>
 
       <View style={styles.searchContainer}>
         <SearchBar
           value={search}
           onChangeText={setSearch}
-          placeholder="Buscar por nombre o email..."
+          placeholder="Buscar por nombre, puesto..."
         />
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_empleado)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <EmpleadoCard
-            item={item}
-            onPress={() => router.push(`/empleados/${item.id_empleado}`)}
-            onLongPress={() => setDeleteId(item.id_empleado)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            title="Sin empleados"
-            message={search ? 'No hay resultados para tu búsqueda.' : 'Aún no hay empleados registrados.'}
-            actionLabel="Agregar empleado"
-            onAction={() => router.push('/empleados/create')}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {loading && empleados.length === 0 ? (
+        <LoadingSpinner fullScreen message="Cargando empleados..." />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_empleado)}
+          contentContainerStyle={[
+            styles.listContent,
+            filtered.length === 0 && styles.listEmpty,
+          ]}
+          renderItem={({ item }) => (
+            <EmpleadoCard
+              item={item}
+              onPress={() => router.push(`/empleados/${item.id_empleado}`)}
+              onLongPress={() => setDeleteId(item.id_empleado)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="account-group"
+              title="Sin empleados"
+              message={search ? 'No hay resultados.' : 'Aún no hay empleados.'}
+              actionLabel="Agregar empleado"
+              onAction={() => router.push('/empleados/create')}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <TouchableOpacity
         style={styles.fab}
@@ -214,14 +210,15 @@ export default function EmpleadosScreen() {
       <ConfirmDialog
         visible={deleteId !== null}
         title="Eliminar empleado"
-        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"? Esta acción no se puede deshacer.`}
+        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
         confirmText="Eliminar"
-        cancelText="Cancelar"
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
         loading={deleting}
         destructive
       />
+
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
   );
 }
@@ -229,6 +226,7 @@ export default function EmpleadosScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.beige,
   },
   header: {
     flexDirection: 'row',
@@ -240,9 +238,13 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h2,
+    fontWeight: '900',
+    color: '#1A1A1A',
   },
   count: {
     ...Typography.bodySmall,
+    fontWeight: '700',
+    color: 'rgba(26,26,26,0.5)',
   },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
@@ -250,60 +252,88 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   listEmpty: {
     flexGrow: 1,
+    justifyContent: 'center',
   },
   card: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   cardPressed: {
-    opacity: 0.75,
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
-  cardContent: {
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  cardInfo: {
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.primary + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  headerInfo: {
     flex: 1,
-    gap: 2,
   },
   cardName: {
-    ...Typography.bodyMedium,
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  cardPuesto: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.primary,
+    letterSpacing: 0.5,
+  },
+  cardContent: {
+    gap: Spacing.xs,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  infoText: {
+    fontSize: 13,
     fontWeight: '600',
-  },
-  cardMeta: {
-    ...Typography.bodySmall,
-  },
-  chevron: {
-    fontSize: 22,
-    fontWeight: '300',
+    color: 'rgba(26,26,26,0.6)',
   },
   fab: {
     position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 90,
+    right: Spacing.lg,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 999,
   },
   fabIcon: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 32,
+    fontSize: 32,
+    color: '#ffffff',
+    fontWeight: '900',
   },
 });

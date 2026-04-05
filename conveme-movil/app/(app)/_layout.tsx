@@ -25,21 +25,35 @@ export default function AppLayout() {
   }, [isAuthenticated]);
 
   const tabBarStyle = {
-    backgroundColor: Colors.dark,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    borderTopWidth: 1,
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 0,
+    height: 70,
+    paddingBottom: 12,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: isAdmin ? Colors.primary : Colors.info,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: 'rgba(26,26,26,0.5)',
         tabBarStyle,
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
+          fontSize: 12,
+          fontWeight: '900',
+          letterSpacing: 0.5,
         },
       }}
     >

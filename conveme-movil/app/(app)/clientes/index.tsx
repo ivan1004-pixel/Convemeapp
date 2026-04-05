@@ -6,26 +6,22 @@ import {
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getClientes, deleteCliente } from '../../../src/services/cliente.service';
 import { useClienteStore } from '../../../src/store/clienteStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
-import { Avatar } from '../../../src/components/ui/Avatar';
-
-const AVATAR_MD = 40;
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
-import { formatDate, parseGraphQLError, getInitials, formatPhone } from '../../../src/utils';
+import { Toast, useToast } from '../../../src/components/Toast';
+import { parseGraphQLError, formatPhone } from '../../../src/utils';
 import type { Cliente } from '../../../src/types';
 
 function ClienteCard({
@@ -37,55 +33,49 @@ function ClienteCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card, borderColor: theme.border },
-        Shadows.sm,
         pressed && styles.cardPressed,
       ]}
       accessibilityRole="button"
     >
-      <View style={styles.cardContent}>
-        <Avatar name={item.nombre_completo} size={AVATAR_MD} />
-        <View style={styles.cardInfo}>
-          <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-            {item.nombre_completo}
-          </Text>
-          {item.email && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              {item.email}
-            </Text>
-          )}
-          {item.telefono && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]}>
-              {formatPhone(item.telefono)}
-            </Text>
-          )}
-          {item.fecha_registro && (
-            <Text style={[styles.cardDate, { color: theme.muted }]}>
-              Desde {formatDate(item.fecha_registro)}
-            </Text>
-          )}
+      <View style={styles.cardHeader}>
+        <View style={styles.avatarContainer}>
+          <MaterialCommunityIcons name="account-group" size={32} color={Colors.info} />
         </View>
-        <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.cardName}>{item.nombre_completo}</Text>
+          <Text style={styles.cardMeta}>CLIENTE DESDE EL REGISTRO</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(26,26,26,0.3)" />
+      </View>
+
+      <View style={styles.cardContent}>
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="email-outline" size={16} color="rgba(26,26,26,0.5)" />
+          <Text style={styles.infoText}>{item.email || 'Sin email'}</Text>
+        </View>
+        <View style={styles.infoRow}>
+          <MaterialCommunityIcons name="phone-outline" size={16} color="rgba(26,26,26,0.5)" />
+          <Text style={styles.infoText}>{item.telefono ? formatPhone(item.telefono) : 'Sin teléfono'}</Text>
+        </View>
+        {item.direccion_envio && (
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={16} color="rgba(26,26,26,0.5)" />
+            <Text style={styles.infoText} numberOfLines={1}>{item.direccion_envio}</Text>
+          </View>
+        )}
       </View>
     </Pressable>
   );
 }
 
 export default function ClientesScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const { clientes, setClientes, removeCliente } = useClienteStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -99,7 +89,7 @@ export default function ClientesScreen() {
       const data = await getClientes();
       setClientes(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
@@ -111,7 +101,7 @@ export default function ClientesScreen() {
       const data = await getClientes();
       setClientes(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
@@ -138,8 +128,9 @@ export default function ClientesScreen() {
     try {
       await deleteCliente(deleteId);
       removeCliente(deleteId);
+      showToast('Cliente eliminado correctamente', 'success');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
@@ -148,22 +139,11 @@ export default function ClientesScreen() {
 
   const deleteTarget = clientes.find((c) => c.id_cliente === deleteId);
 
-  if (loading && clientes.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Clientes</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando clientes..." />
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Clientes</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+        <Text style={styles.title}>Clientes</Text>
+        <Text style={styles.count}>{filtered.length} registros</Text>
       </View>
 
       <View style={styles.searchContainer}>
@@ -174,50 +154,50 @@ export default function ClientesScreen() {
         />
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_cliente)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <ClienteCard
-            item={item}
-            onPress={() => router.push(`/clientes/${item.id_cliente}`)}
-            onLongPress={() => setDeleteId(item.id_cliente)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="account-group"
-            title="Sin clientes"
-            message={
-              search
-                ? 'No hay clientes que coincidan con tu búsqueda.'
-                : 'Aún no hay clientes registrados.'
-            }
-            actionLabel={!search ? 'Agregar cliente' : undefined}
-            onAction={!search ? () => router.push('/clientes/create') : undefined}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+      {loading && clientes.length === 0 ? (
+        <LoadingSpinner fullScreen message="Cargando clientes..." />
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_cliente)}
+          contentContainerStyle={[
+            styles.listContent,
+            filtered.length === 0 && styles.listEmpty,
+          ]}
+          renderItem={({ item }) => (
+            <ClienteCard
+              item={item}
+              onPress={() => router.push(`/clientes/${item.id_cliente}`)}
+              onLongPress={() => setDeleteId(item.id_cliente)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="account-group"
+              title="Sin clientes"
+              message={search ? 'No hay resultados.' : 'Aún no hay clientes.'}
+              actionLabel="Agregar cliente"
+              onAction={() => router.push('/clientes/create')}
+            />
+          }
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <TouchableOpacity
-        style={[styles.fab, Shadows.lg]}
+        style={styles.fab}
         onPress={() => router.push('/clientes/create')}
         activeOpacity={0.85}
+        accessibilityLabel="Agregar cliente"
         accessibilityRole="button"
-        accessibilityLabel="Nuevo cliente"
       >
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
@@ -225,18 +205,24 @@ export default function ClientesScreen() {
       <ConfirmDialog
         visible={deleteId !== null}
         title="Eliminar cliente"
-        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"? Esta acción no se puede deshacer.`}
+        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
+        confirmText="Eliminar"
         onConfirm={handleDelete}
         onCancel={() => setDeleteId(null)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+        loading={deleting}
         destructive
       />
+
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.beige,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -245,47 +231,104 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
-  title: { ...Typography.h3 },
-  count: { ...Typography.bodySmall },
+  title: {
+    ...Typography.h2,
+    fontWeight: '900',
+    color: '#1A1A1A',
+  },
+  count: {
+    ...Typography.bodySmall,
+    fontWeight: '700',
+    color: 'rgba(26,26,26,0.5)',
+  },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl + Spacing.xl,
+    paddingBottom: 120,
   },
   listEmpty: {
     flexGrow: 1,
     justifyContent: 'center',
   },
   card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm,
+    padding: Spacing.lg,
+    marginBottom: Spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  cardPressed: { opacity: 0.85 },
-  cardContent: {
+  cardPressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
+  },
+  cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.md,
+    marginBottom: Spacing.md,
   },
-  cardInfo: { flex: 1 },
-  cardName: { ...Typography.bodySmall, fontWeight: '600', marginBottom: 2 },
-  cardMeta: { ...Typography.caption, marginTop: 2 },
-  cardDate: { ...Typography.caption, marginTop: Spacing.xs },
-  chevron: { fontSize: 20, fontWeight: '300' },
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: Colors.info + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.md,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  cardName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A1A1A',
+  },
+  cardMeta: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.info,
+    letterSpacing: 0.5,
+  },
+  cardContent: {
+    gap: Spacing.xs,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  infoText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(26,26,26,0.6)',
+  },
   fab: {
     position: 'absolute',
-    bottom: Spacing.xl,
+    bottom: 90,
     right: Spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+    zIndex: 999,
   },
-  fabIcon: { fontSize: 28, color: '#ffffff', lineHeight: 32 },
+  fabIcon: {
+    fontSize: 32,
+    color: '#ffffff',
+    fontWeight: '900',
+  },
 });

@@ -43,6 +43,12 @@ export const createEmpleado = async (input: any) => {
         createEmpleado(createEmpleadoInput: $input) {
             id_empleado
             nombre_completo
+            email
+            telefono
+            puesto
+            calle_y_numero
+            colonia
+            codigo_postal
         }
     }
     `;
@@ -58,6 +64,12 @@ export const updateEmpleado = async (input: any) => {
         updateEmpleado(updateEmpleadoInput: $input) {
             id_empleado
             nombre_completo
+            email
+            telefono
+            puesto
+            calle_y_numero
+            colonia
+            codigo_postal
         }
     }
     `;

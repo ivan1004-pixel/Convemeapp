@@ -4,22 +4,22 @@ import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
 import { formatCurrency, formatDate } from '../../utils';
-import type { Venta } from '../../types';
+import type { Corte } from '../../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-// Ajustamos el ancho para que siempre sobre margen lateral
 const TICKET_WIDTH = SCREEN_WIDTH * 0.82;
 
-interface SalesTicketProps {
-  venta: Venta;
+interface CorteTicketProps {
+  corte: Corte;
 }
 
-export function SalesTicket({ venta }: SalesTicketProps) {
-  const total = venta.monto_total;
+export function CorteTicket({ corte }: CorteTicketProps) {
+  const diff = corte.diferencia_corte || 0;
+  const isOk = Math.abs(diff) < 0.01;
 
   return (
     <View style={styles.container}>
-      {/* Header con Rosa y Amarillo */}
+      {/* Header Neobrutalista Rosa */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
             <Image
@@ -28,65 +28,78 @@ export function SalesTicket({ venta }: SalesTicketProps) {
             resizeMode="contain"
             />
             <View style={styles.headerRight}>
-                <Text style={styles.ticketType}>COMPROBANTE DE VENTA</Text>
+                <Text style={styles.ticketType}>REPORTE DE LIQUIDACIÓN</Text>
                 <Text style={styles.brandName}>CONVEME</Text>
             </View>
         </View>
       </View>
 
       <View style={styles.body}>
-        {/* Info principal con fondo amarillo sutil */}
-        <View style={styles.yellowSection}>
+        {/* Info principal con toque amarillo */}
+        <View style={styles.infoSection}>
             <View style={styles.infoGrid}>
                 <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>TICKET #</Text>
-                    <Text style={styles.infoValue}>{venta.id_venta}</Text>
+                    <Text style={styles.infoLabel}>FOLIO CORTE</Text>
+                    <Text style={styles.infoValue}>#{corte.id_corte}</Text>
                 </View>
                 <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>FECHA</Text>
-                    <Text style={styles.infoValue}>{formatDate(venta.fecha_venta)}</Text>
+                    <Text style={styles.infoValue}>{formatDate(corte.fecha_corte)}</Text>
                 </View>
             </View>
 
-            {venta.vendedor && (
-                <View style={styles.metaSection}>
-                    <Text style={styles.metaLabel}>ATENDIDO POR:</Text>
-                    <Text style={styles.metaValue}>{venta.vendedor.nombre_completo?.toUpperCase()}</Text>
-                </View>
-            )}
+            <View style={styles.vendedorSection}>
+                <Text style={styles.vendedorLabel}>VENDEDOR:</Text>
+                <Text style={styles.vendedorName}>{corte.vendedor?.nombre_completo?.toUpperCase() || 'N/A'}</Text>
+            </View>
         </View>
 
         <View style={styles.divider} />
 
         {/* Productos */}
-        <Text style={styles.sectionTitle}>DETALLE DE PRODUCTOS</Text>
-        {venta.detalles && venta.detalles.length > 0 ? (
-          venta.detalles.map((det, index) => (
+        <Text style={styles.sectionTitle}>RESUMEN DE INVENTARIO</Text>
+        {corte.detalles && corte.detalles.length > 0 ? (
+          corte.detalles.map((det, index) => (
             <View key={index} style={styles.itemRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.itemName} numberOfLines={1}>{det.producto?.nombre?.toUpperCase()}</Text>
-                <Text style={styles.itemQty}>{det.cantidad} x {formatCurrency(det.precio_unitario)}</Text>
+              <Text style={styles.itemName} numberOfLines={1}>{det.producto?.nombre?.toUpperCase()}</Text>
+              <View style={styles.itemStats}>
+                <Text style={styles.statItem}>V:{det.cantidad_vendida}</Text>
+                <Text style={styles.statItem}>D:{det.cantidad_devuelta || 0}</Text>
+                <Text style={styles.statItem}>M:{det.merma_reportada || 0}</Text>
               </View>
-              <Text style={styles.itemTotal}>{formatCurrency(det.cantidad * det.precio_unitario)}</Text>
             </View>
           ))
         ) : (
-          <Text style={styles.noData}>Sin productos</Text>
+          <Text style={styles.noData}>Sin detalles de productos</Text>
         )}
 
         <View style={styles.divider} />
 
-        {/* Total con Amarillo Neobrutalista */}
-        <View style={styles.totalContainer}>
-            <View style={styles.totalBadge}>
-                <Text style={styles.totalFinalLabel}>MÉTODO: {venta.metodo_pago?.toUpperCase() || 'EFECTIVO'}</Text>
-                <Text style={styles.totalFinalValue}>{formatCurrency(total)}</Text>
+        {/* Liquidación con Amarillo resaltado */}
+        <View style={styles.moneyContainer}>
+            <View style={styles.moneyRow}>
+                <Text style={styles.moneyLabel}>NETO ESPERADO</Text>
+                <Text style={styles.moneyValue}>{formatCurrency(corte.dinero_esperado || 0)}</Text>
+            </View>
+            <View style={styles.moneyRow}>
+                <Text style={styles.moneyLabel}>EFECTIVO RECIBIDO</Text>
+                <Text style={styles.moneyValue}>{formatCurrency(corte.dinero_total_entregado || 0)}</Text>
+            </View>
+            
+            <View style={[
+                styles.diffBadge, 
+                { backgroundColor: isOk ? Colors.success : (diff > 0 ? Colors.warning : Colors.error) }
+            ]}>
+                <Text style={styles.diffLabel}>DIFERENCIA FINAL</Text>
+                <Text style={styles.diffValue}>
+                    {diff > 0.01 ? '+' : ''}{formatCurrency(diff)}
+                </Text>
             </View>
         </View>
 
         <View style={styles.footer}>
-            <Text style={styles.footerText}>¡GRACIAS POR TU COMPRA!</Text>
-            <Text style={styles.footerTagline}>WWW.CONVEME.COM</Text>
+            <Text style={styles.footerText}>ID ASIGNACIÓN: #{corte.asignacion?.id_asignacion || 'N/A'}</Text>
+            <Text style={styles.footerTagline}>SISTEMA DE GESTIÓN CONVEME</Text>
         </View>
       </View>
     </View>
@@ -143,18 +156,17 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     backgroundColor: Colors.light,
   },
-  yellowSection: {
-    backgroundColor: Colors.warning + '30', // AMARILLO SUTIL
-    padding: 10,
+  infoSection: {
+    backgroundColor: '#F9FAFB',
+    padding: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.warning,
-    marginBottom: 10,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   infoGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   infoItem: {
     flex: 1,
@@ -165,22 +177,22 @@ const styles = StyleSheet.create({
     color: 'rgba(0,0,0,0.4)',
   },
   infoValue: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     color: Colors.dark,
   },
-  metaSection: {
-    marginTop: 4,
+  vendedorSection: {
+    marginTop: 2,
   },
-  metaLabel: {
+  vendedorLabel: {
     fontSize: 7,
     fontWeight: '900',
     color: 'rgba(0,0,0,0.4)',
   },
-  metaValue: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: Colors.dark,
+  vendedorName: {
+    fontSize: 11,
+    fontWeight: '900',
+    color: Colors.primary,
   },
   divider: {
     height: 2,
@@ -200,7 +212,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 5,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFF',
     padding: 6,
     borderRadius: 6,
     borderWidth: 1,
@@ -210,15 +222,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '800',
     color: Colors.dark,
+    flex: 1,
   },
-  itemQty: {
+  itemStats: {
+    flexDirection: 'row',
+    gap: 5,
+  },
+  statItem: {
     fontSize: 8,
-    color: 'rgba(0,0,0,0.5)',
-  },
-  itemTotal: {
-    fontSize: 10,
     fontWeight: '900',
     color: Colors.primary,
+    backgroundColor: Colors.primary + '10',
+    paddingHorizontal: 3,
+    borderRadius: 3,
   },
   noData: {
     fontSize: 9,
@@ -226,40 +242,56 @@ const styles = StyleSheet.create({
     color: 'rgba(0,0,0,0.3)',
     padding: 10,
   },
-  totalContainer: {
+  moneyContainer: {
     marginTop: 5,
   },
-  totalBadge: {
+  moneyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 3,
+  },
+  moneyLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
+  },
+  moneyValue: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.dark,
+  },
+  diffBadge: {
+    marginTop: 8,
     padding: 10,
     borderRadius: 10,
     borderWidth: 3,
     borderColor: Colors.dark,
-    backgroundColor: Colors.warning, // AMARILLO
+    backgroundColor: Colors.warning, // AMARILLO POR DEFECTO
     alignItems: 'center',
   },
-  totalFinalLabel: {
+  diffLabel: {
     fontSize: 8,
     fontWeight: '900',
     color: 'rgba(0,0,0,0.6)',
   },
-  totalFinalValue: {
-    fontSize: 20,
+  diffValue: {
+    fontSize: 18,
     fontWeight: '900',
     color: Colors.dark,
   },
   footer: {
-    marginTop: 12,
+    marginTop: 15,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 8,
-    fontWeight: '900',
-    color: Colors.dark,
-  },
-  footerTagline: {
     fontSize: 7,
     fontWeight: '800',
     color: 'rgba(0,0,0,0.4)',
+  },
+  footerTagline: {
+    fontSize: 8,
+    fontWeight: '900',
+    color: Colors.dark,
     marginTop: 2,
   },
 });

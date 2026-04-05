@@ -6,54 +6,52 @@ import {
   StyleSheet,
   Alert,
   Pressable,
-  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getClientes, deleteCliente } from '../../../src/services/cliente.service';
 import { useClienteStore } from '../../../src/store/clienteStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Button } from '../../../src/components/ui/Button';
-import { Card } from '../../../src/components/ui/Card';
+import { Shadows } from '../../../src/theme/shadows';
 import { Avatar } from '../../../src/components/ui/Avatar';
-
-const AVATAR_LG = 56;
-import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { Button } from '../../../src/components/ui/Button';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
+import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
-import { formatDate, parseGraphQLError, formatPhone } from '../../../src/utils';
+import { parseGraphQLError, formatPhone, formatDate } from '../../../src/utils';
 import type { Cliente } from '../../../src/types';
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function InfoRow({ label, value }: { label: string; value?: string | null }) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
+  if (!value) return null;
   return (
-    <View style={rowStyles.row}>
-      <Text style={[rowStyles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[rowStyles.value, { color: theme.text }]}>{value}</Text>
+    <View style={infoStyles.row}>
+      <Text style={[infoStyles.label, { color: theme.muted }]}>{label}</Text>
+      <Text style={[infoStyles.value, { color: theme.text }]}>{value}</Text>
     </View>
   );
 }
 
-const rowStyles = StyleSheet.create({
+const infoStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light2.border,
   },
-  label: { ...Typography.bodySmall },
-  value: {
+  label: {
     ...Typography.bodySmall,
-    fontWeight: '500',
-    flexShrink: 1,
+    flex: 1,
+  },
+  value: {
+    ...Typography.body,
+    flex: 2,
     textAlign: 'right',
-    marginLeft: Spacing.sm,
   },
 });
 
@@ -65,23 +63,23 @@ export default function ClienteDetailScreen() {
 
   const { clientes, setClientes, removeCliente } = useClienteStore();
   const [loading, setLoading] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const clienteId = Number(id);
-  const cliente: Cliente | undefined = clientes.find((c) => c.id_cliente === clienteId);
+  const cliente: Cliente | undefined = clientes.find(
+    (c) => c.id_cliente === Number(id)
+  );
 
   const fetchIfNeeded = useCallback(async () => {
-    if (!cliente) {
-      setLoading(true);
-      try {
-        const data = await getClientes();
-        setClientes(data);
-      } catch (err) {
-        Alert.alert('Error', parseGraphQLError(err));
-      } finally {
-        setLoading(false);
-      }
+    if (cliente) return;
+    setLoading(true);
+    try {
+      const data = await getClientes();
+      setClientes(data);
+    } catch (err) {
+      Alert.alert('Error', parseGraphQLError(err));
+    } finally {
+      setLoading(false);
     }
   }, [cliente, setClientes]);
 
@@ -90,40 +88,39 @@ export default function ClienteDetailScreen() {
   }, [fetchIfNeeded]);
 
   const handleDelete = useCallback(async () => {
+    if (!cliente) return;
     setDeleting(true);
     try {
-      await deleteCliente(clienteId);
-      removeCliente(clienteId);
+      await deleteCliente(cliente.id_cliente);
+      removeCliente(cliente.id_cliente);
       router.back();
-    } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('foreign key constraint fails') || msg.includes('a parent row')) {
+        Alert.alert(
+          'No se puede eliminar',
+          'Este cliente tiene ventas o pedidos registrados. Para mantener la integridad de los datos, no es posible eliminarlo por completo.'
+        );
+      } else {
+        Alert.alert('Error', parseGraphQLError(err));
+      }
     } finally {
       setDeleting(false);
-      setShowDelete(false);
+      setShowConfirm(false);
     }
-  }, [clienteId, removeCliente]);
+  }, [cliente, removeCliente]);
 
-  if (loading) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <LoadingSpinner fullScreen message="Cargando cliente..." />
-      </SafeAreaView>
-    );
-  }
-
-  if (!cliente) {
+  if (loading || !cliente) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={styles.backIcon}>←</Text>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>Cliente</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Detalle</Text>
           <View style={styles.headerPlaceholder} />
         </View>
-        <View style={styles.notFound}>
-          <Text style={{ ...Typography.body, color: theme.muted }}>Cliente no encontrado.</Text>
-        </View>
+        <LoadingSpinner fullScreen message="Cargando..." />
       </SafeAreaView>
     );
   }
@@ -132,87 +129,45 @@ export default function ClienteDetailScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={styles.backIcon}>←</Text>
+          <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
         </Pressable>
-        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-          {cliente.nombre_completo}
-        </Text>
-        <Pressable
-          onPress={() => setShowDelete(true)}
-          style={styles.deleteBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Eliminar cliente"
-        >
-          <Text style={styles.deleteIcon}>X</Text>
-        </Pressable>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Cliente</Text>
+        <View style={styles.headerPlaceholder} />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Profile Card */}
-        <Card style={styles.profileCard}>
-          <View style={styles.profileContent}>
-            <Avatar name={cliente.nombre_completo} size={AVATAR_LG} />
-            <View style={styles.profileInfo}>
-              <Text style={[styles.profileName, { color: theme.text }]}>
-                {cliente.nombre_completo}
-              </Text>
-              {cliente.usuario && (
-                <Text style={[styles.profileUsername, { color: theme.muted }]}>
-                  @{cliente.usuario.username}
-                </Text>
-              )}
-            </View>
+        {/* Hero card */}
+        <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
+          <Avatar name={cliente.nombre_completo} size={72} />
+          <Text style={[styles.heroName, { color: theme.text }]}>{cliente.nombre_completo}</Text>
+          <Text style={[styles.heroPuesto, { color: Colors.info }]}>CLIENTE REGISTRADO</Text>
+        </View>
+
+        {/* Contact section */}
+        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Contacto</Text>
+          <InfoRow label="Email" value={cliente.email || 'No registrado'} />
+          <InfoRow label="Teléfono" value={cliente.telefono ? formatPhone(cliente.telefono) : 'No registrado'} />
+        </View>
+
+        {/* Address section */}
+        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Ubicación y Registro</Text>
+          <InfoRow label="Dirección de envío" value={cliente.direccion_envio || 'No registrada'} />
+          <InfoRow label="Fecha de registro" value={formatDate(cliente.fecha_registro)} />
+        </View>
+
+        {/* Usuario section */}
+        {cliente.usuario && (
+          <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Usuario Vinculado</Text>
+            <InfoRow label="Username" value={cliente.usuario.username} />
           </View>
-        </Card>
-
-        {/* Contact Card */}
-        <Card title="Contacto" style={styles.sectionCard}>
-          <DetailRow label="Email" value={cliente.email ?? 'No registrado'} />
-          <DetailRow label="Teléfono" value={formatPhone(cliente.telefono)} />
-          <DetailRow label="Dirección" value={cliente.direccion_envio ?? 'No registrada'} />
-          <DetailRow label="Registro" value={formatDate(cliente.fecha_registro)} />
-        </Card>
-
-        {/* Quick Actions */}
-        {(cliente.email || cliente.telefono) && (
-          <Card title="Acciones rápidas" style={styles.sectionCard}>
-            <View style={styles.quickActions}>
-              {cliente.email && (
-                <Pressable
-                  onPress={() => Linking.openURL(`mailto:${cliente.email}`)}
-                  style={({ pressed }) => [
-                    styles.quickActionBtn,
-                    { borderColor: Colors.primary },
-                    pressed && styles.quickActionPressed,
-                  ]}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.quickActionIcon}>@</Text>
-                  <Text style={[styles.quickActionText, { color: Colors.primary }]}>Email</Text>
-                </Pressable>
-              )}
-              {cliente.telefono && (
-                <Pressable
-                  onPress={() => Linking.openURL(`tel:${cliente.telefono}`)}
-                  style={({ pressed }) => [
-                    styles.quickActionBtn,
-                    { borderColor: Colors.success },
-                    pressed && styles.quickActionPressed,
-                  ]}
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.quickActionIcon}>#</Text>
-                  <Text style={[styles.quickActionText, { color: Colors.success }]}>Llamar</Text>
-                </Pressable>
-              )}
-            </View>
-          </Card>
         )}
 
-        {/* Actions */}
         <View style={styles.actions}>
           <Button
             title="Editar"
@@ -223,19 +178,21 @@ export default function ClienteDetailScreen() {
           <Button
             title="Eliminar"
             variant="danger"
-            onPress={() => setShowDelete(true)}
+            onPress={() => setShowConfirm(true)}
             style={styles.actionBtn}
           />
         </View>
       </ScrollView>
 
       <ConfirmDialog
-        visible={showDelete}
+        visible={showConfirm}
         title="Eliminar cliente"
         message={`¿Deseas eliminar a "${cliente.nombre_completo}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
         onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+        onCancel={() => setShowConfirm(false)}
+        loading={deleting}
         destructive
       />
     </SafeAreaView>
@@ -243,44 +200,68 @@ export default function ClienteDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
   },
-  backBtn: { padding: Spacing.xs, marginRight: Spacing.sm },
-  backIcon: { fontSize: 22, color: Colors.primary },
-  title: { ...Typography.h4, flex: 1 },
-  headerPlaceholder: { width: 32 },
-  deleteBtn: { padding: Spacing.xs },
-  deleteIcon: { fontSize: 20 },
+  backBtn: {
+    padding: Spacing.xs,
+  },
+  headerTitle: {
+    ...Typography.h3,
+    fontWeight: '900',
+  },
+  headerPlaceholder: {
+    width: 34,
+  },
   scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    padding: Spacing.lg,
+    paddingBottom: Spacing.xxl * 3,
+    gap: Spacing.md,
   },
-  profileCard: { marginBottom: Spacing.md },
-  profileContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  profileInfo: { flex: 1 },
-  profileName: { ...Typography.h4, marginBottom: Spacing.xs },
-  profileUsername: { ...Typography.bodySmall },
-  sectionCard: { marginBottom: Spacing.md },
-  quickActions: { flexDirection: 'row', gap: Spacing.sm },
-  quickActionBtn: {
-    flex: 1,
-    flexDirection: 'row',
+  heroCard: {
+    borderRadius: BorderRadius.xl,
+    borderWidth: 1,
+    padding: Spacing.xl,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.xs,
-    paddingVertical: Spacing.sm + 2,
-    borderWidth: 1.5,
-    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
   },
-  quickActionPressed: { opacity: 0.75 },
-  quickActionIcon: { fontSize: 16 },
-  quickActionText: { ...Typography.buttonSmall },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  actionBtn: { flex: 1 },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  heroName: {
+    ...Typography.h2,
+    textAlign: 'center',
+    fontWeight: '900',
+  },
+  heroPuesto: {
+    ...Typography.body,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  section: {
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    padding: Spacing.md,
+  },
+  sectionTitle: {
+    ...Typography.label,
+    marginBottom: Spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontWeight: '800',
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  actionBtn: {
+    flex: 1,
+  },
 });

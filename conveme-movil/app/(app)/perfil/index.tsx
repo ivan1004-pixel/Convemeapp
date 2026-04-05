@@ -13,7 +13,6 @@ export default function PerfilScreen() {
   const { logout } = useAuth();
   const { usuario } = useAuthStore();
 
-
   const username = usuario?.username ?? 'Usuario';
   const rolId = usuario?.rol_id ?? 0;
   const rolLabel = rolId === 1 ? 'Administrador' : rolId === 2 ? 'Vendedor' : `Rol ${rolId}`;
@@ -75,52 +74,145 @@ export default function PerfilScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.dark },
-  scroll: { padding: Spacing.md, paddingBottom: Spacing.xxl },
-  header: { marginBottom: Spacing.lg },
-  screenTitle: { ...Typography.h3, fontWeight: '700', color: Colors.textLight },
-  avatarSection: { alignItems: 'center', marginBottom: Spacing.lg },
+  container: { 
+    flex: 1, 
+    backgroundColor: Colors.beige 
+  },
+  scroll: { 
+    padding: Spacing.lg, 
+    paddingBottom: Spacing.xxl 
+  },
+  header: { 
+    marginBottom: Spacing.xl,
+    alignItems: 'center'
+  },
+  screenTitle: { 
+    ...Typography.h3, 
+    fontWeight: '900', 
+    color: Colors.dark,
+    letterSpacing: 1
+  },
+  avatarSection: { 
+    alignItems: 'center', 
+    marginBottom: Spacing.xl 
+  },
   avatarCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.md,
+    borderWidth: 4,
+    borderColor: Colors.dark,
+    // Shadow neobrutalista
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
-  avatarText: { ...Typography.h2, color: '#fff', fontFamily: 'Galada' },
-  username: { ...Typography.h3, fontFamily: 'Galada', fontWeight: '700', color: Colors.textLight, marginBottom: Spacing.xs },
+  avatarText: { 
+    ...Typography.h2, 
+    color: '#fff', 
+    fontWeight: '900'
+  },
+  username: { 
+    ...Typography.h3, 
+    fontWeight: '900', 
+    color: Colors.dark, 
+    marginBottom: Spacing.xs,
+    letterSpacing: 0.5
+  },
   rolBadge: {
-    backgroundColor: Colors.primaryLight,
-    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.pink,
+    paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
+    borderWidth: 2,
+    borderColor: Colors.dark,
   },
-  rolBadgeText: { ...Typography.caption, color: Colors.primary, fontWeight: '600' },
+  rolBadgeText: { 
+    ...Typography.caption, 
+    color: Colors.dark, 
+    fontWeight: '900',
+    letterSpacing: 1
+  },
   card: {
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    padding: Spacing.md,
-    marginBottom: Spacing.lg,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    backgroundColor: '#F9F4EE',
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+    // Shadow neobrutalista
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
-  cardTitle: { ...Typography.h4, fontWeight: '700', color: Colors.textLight, marginBottom: Spacing.md },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: Spacing.sm },
-  infoLabel: { ...Typography.body, color: 'rgba(255,255,255,0.5)' },
-  infoValue: { ...Typography.body, fontWeight: '600', color: Colors.textLight },
-  infoValueGreen: { ...Typography.body, fontWeight: '600', color: Colors.success },
-  activeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)' },
+  cardTitle: { 
+    ...Typography.h4, 
+    fontWeight: '900', 
+    color: Colors.dark, 
+    marginBottom: Spacing.lg,
+    letterSpacing: 1
+  },
+  infoRow: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingVertical: Spacing.md 
+  },
+  infoLabel: { 
+    ...Typography.body, 
+    color: Colors.dark,
+    opacity: 0.6,
+    fontWeight: '700'
+  },
+  infoValue: { 
+    ...Typography.body, 
+    fontWeight: '900', 
+    color: Colors.dark 
+  },
+  infoValueGreen: { 
+    ...Typography.body, 
+    fontWeight: '900', 
+    color: Colors.success 
+  },
+  activeRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 6 
+  },
+  divider: { 
+    height: 2, 
+    backgroundColor: Colors.dark,
+    opacity: 0.1
+  },
   logoutButton: {
     backgroundColor: Colors.error,
     borderRadius: BorderRadius.xl,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     gap: Spacing.sm,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    // Shadow neobrutalista
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 0,
   },
-  logoutText: { ...Typography.button, color: '#fff' },
+  logoutText: { 
+    ...Typography.button, 
+    color: '#fff',
+    fontWeight: '900',
+    letterSpacing: 1
+  },
 });
