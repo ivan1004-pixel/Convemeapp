@@ -21,10 +21,10 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const CARRUSEL_ITEMS = [
   { id: '1', source: require('../../assets/images/carrusel/foto1.jpg') },
-  { id: '2', source: require('../../assets/images/carrusel/foto2.jpg') },
+  { id: '2', source: require('../../assets/images/carrusel/foto2.png') },
   { id: '3', source: require('../../assets/images/carrusel/foto3.jpg') },
   { id: '4', source: require('../../assets/images/carrusel/foto4.jpg') },
-  { id: '5', source: require('../../assets/images/carrusel/foto5.png') },
+  { id: '5', source: require('../../assets/images/carrusel/foto5.jpg') },
 ];
 
 export default function SplashScreen() {
@@ -52,14 +52,14 @@ export default function SplashScreen() {
           <View style={styles.brandRow}>
             <View style={styles.mascotaWrap}>
               <Image
-                source={require('../../assets/images/mascota.png')}
+                source={require('../../assets/images/mascota.jpg')}
                 style={styles.mascota}
                 contentFit="cover"
               />
             </View>
             <View style={styles.brandText}>
               <Text style={styles.appName}>ConVeMe</Text>
-              <Text style={styles.tagline}>Gestión Empresarial</Text>
+              <Text style={styles.tagline}>Gestión NoManches Mx</Text>
             </View>
           </View>
 
