@@ -1,56 +1,93 @@
-import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import React from 'react';
+import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
-import { useColorScheme } from '../../src/hooks/use-color-scheme';
+import { useAuthStore } from '../../src/store/authStore';
+import { ROLE_ADMIN } from '../../src/hooks/useAuth';
 
-function TabIcon({ emoji }: { emoji: string }) {
-  return <Text style={{ fontSize: 20 }}>{emoji}</Text>;
+type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+function TabIcon({ name, color, size }: { name: IconName; color: string; size: number }) {
+  return <MaterialCommunityIcons name={name} color={color} size={size} />;
 }
 
 const HIDDEN: { href: null } = { href: null };
 
 export default function AppLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
+  const { isAuthenticated, usuario } = useAuthStore();
+  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/auth/splash');
+    }
+  }, [isAuthenticated]);
+
+  const tabBarStyle = {
+    backgroundColor: Colors.dark,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderTopWidth: 1,
+  };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: theme.muted,
-        tabBarStyle: {
-          backgroundColor: theme.background,
-          borderTopColor: theme.border,
-          borderTopWidth: 1,
-        },
+        tabBarActiveTintColor: isAdmin ? Colors.primary : Colors.info,
+        tabBarInactiveTintColor: 'rgba(255,255,255,0.4)',
+        tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '500',
         },
       }}
     >
-      {/* ── Visible tabs ── */}
+      {/* ── Visible tabs (common) ── */}
       <Tabs.Screen
         name="index"
-        options={{ title: 'Inicio', tabBarIcon: () => <TabIcon emoji="🏠" /> }}
+        options={{
+          title: 'Inicio',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="home" color={color} size={size} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="ventas"
-        options={{ title: 'Ventas', tabBarIcon: () => <TabIcon emoji="💰" /> }}
+        options={{
+          title: 'Ventas',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="cash-register" color={color} size={size} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="pedidos"
-        options={{ title: 'Pedidos', tabBarIcon: () => <TabIcon emoji="📦" /> }}
+        options={{
+          title: 'Pedidos',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="package-variant" color={color} size={size} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="productos"
-        options={{ title: 'Productos', tabBarIcon: () => <TabIcon emoji="🛍️" /> }}
+        options={{
+          title: 'Productos',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="shopping" color={color} size={size} />
+          ),
+        }}
       />
       <Tabs.Screen
         name="mas"
-        options={{ title: 'Más', tabBarIcon: () => <TabIcon emoji="☰" /> }}
+        options={{
+          title: isAdmin ? 'Admin' : 'Más',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name={isAdmin ? 'shield-crown' : 'menu'} color={color} size={size} />
+          ),
+        }}
       />
 
       {/* ── Hidden from tab bar ── */}

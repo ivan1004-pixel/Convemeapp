@@ -155,13 +155,13 @@ export default function CorteDetailScreen() {
               router.push({ pathname: '/(app)/cortes/create', params: { id: String(corte.id_corte) } })
             }
           >
-            <Text style={styles.buttonText}>✏️ Editar</Text>
+            <Text style={styles.buttonText}>Editar</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.deleteButton, { backgroundColor: Colors.error }]}
             onPress={() => setDeleteVisible(true)}
           >
-            <Text style={styles.buttonText}>🗑️ Eliminar</Text>
+            <Text style={styles.buttonText}>Eliminar</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

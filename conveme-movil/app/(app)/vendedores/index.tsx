@@ -191,7 +191,7 @@ export default function VendedoresScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="🧑‍💼"
+            icon="account-tie"
             title="Sin vendedores"
             message={
               search ? 'No hay vendedores que coincidan.' : 'Aún no hay vendedores registrados.'

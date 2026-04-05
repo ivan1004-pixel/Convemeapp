@@ -215,7 +215,7 @@ export default function CategoriasScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="🏷️"
+            icon="tag"
             title="Sin categorías"
             message={search ? 'No hay categorías que coincidan.' : 'Aún no hay categorías.'}
             actionLabel={!search ? 'Crear categoría' : undefined}

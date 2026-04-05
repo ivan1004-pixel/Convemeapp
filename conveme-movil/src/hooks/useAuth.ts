@@ -2,23 +2,27 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
 import { loginService, logoutService } from '../services/auth.service';
-import { parseGraphQLError } from '../utils/errors';
+
+export const ROLE_ADMIN = 1;
+export const ROLE_VENDEDOR = 2;
 
 export const useAuth = () => {
   const { token, usuario, isAuthenticated, setToken, setUsuario, logout: storeLogout } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
+  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
+
+  /**
+   * Attempts login. Re-throws on failure so callers can handle errors.
+   */
   const login = async (username: string, password_raw: string) => {
     setIsLoading(true);
-    setError(null);
     try {
       const result = await loginService(username, password_raw);
       setToken(result.token);
       setUsuario(result.usuario);
+      // Redirect based on role
       router.replace('/(app)');
-    } catch (err) {
-      setError(parseGraphQLError(err));
     } finally {
       setIsLoading(false);
     }
@@ -27,8 +31,8 @@ export const useAuth = () => {
   const logout = async () => {
     await logoutService();
     storeLogout();
-    router.replace('/auth/login');
+    router.replace('/auth/splash');
   };
 
-  return { token, usuario, isAuthenticated, isLoading, error, login, logout };
+  return { token, usuario, isAuthenticated, isAdmin, isLoading, login, logout };
 };

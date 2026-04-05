@@ -61,12 +61,12 @@ function ClienteCard({
           </Text>
           {item.email && (
             <Text style={[styles.cardMeta, { color: theme.muted }]} numberOfLines={1}>
-              ✉️ {item.email}
+              {item.email}
             </Text>
           )}
           {item.telefono && (
             <Text style={[styles.cardMeta, { color: theme.muted }]}>
-              📞 {formatPhone(item.telefono)}
+              {formatPhone(item.telefono)}
             </Text>
           )}
           {item.fecha_registro && (
@@ -198,7 +198,7 @@ export default function ClientesScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="👥"
+            icon="account-group"
             title="Sin clientes"
             message={
               search

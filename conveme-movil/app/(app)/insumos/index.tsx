@@ -59,7 +59,7 @@ function InsumoCard({
       <View style={styles.cardContent}>
         <View style={[styles.cardIcon, { backgroundColor: isLowStock ? '#FEE2E2' : Colors.primaryLight }]}>
           <Text style={[styles.cardIconText, { color: isLowStock ? Colors.error : Colors.primary }]}>
-            {isLowStock ? '⚠️' : '📦'}
+            {isLowStock ? '!' : ''}
           </Text>
         </View>
         <View style={styles.cardInfo}>

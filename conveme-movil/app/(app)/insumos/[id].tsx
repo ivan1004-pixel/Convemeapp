@@ -136,7 +136,7 @@ export default function InsumoDetailScreen() {
         {/* Hero card */}
         <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: isLowStock ? Colors.error : theme.border }, Shadows.sm]}>
           <View style={[styles.heroIcon, { backgroundColor: isLowStock ? '#FEE2E2' : Colors.primaryLight }]}>
-            <Text style={styles.heroIconText}>{isLowStock ? '⚠️' : '📦'}</Text>
+            <Text style={styles.heroIconText}></Text>
           </View>
           <Text style={[styles.heroName, { color: theme.text }]}>{insumo.nombre}</Text>
           {isLowStock && <Badge text="Stock bajo — Requiere reabastecimiento" color="error" />}

@@ -206,7 +206,7 @@ export default function PedidosScreen() {
         }
         ListEmptyComponent={
           <EmptyState
-            icon="📦"
+            icon="package-variant"
             title="Sin pedidos"
             message={
               search
