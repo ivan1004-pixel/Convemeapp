@@ -33,6 +33,12 @@ interface MenuSection {
 
 const SECTIONS_ADMIN: MenuSection[] = [
   {
+    title: 'Cuenta',
+    data: [
+      { icon: 'account-circle', title: 'Mi Perfil', route: '/(app)/perfil', iconColor: Colors.primary },
+    ],
+  },
+  {
     title: 'Personas',
     data: [
       { icon: 'account-group', title: 'Clientes', route: '/(app)/clientes', iconColor: Colors.info },
@@ -72,15 +78,15 @@ const SECTIONS_ADMIN: MenuSection[] = [
       { icon: 'bank', title: 'Cuentas Bancarias', route: '/(app)/cuentas-bancarias', iconColor: Colors.success },
     ],
   },
+];
+
+const SECTIONS_VENDEDOR: MenuSection[] = [
   {
     title: 'Cuenta',
     data: [
       { icon: 'account-circle', title: 'Mi Perfil', route: '/(app)/perfil', iconColor: Colors.primary },
     ],
   },
-];
-
-const SECTIONS_VENDEDOR: MenuSection[] = [
   {
     title: 'Personas',
     data: [
@@ -93,12 +99,6 @@ const SECTIONS_VENDEDOR: MenuSection[] = [
       { icon: 'receipt', title: 'Historial de Ventas', route: '/(app)/ventas', iconColor: Colors.success },
       { icon: 'bank', title: 'Pagos Recibidos', route: '/(app)/cortes', iconColor: Colors.warning },
       { icon: 'file-document', title: 'Comprobantes', route: '/(app)/comprobantes', iconColor: Colors.primary },
-    ],
-  },
-  {
-    title: 'Cuenta',
-    data: [
-      { icon: 'account-circle', title: 'Mi Perfil', route: '/(app)/perfil', iconColor: Colors.primary },
     ],
   },
 ];
@@ -147,14 +147,6 @@ export default function MasScreen() {
           renderSectionHeader={renderSectionHeader}
           stickySectionHeadersEnabled={false}
           contentContainerStyle={styles.list}
-          ListFooterComponent={
-            <TouchableOpacity style={styles.logoutRow} onPress={logout} activeOpacity={0.8}>
-              <View style={[styles.iconWrap, { backgroundColor: `${Colors.error}22`, borderWidth: 1, borderColor: Colors.error }]}>
-                <MaterialCommunityIcons name="logout" size={20} color={Colors.error} />
-              </View>
-              <Text style={[styles.itemTitle, { color: Colors.error, fontWeight: '900' }]}>Cerrar Sesión</Text>
-            </TouchableOpacity>
-          }
         />
       </SafeAreaView>
     </NeobrutalistBackground>
@@ -183,7 +175,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   list: {
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 100,
   },
   sectionHeader: {
     paddingHorizontal: Spacing.lg,

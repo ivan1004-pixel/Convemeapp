@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   },
   scroll: { 
     padding: Spacing.lg, 
-    paddingBottom: Spacing.xxl 
+    paddingBottom: 100
   },
   header: { 
     marginBottom: Spacing.xl,
@@ -253,9 +253,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl 
   },
   avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',

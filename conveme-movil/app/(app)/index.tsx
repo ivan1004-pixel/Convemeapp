@@ -32,6 +32,35 @@ import { getPedidos } from '../../src/services/pedido.service';
 import { getCortes } from '../../src/services/corte.service';
 import { formatCurrency } from '../../src/utils';
 
+// --- Helper de Regresión Lineal ---
+function getLinearRegression(data: {label: string, value: number}[]) {
+    const n = data.length;
+    // Necesitamos al menos dos puntos para una línea
+    if (n < 2) {
+      return { predict: (x: number) => (data[0]?.value || 0) };
+    }
+  
+    let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+    
+    data.forEach((point, i) => {
+      sumX += i;
+      sumY += point.value;
+      sumXY += i * point.value;
+      sumXX += i * i;
+    });
+  
+    const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+  
+    // Si la pendiente no es un número (división por cero), devolvemos un valor plano
+    if (isNaN(slope)) {
+        return { predict: (x: number) => data[0].value };
+    }
+
+    return { predict: (x: number) => slope * x + intercept };
+}
+
+
 // Patrón de fondo de partículas
 const DashboardPattern = () => (
   <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -102,7 +131,9 @@ const AnimatedQuickActionCard = ({ icon, label, onPress, color, index }: { icon:
 function AdminDashboard() {
   const { usuario, logout } = useAuth();
   const [stats, setStats] = useState({ ingresosMes: 0, pedidosPend: 0, empleados: 0, vendedores: 0 });
-  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [historicalData, setHistoricalData] = useState<{label: string, value: number}[]>([]);
+  const [prediction, setPrediction] = useState({ value: 0, label: '' });
+  const [growth, setGrowth] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
@@ -115,10 +146,10 @@ function AdminDashboard() {
       const m = now.getMonth();
       const y = now.getFullYear();
       
-      const totalActual = ventas.filter((v:any) => new Date(v.fecha_venta).getMonth() === m && new Date(v.fecha_venta).getFullYear() === y).reduce((s:number, v:any) => s + v.monto_total, 0) +
+      const ingresosMes = ventas.filter((v:any) => new Date(v.fecha_venta).getMonth() === m && new Date(v.fecha_venta).getFullYear() === y).reduce((s:number, v:any) => s + v.monto_total, 0) +
                           cortes.filter((c:any) => new Date(c.fecha_corte).getMonth() === m && new Date(c.fecha_corte).getFullYear() === y).reduce((s:number, c:any) => s + (c.dinero_total_entregado || 0), 0);
 
-      setStats({ ingresosMes: totalActual, pedidosPend: pedidos.filter((p:any) => p.estado === 'Pendiente').length, empleados: empleados.length, vendedores: vendedores.length });
+      setStats({ ingresosMes, pedidosPend: pedidos.filter((p:any) => p.estado === 'Pendiente').length, empleados: empleados.length, vendedores: vendedores.length });
       
       const revenueByMonth: Record<string, number> = {};
       [...ventas, ...cortes].forEach((item: any) => {
@@ -127,7 +158,32 @@ function AdminDashboard() {
         const mKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
         revenueByMonth[mKey] = (revenueByMonth[mKey] || 0) + (item.monto_total || item.dinero_total_entregado || 0);
       });
-      setHistoricalData(Object.keys(revenueByMonth).sort().slice(-5).map(key => ({ label: key.split('-')[1], value: revenueByMonth[key] })));
+
+      const historical = Object.keys(revenueByMonth).sort().slice(-5).map(key => ({ label: key.split('-')[1], value: revenueByMonth[key] }));
+      setHistoricalData(historical);
+
+      if (historical.length > 1) {
+        const regression = getLinearRegression(historical);
+        const nextX = historical.length;
+        const predictedValue = regression.predict(nextX);
+        
+        const lastMonthLabel = Object.keys(revenueByMonth).sort().slice(-1)[0];
+        const lastMonthDate = new Date(lastMonthLabel + '-02T12:00:00Z');
+        const nextMonthDate = new Date(lastMonthDate.setMonth(lastMonthDate.getMonth() + 1));
+        const nextMonthLabel = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
+        
+        const currentMonthRevenue = ingresosMes > 0 ? ingresosMes : historical[historical.length - 1].value;
+        const growthPercentage = currentMonthRevenue > 0 
+            ? ((predictedValue - currentMonthRevenue) / currentMonthRevenue) * 100
+            : 0;
+        
+        setGrowth(growthPercentage);
+        setPrediction({ value: predictedValue > 0 ? predictedValue : 0, label: nextMonthLabel });
+      } else {
+        setPrediction({ value: 0, label: '' });
+        setGrowth(0);
+      }
+
     } catch (err) { console.error(err); } finally { setLoading(false); }
   }, []);
 
@@ -153,6 +209,9 @@ function AdminDashboard() {
           <AnimatedStatCard index={3} icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} />
           <AnimatedStatCard index={4} icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} />
         </View>
+        <View style={styles.statsRow}>
+            <AnimatedStatCard index={5} icon="trending-up" label="Crecimiento Estimado" value={`${growth.toFixed(1)}%`} color={Colors.pink} />
+        </View>
       </View>
 
       <Animated.View entering={FadeInUp.duration(500).delay(400)}>
@@ -168,15 +227,15 @@ function AdminDashboard() {
         <Text style={styles.sectionTitle}>Administración</Text>
         <View style={styles.actionsGrid}>
             <AnimatedQuickActionCard index={1} icon="warehouse" label="Inventario" onPress={() => router.push('/(app)/productos')} color={Colors.primary} />
-            <AnimatedQuickActionCard index={2} icon="account-group" label="Clientes" onPress={() => router.push('/(app)/clientes')} color={Colors.info} />
-            <AnimatedQuickActionCard index={3} icon="school" label="Escuelas" onPress={() => router.push('/(app)/escuelas')} color={Colors.success} />
+            <AnimatedQuickActionCard index={2} icon="clipboard-account-outline" label="Asignaciones" onPress={() => router.push('/(app)/asignaciones')} color={Colors.info} />
+            <AnimatedQuickActionCard index={3} icon="receipt" label="Comprobantes" onPress={() => router.push('/(app)/comprobantes')} color={Colors.success} />
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInUp.duration(500).delay(600)} style={{paddingHorizontal: 20, marginTop: 30, paddingBottom: 100}}>
           <View style={styles.predSection}>
               <Text style={styles.predTitle}>Tendencia de Ingresos</Text>
-              <PredictionChart data={historicalData} />
+              <PredictionChart data={historicalData} predictedValue={prediction.value} predictedLabel={prediction.label} />
           </View>
       </Animated.View>
     </ScrollView>
