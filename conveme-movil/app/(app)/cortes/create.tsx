@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { createCorte, updateCorte, deleteCorte } from '../../../src/services/corte.service';
+import { createComprobante } from '../../../src/services/comprobante.service';
 import { getVendedores } from '../../../src/services/vendedor.service';
 import { getAsignaciones, updateAsignacion } from '../../../src/services/asignacion.service';
 import { loginService } from '../../../src/services/auth.service';
@@ -75,6 +76,7 @@ export default function CorteCreateScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
+  const [isSavingComprobante, setIsSavingComprobante] = useState(false);
   const [lastCreatedCorte, setLastCreatedCorte] = useState<Corte | null>(null);
   const [adminPass, setAdminPass] = useState('');
   const [isAuthorizing, setIsAuthorizing] = useState(false);
@@ -83,6 +85,34 @@ export default function CorteCreateScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const handleSaveComprobante = async () => {
+    if (!lastCreatedCorte) return;
+    setIsSavingComprobante(true);
+    try {
+        const bruteTotal = lastCreatedCorte.detalles?.reduce((acc, d) => acc + (d.cantidad_vendida * (d.producto?.precio_unitario || 0)), 0) || 0;
+        const totalUnits = lastCreatedCorte.detalles?.reduce((acc, d) => acc + d.cantidad_vendida, 0) || 0;
+        const comision = totalUnits * COMISION_POR_UNIDAD;
+
+        await createComprobante({
+            vendedor_id: Number(lastCreatedCorte.vendedor?.id_vendedor),
+            admin_id: Number(usuario?.id_usuario),
+            total_vendido: bruteTotal,
+            comision_vendedor: comision,
+            monto_entregado: lastCreatedCorte.dinero_total_entregado,
+            saldo_pendiente: Math.abs(lastCreatedCorte.diferencia_corte || 0),
+            notas: lastCreatedCorte.observaciones,
+            fecha_corte: lastCreatedCorte.fecha_corte
+        });
+        showToast('Comprobante guardado con éxito', 'success');
+        setShowTicketModal(false);
+        router.back();
+    } catch (err) {
+        showToast('Error al guardar comprobante', 'error');
+    } finally {
+        setIsSavingComprobante(false);
+    }
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -462,11 +492,20 @@ export default function CorteCreateScreen() {
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center', paddingBottom: 20 }}>
                         {lastCreatedCorte && <CorteTicket corte={lastCreatedCorte} />}
                     </ScrollView>
-                    <Button 
-                        title="CERRAR Y VOLVER" 
-                        onPress={() => { setShowTicketModal(false); router.back(); }} 
-                        style={{ marginTop: 10 }}
-                    />
+                    <View style={{ gap: 10 }}>
+                        <Button 
+                            title="GUARDAR COMPROBANTE" 
+                            onPress={handleSaveComprobante} 
+                            loading={isSavingComprobante}
+                            variant="primary"
+                        />
+                        <TouchableOpacity 
+                            onPress={() => { setShowTicketModal(false); router.back(); }} 
+                            style={{ alignItems: 'center', padding: 10 }}
+                        >
+                            <Text style={{ fontWeight: '900', color: '#FFF', fontSize: 12 }}>CERRAR SIN GUARDAR</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </Modal>

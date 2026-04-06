@@ -29,7 +29,11 @@ export function SalesTicket({ venta }: SalesTicketProps) {
             />
             <View style={styles.headerRight}>
                 <Text style={styles.ticketType}>COMPROBANTE DE VENTA</Text>
-                <Text style={styles.brandName}>CONVEME</Text>
+                <Image
+                  source={require('../../../assets/images/logon.png')}
+                  style={styles.logoMarca}
+                  resizeMode="contain"
+                />
             </View>
         </View>
       </View>

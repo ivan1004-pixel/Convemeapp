@@ -66,7 +66,7 @@ export default function PromocionDetailScreen() {
     }
   }, [promocion, removePromocion, showToast]);
 
-  if (loading || !promocion) {
+  if (!promocion) {
     return (
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
