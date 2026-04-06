@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getVentas, deleteVenta } from '../../../src/services/venta.service';
+import { getCortes } from '../../../src/services/corte.service';
 import { useVentaStore } from '../../../src/store/ventaStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
@@ -31,7 +32,8 @@ import { Toast, useToast } from '../../../src/components/Toast';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import { PredictionChart } from '../../../src/components/PredictionChart';
-import type { Venta } from '../../../src/types';
+import { BarChart } from '../../../src/components/ui/BarChart';
+import type { Venta, Corte } from '../../../src/types';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'success' | 'error' | 'primary'> = {
   Pendiente: 'warning',
@@ -133,6 +135,7 @@ export default function VentasScreen() {
 
   const { toast, show, hide } = useToast();
   const { ventas, setVentas, removeVenta } = useVentaStore();
+  const [cortes, setCortes] = useState<Corte[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -143,26 +146,28 @@ export default function VentasScreen() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getVentas();
-      setVentas(data);
+      const [vData, cData] = await Promise.all([getVentas(), getCortes()]);
+      setVentas(vData);
+      setCortes(cData);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [setVentas]);
+  }, [setVentas, show]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      const data = await getVentas();
-      setVentas(data);
+      const [vData, cData] = await Promise.all([getVentas(), getCortes()]);
+      setVentas(vData);
+      setCortes(cData);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
-  }, [setVentas]);
+  }, [setVentas, show]);
 
   useEffect(() => {
     fetchData();
@@ -179,36 +184,24 @@ export default function VentasScreen() {
     );
   }, [ventas, search]);
 
-  const chartData = useMemo(() => {
-    const salesByMonth: Record<string, number> = {};
-    ventas.forEach((v: any) => {
-      const d = new Date(v.fecha_venta);
-      const mKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-      salesByMonth[mKey] = (salesByMonth[mKey] || 0) + v.monto_total;
-    });
-
-    return Object.keys(salesByMonth)
-      .sort()
-      .slice(-6)
-      .map(key => ({
-        label: key.split('-')[1],
-        value: salesByMonth[key]
-      }));
-  }, [ventas]);
-
-  // Cálculo de ventas por vendedor para el nuevo gráfico
-  const vendorSalesData = useMemo(() => {
+  const vendorPerformanceData = useMemo(() => {
     const vendorMap: Record<string, number> = {};
+    
     ventas.forEach((v: any) => {
         const name = v.vendedor?.nombre_completo || 'Desconocido';
         vendorMap[name] = (vendorMap[name] || 0) + v.monto_total;
     });
+
+    cortes.forEach((c: any) => {
+        const name = c.vendedor?.nombre_completo || 'Desconocido';
+        vendorMap[name] = (vendorMap[name] || 0) + (c.dinero_total_entregado || 0);
+    });
     
     return Object.keys(vendorMap).map(name => ({
-        label: name.substring(0, 8), // Recortamos para que quepa
+        label: name.substring(0, 8), 
         value: vendorMap[name]
     })).sort((a,b) => b.value - a.value).slice(0, 5);
-  }, [ventas]);
+  }, [ventas, cortes]);
 
   const handleDelete = useCallback(async () => {
     if (deleteId == null) return;
@@ -223,22 +216,20 @@ export default function VentasScreen() {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeVenta]);
+  }, [deleteId, removeVenta, show]);
 
   const listHeader = () => (
     <View style={indexStyles.listHeader}>
-        {chartData.length > 0 && (
-            <View style={indexStyles.analyticsCard}>
-                <View style={indexStyles.analyticsHeader}>
-                    <Text style={indexStyles.analyticsTitle}>Rendimiento Mensual</Text>
-                    <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={indexStyles.vendorBtn}>
-                        <MaterialCommunityIcons name="account-group" size={20} color={Colors.primary} />
-                        <Text style={indexStyles.vendorBtnText}>VENDEDORES</Text>
-                    </TouchableOpacity>
-                </View>
-                <PredictionChart data={chartData} />
+        <View style={indexStyles.analyticsCard}>
+            <View style={indexStyles.analyticsHeader}>
+                <Text style={indexStyles.analyticsTitle}>Rendimiento Global</Text>
+                <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={indexStyles.vendorBtn}>
+                    <MaterialCommunityIcons name="account-group" size={20} color={Colors.primary} />
+                    <Text style={indexStyles.vendorBtnText}>VENDEDORES</Text>
+                </TouchableOpacity>
             </View>
-        )}
+            <Text style={indexStyles.analyticsDesc}>Analiza los ingresos generados por cada vendedor sumando sus ventas y cortes.</Text>
+        </View>
         <View style={indexStyles.searchContainer}>
             <SearchBar
                 value={search}
@@ -298,22 +289,22 @@ export default function VentasScreen() {
           />
         )}
 
-        {/* Modal de Analíticas por Vendedor */}
         <Modal visible={showVendorAnalytics} transparent animationType="fade">
             <View style={indexStyles.modalOverlay}>
                 <View style={indexStyles.modalContent}>
                     <View style={indexStyles.modalHeader}>
-                        <Text style={indexStyles.modalTitle}>Ventas por Vendedor</Text>
+                        <Text style={indexStyles.modalTitle}>Rendimiento Vendedores</Text>
                         <TouchableOpacity onPress={() => setShowVendorAnalytics(false)}>
                             <MaterialCommunityIcons name="close-thick" size={24} color={Colors.dark} />
                         </TouchableOpacity>
                     </View>
                     
-                    <ScrollView style={{ maxHeight: 400 }}>
-                        <PredictionChart data={vendorSalesData} />
+                    <ScrollView style={{ maxHeight: 450 }} showsVerticalScrollIndicator={false}>
+                        <Text style={indexStyles.chartTitle}>INGRESOS (VENTAS + CORTES)</Text>
+                        <BarChart data={vendorPerformanceData} color={Colors.success} />
                         
                         <View style={indexStyles.vendorStatsList}>
-                            {vendorSalesData.map((v, i) => (
+                            {vendorPerformanceData.map((v, i) => (
                                 <View key={i} style={indexStyles.vendorStatRow}>
                                     <Text style={indexStyles.vendorStatName}>{v.label}</Text>
                                     <Text style={indexStyles.vendorStatValue}>{formatCurrency(v.value)}</Text>
@@ -323,7 +314,7 @@ export default function VentasScreen() {
                     </ScrollView>
                     
                     <Button 
-                        title="CERRAR VENTANA" 
+                        title="CERRAR ANÁLISIS" 
                         onPress={() => setShowVendorAnalytics(false)} 
                         style={{ marginTop: 20 }}
                     />
@@ -387,14 +378,16 @@ const indexStyles = StyleSheet.create({
   fab: { position: 'absolute', bottom: 90, right: Spacing.lg, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10, zIndex: 999 },
   fabIcon: { fontSize: 32, color: '#ffffff', fontWeight: '900' },
   analyticsCard: { backgroundColor: '#FFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, borderWidth: 3, borderColor: Colors.dark, marginBottom: Spacing.lg, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, shadowRadius: 0 },
-  analyticsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  analyticsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm },
   analyticsTitle: { ...Typography.h4, fontWeight: '900' },
+  analyticsDesc: { fontSize: 11, color: 'rgba(0,0,0,0.5)', fontWeight: '600', marginBottom: 10 },
   vendorBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.primary + '10', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: Colors.primary },
   vendorBtnText: { fontSize: 9, fontWeight: '900', color: Colors.primary },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.beige, width: '100%', borderRadius: BorderRadius.xxl, padding: Spacing.lg, borderWidth: 4, borderColor: Colors.dark, shadowColor: '#000', shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 20, fontWeight: '900' },
+  chartTitle: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', textAlign: 'center', marginBottom: 10, letterSpacing: 1 },
   vendorStatsList: { marginTop: 20, gap: 10 },
   vendorStatRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 10, backgroundColor: '#FFF', borderRadius: 10, borderWidth: 2, borderColor: Colors.dark },
   vendorStatName: { fontWeight: '800', fontSize: 13 },

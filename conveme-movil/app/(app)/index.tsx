@@ -51,11 +51,16 @@ function QuickActionCard({
 function StatCard({ icon, label, value, color }: { icon: IconName; label: string; value: string; color: string }) {
   return (
     <View style={[styles.statCard, { borderLeftWidth: 4, borderLeftColor: color }]}>
+      {/* Icono de fondo para que no se vea simple */}
+      <View style={styles.statWatermark}>
+          <MaterialCommunityIcons name={icon} size={80} color={color + '08'} />
+      </View>
+      
       <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}>
         <MaterialCommunityIcons name={icon} size={22} color={color} />
       </View>
       <View style={styles.statInfo}>
-        <Text style={[styles.statValue, { color: '#1A1A1A' }]}>{value}</Text>
+        <Text style={[styles.statValue, { color: '#1A1A1A' }]} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
         <Text style={styles.statLabel}>{label}</Text>
       </View>
     </View>
@@ -75,6 +80,7 @@ import { getVentas } from '../../src/services/venta.service';
 import { getEmpleados } from '../../src/services/empleado.service';
 import { getVendedores } from '../../src/services/vendedor.service';
 import { getPedidos } from '../../src/services/pedido.service';
+import { getCortes } from '../../src/services/corte.service';
 import { formatCurrency } from '../../src/utils';
 
 // ---------- ADMIN DASHBOARD ----------
@@ -82,7 +88,7 @@ function AdminDashboard() {
   const { usuario, logout } = useAuth();
   const { toast, show: showToast, hide: hideToast } = useToast();
   const [stats, setStats] = useState({
-    ventasMes: 0,
+    ingresosMes: 0,
     pedidosPend: 0,
     empleados: 0,
     vendedores: 0,
@@ -96,58 +102,78 @@ function AdminDashboard() {
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [ventas, pedidos, empleados, vendedores] = await Promise.all([
+      const [ventas, cortes, pedidos, empleados, vendedores] = await Promise.all([
         getVentas(),
+        getCortes(),
         getPedidos(),
         getEmpleados(),
         getVendedores(),
       ]);
 
       const now = new Date();
-      const esteMes = ventas.filter((v: any) => {
-        const fecha = new Date(v.fecha_venta);
-        return fecha.getMonth() === now.getMonth() && fecha.getFullYear() === now.getFullYear();
-      });
+      const m = now.getMonth();
+      const y = now.getFullYear();
       
-      const mesPasado = ventas.filter((v: any) => {
-        const fecha = new Date(v.fecha_venta);
-        const m = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
-        const y = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-        return fecha.getMonth() === m && fecha.getFullYear() === y;
+      // Filtrado robusto para este mes
+      const esteMesV = ventas.filter((v: any) => {
+        const d = new Date(v.fecha_venta);
+        return d.getMonth() === m && d.getFullYear() === y;
+      });
+      const esteMesC = cortes.filter((c: any) => {
+        const d = new Date(c.fecha_corte);
+        return d.getMonth() === m && d.getFullYear() === y;
       });
 
-      const totalMes = esteMes.reduce((sum: number, v: any) => sum + v.monto_total, 0);
-      const totalMesPasado = mesPasado.reduce((sum: number, v: any) => sum + v.monto_total, 0);
+      const totalMesV = esteMesV.reduce((sum: number, v: any) => sum + v.monto_total, 0);
+      const totalMesC = esteMesC.reduce((sum: number, c: any) => sum + (c.dinero_total_entregado || 0), 0);
+      const totalActual = totalMesV + totalMesC;
+
+      // Cálculo mes pasado
+      const mPasado = m === 0 ? 11 : m - 1;
+      const yPasado = m === 0 ? y - 1 : y;
+
+      const mesPasadoV = ventas.filter((v: any) => {
+        const d = new Date(v.fecha_venta);
+        return d.getMonth() === mPasado && d.getFullYear() === yPasado;
+      });
+      const mesPasadoC = cortes.filter((c: any) => {
+        const d = new Date(c.fecha_corte);
+        return d.getMonth() === mPasado && d.getFullYear() === yPasado;
+      });
+
+      const totalPasado = mesPasadoV.reduce((sum: number, v: any) => sum + v.monto_total, 0) + 
+                          mesPasadoC.reduce((sum: number, c: any) => sum + (c.dinero_total_entregado || 0), 0);
       
       let crecimiento = 0;
-      if (totalMesPasado > 0) {
-          crecimiento = ((totalMes - totalMesPasado) / totalMesPasado) * 100;
+      if (totalPasado > 0) {
+          crecimiento = ((totalActual - totalPasado) / totalPasado) * 100;
+      } else if (totalActual > 0) {
+          crecimiento = 100; // Si es el primer mes con datos, el crecimiento es del 100%
       }
 
-      const pendientes = pedidos.filter((p: any) => p.estado === 'Pendiente').length;
-
       setStats({
-        ventasMes: totalMes,
-        pedidosPend: pendientes,
+        ingresosMes: totalActual,
+        pedidosPend: pedidos.filter((p: any) => p.estado === 'Pendiente').length,
         empleados: empleados.length,
         vendedores: vendedores.length,
         crecimientoReal: crecimiento,
       });
 
-      // Agrupar ventas por mes para la gráfica
-      const salesByMonth: Record<string, number> = {};
-      ventas.forEach((v: any) => {
-        const d = new Date(v.fecha_venta);
+      // Histórico de ingresos (Ventas + Cortes)
+      const revenueByMonth: Record<string, number> = {};
+      [...ventas, ...cortes].forEach((item: any) => {
+        const d = new Date(item.fecha_venta || item.fecha_corte);
+        if (isNaN(d.getTime())) return;
         const mKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-        salesByMonth[mKey] = (salesByMonth[mKey] || 0) + v.monto_total;
+        revenueByMonth[mKey] = (revenueByMonth[mKey] || 0) + (item.monto_total || item.dinero_total_entregado || 0);
       });
 
-      const chartData = Object.keys(salesByMonth)
+      const chartData = Object.keys(revenueByMonth)
         .sort()
-        .slice(-5) 
+        .slice(-6) 
         .map(key => ({
           label: key.split('-')[1],
-          value: salesByMonth[key]
+          value: revenueByMonth[key]
         }));
       
       setHistoricalData(chartData);
@@ -165,7 +191,7 @@ function AdminDashboard() {
       const data = await getPrediccionVentasService();
       setPrediccion(data);
     } catch {
-      showToast('No se pudo cargar la predicción.', 'warning');
+      showToast('No se pudo cargar la proyección.', 'warning');
     } finally {
       setLoadingPred(false);
     }
@@ -209,7 +235,7 @@ function AdminDashboard() {
 
         {/* Stats */}
         <View style={[styles.statsRow, { marginTop: Spacing.sm }]}>
-          <StatCard icon="cash-multiple" label="Ventas del mes" value={formatCurrency(stats.ventasMes)} color={Colors.success} />
+          <StatCard icon="cash-multiple" label="Ingresos del mes" value={formatCurrency(stats.ingresosMes)} color={Colors.success} />
           <StatCard icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
         </View>
         <View style={styles.statsRow}>
@@ -239,7 +265,7 @@ function AdminDashboard() {
         <View style={styles.predSection}>
             <View style={styles.predHeader}>
                 <MaterialCommunityIcons name="chart-line" size={20} color={Colors.primary} />
-                <Text style={styles.predTitle}>Proyección de Ventas</Text>
+                <Text style={styles.predTitle}>Proyección de Ingresos</Text>
                 <TouchableOpacity onPress={loadPrediccion} style={styles.refreshBtn} disabled={loadingPred}>
                 <MaterialCommunityIcons name="refresh" size={18} color={Colors.primary} />
                 </TouchableOpacity>
@@ -378,7 +404,8 @@ const styles = StyleSheet.create({
   logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, backgroundColor: '#FFFFFF', borderRadius: BorderRadius.full, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs + 2, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
   logoutText: { ...Typography.label, color: Colors.primary, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.sm },
-  statCard: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.md, gap: Spacing.sm, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  statCard: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.md, gap: Spacing.sm, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3, overflow: 'hidden' },
+  statWatermark: { position: 'absolute', right: -10, bottom: -10, opacity: 0.5 },
   statIconBox: { padding: Spacing.xs, borderRadius: BorderRadius.md },
   statInfo: { flex: 1 },
   statValue: { fontSize: 18, fontWeight: '800', color: '#1A1A1A' },
