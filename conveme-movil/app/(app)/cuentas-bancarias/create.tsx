@@ -74,7 +74,6 @@ export default function CuentaBancariaCreateScreen() {
         titular_cuenta, 
         numero_cuenta,
         vendedor_id: vendedor_id,
-        activa: true
       };
       if (clabe_interbancaria) input.clabe_interbancaria = clabe_interbancaria;
 
