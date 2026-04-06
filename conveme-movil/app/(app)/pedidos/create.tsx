@@ -30,101 +30,156 @@ import type { Pedido, Cliente, Vendedor } from '../../../src/types';
 
 const ESTADOS_PEDIDO = ['Pendiente', 'Confirmado', 'Entregado', 'Cancelado'];
 
-const DatePickerModal = memo(({ visible, field, value, onConfirm, onCancel }: any) => {
-  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() + i - 1);
-  const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
-  const days = Array.from({ length: 31 }, (_, i) => (i + 1).toString().padStart(2, '0'));
+const DatePickerModal = memo(
+  ({ visible, field, value, onConfirm, onCancel }: any) => {
+    const years = Array.from(
+      { length: 5 },
+      (_, i) => new Date().getFullYear() + i - 1
+    );
+    const months = [
+      '01',
+      '02',
+      '03',
+      '04',
+      '05',
+      '06',
+      '07',
+      '08',
+      '09',
+      '10',
+      '11',
+      '12',
+    ];
+    const days = Array.from(
+      { length: 31 },
+      (_, i) => (i + 1).toString().padStart(2, '0')
+    );
 
-  const initialParts = value?.split('-') || [];
-  const [selYear, setSelYear] = useState(initialParts[0] || new Date().getFullYear().toString());
-  const [selMonth, setSelMonth] = useState(initialParts[1] || '01');
-  const [selDay, setSelDay] = useState(initialParts[2] || '01');
+    const initialParts = value?.split('-') || [];
+    const [selYear, setSelYear] = useState(
+      initialParts[0] || new Date().getFullYear().toString()
+    );
+    const [selMonth, setSelMonth] = useState(initialParts[1] || '01');
+    const [selDay, setSelDay] = useState(initialParts[2] || '01');
 
-  useEffect(() => {
-    if (value) {
-      const parts = value.split('-');
-      setSelYear(parts[0]);
-      setSelMonth(parts[1]);
-      setSelDay(parts[2]);
-    }
-  }, [value, visible]);
+    useEffect(() => {
+      if (value) {
+        const parts = value.split('-');
+        setSelYear(parts[0]);
+        setSelMonth(parts[1]);
+        setSelDay(parts[2]);
+      }
+    }, [value, visible]);
 
-  if (!visible) return null;
+    if (!visible) return null;
 
-  return (
-    <Modal visible={visible} animationType="fade" transparent>
-    <View style={styles.modalOverlay}>
-    <View style={styles.datePickerCard}>
-    <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
-    <View style={styles.datePickerRows}>
-    <FlatList
-    data={years}
-    keyExtractor={y => `y-${y}`}
-    renderItem={({item}) => (
+    return (
+      <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.modalOverlay}>
+      <View style={styles.datePickerCard}>
+      <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
+      <View style={styles.datePickerRows}>
+      <FlatList
+      data={years}
+      keyExtractor={(y) => `y-${y}`}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+        onPress={() => setSelYear(item.toString())}
+        style={[
+          styles.dateItem,
+          selYear === item.toString() && styles.dateItemSel,
+        ]}
+        >
+        <Text
+        style={[
+          styles.dateItemText,
+          selYear === item.toString() && styles.dateItemTextSel,
+        ]}
+        >
+        {item}
+        </Text>
+        </TouchableOpacity>
+      )}
+      style={{ height: 150 }}
+      showsVerticalScrollIndicator={false}
+      />
+      <FlatList
+      data={months}
+      keyExtractor={(m) => `m-${m}`}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+        onPress={() => setSelMonth(item)}
+        style={[
+          styles.dateItem,
+          selMonth === item && styles.dateItemSel,
+        ]}
+        >
+        <Text
+        style={[
+          styles.dateItemText,
+          selMonth === item && styles.dateItemTextSel,
+        ]}
+        >
+        {item}
+        </Text>
+        </TouchableOpacity>
+      )}
+      style={{ height: 150 }}
+      showsVerticalScrollIndicator={false}
+      />
+      <FlatList
+      data={days}
+      keyExtractor={(d) => `d-${d}`}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+        onPress={() => setSelDay(item)}
+        style={[
+          styles.dateItem,
+          selDay === item && styles.dateItemSel,
+        ]}
+        >
+        <Text
+        style={[
+          styles.dateItemText,
+          selDay === item && styles.dateItemTextSel,
+        ]}
+        >
+        {item}
+        </Text>
+        </TouchableOpacity>
+      )}
+      style={{ height: 150 }}
+      showsVerticalScrollIndicator={false}
+      />
+      </View>
+      <Button
+      title="CONFIRMAR"
+      onPress={() =>
+        onConfirm(field, `${selYear}-${selMonth}-${selDay}`)
+      }
+      style={{ marginTop: 20 }}
+      />
       <TouchableOpacity
-      onPress={() => setSelYear(item.toString())}
-      style={[styles.dateItem, selYear === item.toString() && styles.dateItemSel]}
+      onPress={onCancel}
+      style={{ marginTop: 10, alignItems: 'center' }}
       >
-      <Text style={[styles.dateItemText, selYear === item.toString() && styles.dateItemTextSel]}>
-      {item}
+      <Text style={{ fontWeight: '900', color: Colors.error }}>
+      CANCELAR
       </Text>
       </TouchableOpacity>
-    )}
-    style={{height: 150}}
-    showsVerticalScrollIndicator={false}
-    />
-    <FlatList
-    data={months}
-    keyExtractor={m => `m-${m}`}
-    renderItem={({item}) => (
-      <TouchableOpacity
-      onPress={() => setSelMonth(item)}
-      style={[styles.dateItem, selMonth === item && styles.dateItemSel]}
-      >
-      <Text style={[styles.dateItemText, selMonth === item && styles.dateItemTextSel]}>
-      {item}
-      </Text>
-      </TouchableOpacity>
-    )}
-    style={{height: 150}}
-    showsVerticalScrollIndicator={false}
-    />
-    <FlatList
-    data={days}
-    keyExtractor={d => `d-${d}`}
-    renderItem={({item}) => (
-      <TouchableOpacity
-      onPress={() => setSelDay(item)}
-      style={[styles.dateItem, selDay === item && styles.dateItemSel]}
-      >
-      <Text style={[styles.dateItemText, selDay === item && styles.dateItemTextSel]}>
-      {item}
-      </Text>
-      </TouchableOpacity>
-    )}
-    style={{height: 150}}
-    showsVerticalScrollIndicator={false}
-    />
-    </View>
-    <Button
-    title="CONFIRMAR"
-    onPress={() => onConfirm(field, `${selYear}-${selMonth}-${selDay}`)}
-    style={{marginTop: 20}}
-    />
-    <TouchableOpacity onPress={onCancel} style={{marginTop: 10, alignItems: 'center'}}>
-    <Text style={{fontWeight: '900', color: Colors.error}}>CANCELAR</Text>
-    </TouchableOpacity>
-    </View>
-    </View>
-    </Modal>
-  );
-});
+      </View>
+      </View>
+      </Modal>
+    );
+  }
+);
 
 export default function PedidoCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
 
   const { toast, show: showToast, hide: hideToast } = useToast();
-  const { pedidos, addPedido, updatePedido: updatePedidoStore } = usePedidoStore();
+  const { pedidos, addPedido, updatePedido: updatePedidoStore } =
+  usePedidoStore();
 
   const isEditing = !!id;
   const existing: Pedido | undefined = isEditing
@@ -132,12 +187,16 @@ export default function PedidoCreateScreen() {
   : undefined;
 
   const [form, setForm] = useState({
-    cliente_id: existing?.cliente?.id_cliente ?? null as number | null,
-    vendedor_id: existing?.vendedor?.id_vendedor ?? null as number | null,
+    cliente_id: (existing?.cliente?.id_cliente ??
+    null) as number | null,
+    vendedor_id: (existing?.vendedor?.id_vendedor ??
+    null) as number | null,
     estado: existing?.estado ?? 'Pendiente',
     monto_total: existing ? String(existing.monto_total) : '',
-                                   anticipo: existing?.anticipo != null ? String(existing.anticipo) : '',
-                                   fecha_entrega_estimada: existing?.fecha_entrega_estimada ?? '',
+                                   anticipo:
+                                   existing?.anticipo != null ? String(existing.anticipo) : '',
+                                   fecha_entrega_estimada:
+                                   existing?.fecha_entrega_estimada ?? '',
   });
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -190,15 +249,23 @@ export default function PedidoCreateScreen() {
     setSearchQuery('');
   };
 
-  const selectedCliente = clientes.find((c) => c.id_cliente === form.cliente_id);
-  const selectedVendedor = vendedores.find((v) => v.id_vendedor === form.vendedor_id);
+  const selectedCliente = clientes.find(
+    (c) => c.id_cliente === form.cliente_id
+  );
+  const selectedVendedor = vendedores.find(
+    (v) => v.id_vendedor === form.vendedor_id
+  );
 
   const filteredClientes = clientes.filter((c) =>
-  c.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase())
+  c.nombre_completo
+  .toLowerCase()
+  .includes(searchQuery.toLowerCase())
   );
 
   const filteredVendedores = vendedores.filter((v) =>
-  v.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase())
+  v.nombre_completo
+  .toLowerCase()
+  .includes(searchQuery.toLowerCase())
   );
 
   const validate = (): boolean => {
@@ -210,11 +277,18 @@ export default function PedidoCreateScreen() {
 
     if (!form.monto_total.trim()) {
       newErrors.monto_total = 'El monto total es requerido';
-    } else if (isNaN(Number(form.monto_total)) || Number(form.monto_total) < 0) {
+    } else if (
+      isNaN(Number(form.monto_total)) ||
+      Number(form.monto_total) < 0
+    ) {
       newErrors.monto_total = 'Ingresa un monto válido';
     }
 
-    if (form.anticipo && (isNaN(Number(form.anticipo)) || Number(form.anticipo) < 0)) {
+    if (
+      form.anticipo &&
+        (isNaN(Number(form.anticipo)) ||
+        Number(form.anticipo) < 0)
+    ) {
       newErrors.anticipo = 'Ingresa un anticipo válido';
     }
 
@@ -224,33 +298,55 @@ export default function PedidoCreateScreen() {
 
   const handleSubmit = async () => {
     if (!validate()) {
-      showToast('Por favor completa los campos requeridos', 'warning');
+      showToast(
+        'Por favor completa los campos requeridos',
+        'warning'
+      );
       return;
     }
+
     setSubmitting(true);
     try {
-      const input: Record<string, unknown> = {
-        cliente_id: form.cliente_id,
-        estado: form.estado,
-        monto_total: Number(form.monto_total),
+      // Construimos el input exactamente con lo que el backend puede esperar
+      const input: any = {
+        cliente_id: form.cliente_id, // Int!
+        estado: form.estado, // String / enum
+        monto_total: Number(form.monto_total), // Float/Int
       };
-      if (form.vendedor_id) input.vendedor_id = form.vendedor_id;
-      if (form.anticipo) input.anticipo = Number(form.anticipo);
+
+      if (form.vendedor_id) {
+        input.vendedor_id = form.vendedor_id;
+      }
+      if (form.anticipo) {
+        input.anticipo = Number(form.anticipo);
+      }
       if (form.fecha_entrega_estimada.trim()) {
-        input.fecha_entrega_estimada = form.fecha_entrega_estimada.trim();
+        // Ya viene como "YYYY-MM-DD" desde el DatePicker
+        input.fecha_entrega_estimada =
+        form.fecha_entrega_estimada.trim();
       }
 
       if (isEditing && existing) {
-        const updated = await updateEstadoPedido(existing.id_pedido, form.estado);
-        updatePedidoStore({ ...existing, ...updated, estado: form.estado });
+        // SOLO actualizamos estado vía updateEstadoPedido (según tu servicio)
+        const updated = await updateEstadoPedido(
+          existing.id_pedido,
+          form.estado
+        );
+        updatePedidoStore({
+          ...existing,
+          ...updated,
+          estado: form.estado,
+        });
         showToast('Pedido actualizado con éxito', 'success');
       } else {
         const created = await createPedido(input);
         addPedido(created);
         showToast('Pedido creado con éxito', 'success');
       }
+
       setTimeout(() => router.back(), 1500);
     } catch (err) {
+      console.log('Error al crear/actualizar pedido:', err);
       showToast(parseGraphQLError(err), 'error');
     } finally {
       setSubmitting(false);
@@ -258,7 +354,7 @@ export default function PedidoCreateScreen() {
   };
 
   const handleDateConfirm = (field: string, date: string) => {
-    setForm(prev => ({ ...prev, [field]: date }));
+    setForm((prev) => ({ ...prev, [field]: date }));
     setShowDatePicker(false);
   };
 
@@ -272,15 +368,27 @@ export default function PedidoCreateScreen() {
       <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-      <Pressable onPress={() => router.back()} style={styles.backBtn}>
-      <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+      <Pressable
+      onPress={() => router.back()}
+      style={styles.backBtn}
+      >
+      <MaterialCommunityIcons
+      name="arrow-left"
+      size={24}
+      color={Colors.primary}
+      />
       </Pressable>
       <Text style={styles.title}>Cargando...</Text>
       <View style={styles.headerPlaceholder} />
       </View>
       <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.primary} />
-      <Text style={styles.loadingText}>Cargando datos...</Text>
+      <ActivityIndicator
+      size="large"
+      color={Colors.primary}
+      />
+      <Text style={styles.loadingText}>
+      Cargando datos...
+      </Text>
       </View>
       </SafeAreaView>
       </NeobrutalistBackground>
@@ -290,9 +398,17 @@ export default function PedidoCreateScreen() {
   return (
     <NeobrutalistBackground>
     <SafeAreaView style={styles.container}>
+    {/* Header */}
     <View style={styles.header}>
-    <Pressable onPress={() => router.back()} style={styles.backBtn}>
-    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+    <Pressable
+    onPress={() => router.back()}
+    style={styles.backBtn}
+    >
+    <MaterialCommunityIcons
+    name="arrow-left"
+    size={24}
+    color={Colors.primary}
+    />
     </Pressable>
     <Text style={styles.title}>
     {isEditing ? 'Editar Pedido' : 'Nuevo Pedido'}
@@ -300,6 +416,7 @@ export default function PedidoCreateScreen() {
     <View style={styles.headerPlaceholder} />
     </View>
 
+    {/* Contenido scrollable */}
     <ScrollView
     contentContainerStyle={styles.scrollContent}
     showsVerticalScrollIndicator={false}
@@ -319,248 +436,354 @@ export default function PedidoCreateScreen() {
     }}
     style={[
       styles.selectorButton,
-      errors.cliente_id && styles.selectorError
+      errors.cliente_id && styles.selectorError,
     ]}
     >
-    <MaterialCommunityIcons name="account-outline" size={20} color={Colors.primary} />
-    <Text style={[styles.selectorValue, !selectedCliente && styles.selectorPlaceholder]}>
-    {selectedCliente ? selectedCliente.nombre_completo : 'Seleccionar cliente'}
-    </Text>
-    <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
-    </Pressable>
-    {errors.cliente_id && <Text style={styles.errorText}>{errors.cliente_id}</Text>}
-    </View>
-
-    {/* Selector de Vendedor */}
-    <View style={styles.selectorContainer}>
-    <Text style={styles.selectorLabel}>Vendedor</Text>
-    <Pressable
-    onPress={() => {
-      setSearchQuery('');
-      setShowVendedorModal(true);
-    }}
-    style={styles.selectorButton}
+    <MaterialCommunityIcons
+    name="account-outline"
+    size={20}
+    color={Colors.primary}
+    />
+    <Text
+    style={[
+      styles.selectorValue,
+      !selectedCliente &&
+      styles.selectorPlaceholder,
+    ]}
     >
-    <MaterialCommunityIcons name="account-tie-outline" size={20} color={Colors.primary} />
-    <Text style={[styles.selectorValue, !selectedVendedor && styles.selectorPlaceholder]}>
-    {selectedVendedor
-      ? selectedVendedor.nombre_completo
-      : 'Seleccionar vendedor (opcional)'}
+    {selectedCliente
+      ? selectedCliente.nombre_completo
+      : 'Seleccionar cliente'}
       </Text>
-      <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+      <MaterialCommunityIcons
+      name="chevron-down"
+      size={20}
+      color="rgba(26,26,26,0.3)"
+      />
       </Pressable>
-      </View>
-      </View>
-
-      {/* Información Financiera */}
-      <View style={styles.card}>
-      <Text style={styles.sectionTitle}>Información Financiera</Text>
-
-      <Input
-      label="Monto Total *"
-      value={form.monto_total}
-      onChangeText={(v) => setField('monto_total', v)}
-      placeholder="0.00"
-      keyboardType="decimal-pad"
-      error={errors.monto_total}
-      leftIcon={
-        <MaterialCommunityIcons name="currency-usd" size={20} color={Colors.primary} />
-      }
-      />
-
-      <Input
-      label="Anticipo"
-      value={form.anticipo}
-      onChangeText={(v) => setField('anticipo', v)}
-      placeholder="0.00"
-      keyboardType="decimal-pad"
-      error={errors.anticipo}
-      leftIcon={<MaterialCommunityIcons name="cash" size={20} color={Colors.primary} />}
-      />
+      {errors.cliente_id && (
+        <Text style={styles.errorText}>
+        {errors.cliente_id}
+        </Text>
+      )}
       </View>
 
-      {/* Fecha y Estado */}
-      <View style={styles.card}>
-      <Text style={styles.sectionTitle}>Detalles del Pedido</Text>
-
-      {/* Selector de Fecha */}
+      {/* Selector de Vendedor */}
       <View style={styles.selectorContainer}>
-      <Text style={styles.selectorLabel}>Fecha de Entrega Estimada</Text>
+      <Text style={styles.selectorLabel}>Vendedor</Text>
       <Pressable
-      onPress={() => openDatePicker('fecha_entrega_estimada')}
+      onPress={() => {
+        setSearchQuery('');
+        setShowVendedorModal(true);
+      }}
       style={styles.selectorButton}
       >
-      <MaterialCommunityIcons name="calendar-outline" size={20} color={Colors.primary} />
+      <MaterialCommunityIcons
+      name="account-tie-outline"
+      size={20}
+      color={Colors.primary}
+      />
       <Text
       style={[
         styles.selectorValue,
-        !form.fecha_entrega_estimada && styles.selectorPlaceholder,
+        !selectedVendedor &&
+        styles.selectorPlaceholder,
       ]}
       >
-      {form.fecha_entrega_estimada
-        ? new Date(form.fecha_entrega_estimada).toLocaleDateString('es-MX', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })
-        : 'Seleccionar fecha (opcional)'}
+      {selectedVendedor
+        ? selectedVendedor.nombre_completo
+        : 'Seleccionar vendedor (opcional)'}
         </Text>
-        <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+        <MaterialCommunityIcons
+        name="chevron-down"
+        size={20}
+        color="rgba(26,26,26,0.3)"
+        />
         </Pressable>
         </View>
+        </View>
 
-        {/* Selector de Estado */}
+        {/* Información Financiera */}
+        <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+        Información Financiera
+        </Text>
+
+        <Input
+        label="Monto Total *"
+        value={form.monto_total}
+        onChangeText={(v) => setField('monto_total', v)}
+        placeholder="0.00"
+        keyboardType="decimal-pad"
+        error={errors.monto_total}
+        leftIcon={
+          <MaterialCommunityIcons
+          name="currency-usd"
+          size={20}
+          color={Colors.primary}
+          />
+        }
+        />
+
+        <Input
+        label="Anticipo"
+        value={form.anticipo}
+        onChangeText={(v) => setField('anticipo', v)}
+        placeholder="0.00"
+        keyboardType="decimal-pad"
+        error={errors.anticipo}
+        leftIcon={
+          <MaterialCommunityIcons
+          name="cash"
+          size={20}
+          color={Colors.primary}
+          />
+        }
+        />
+        </View>
+
+        {/* Fecha y Estado */}
+        <View style={styles.card}>
+        <Text style={styles.sectionTitle}>
+        Detalles del Pedido
+        </Text>
+
+        {/* Selector de Fecha */}
         <View style={styles.selectorContainer}>
-        <Text style={styles.selectorLabel}>Estado *</Text>
-        <View style={styles.estadosRow}>
-        {ESTADOS_PEDIDO.map((estado) => (
-          <Pressable
-          key={estado}
-          onPress={() => setField('estado', estado)}
-          style={[
-            styles.estadoChip,
-            form.estado === estado && styles.estadoChipSelected,
-          ]}
-          >
-          <Text
-          style={[
-            styles.estadoChipText,
-            form.estado === estado && styles.estadoChipTextSelected,
-          ]}
-          >
-          {estado}
+        <Text style={styles.selectorLabel}>
+        Fecha de Entrega Estimada
+        </Text>
+        <Pressable
+        onPress={() =>
+          openDatePicker('fecha_entrega_estimada')
+        }
+        style={styles.selectorButton}
+        >
+        <MaterialCommunityIcons
+        name="calendar-outline"
+        size={20}
+        color={Colors.primary}
+        />
+        <Text
+        style={[
+          styles.selectorValue,
+          !form.fecha_entrega_estimada &&
+          styles.selectorPlaceholder,
+        ]}
+        >
+        {form.fecha_entrega_estimada
+          ? new Date(
+            form.fecha_entrega_estimada
+          ).toLocaleDateString('es-MX', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })
+          : 'Seleccionar fecha (opcional)'}
           </Text>
+          <MaterialCommunityIcons
+          name="chevron-down"
+          size={20}
+          color="rgba(26,26,26,0.3)"
+          />
           </Pressable>
-        ))}
-        </View>
-        </View>
-        </View>
-
-        <Button
-        title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PEDIDO'}
-        onPress={handleSubmit}
-        loading={submitting}
-        size="lg"
-        style={styles.submitBtn}
-        />
-        </ScrollView>
-
-        {/* Date Picker Modal */}
-        <DatePickerModal
-        visible={showDatePicker}
-        field={datePickerField}
-        value={form.fecha_entrega_estimada}
-        onConfirm={handleDateConfirm}
-        onCancel={() => setShowDatePicker(false)}
-        />
-
-        {/* Cliente Modal */}
-        <Modal visible={showClienteModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Seleccionar Cliente</Text>
-        <Pressable
-        onPress={() => setShowClienteModal(false)}
-        style={styles.closeModalBtn}
-        >
-        <MaterialCommunityIcons name="close" size={24} color={Colors.error} />
-        </Pressable>
-        </View>
-
-        <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Buscar cliente..."
-        style={styles.modalSearch}
-        />
-
-        <FlatList
-        data={filteredClientes}
-        keyExtractor={(item) => `cliente-${item.id_cliente}`}
-        contentContainerStyle={styles.modalList}
-        renderItem={({ item }) => (
-          <Pressable
-          style={styles.municipioItem}
-          onPress={() => selectCliente(item)}
-          >
-          <View>
-          <Text style={styles.municipioName}>{item.nombre_completo}</Text>
-          {item.telefono && (
-            <Text style={styles.municipioState}>{item.telefono}</Text>
-          )}
           </View>
-          {form.cliente_id === item.id_cliente && (
-            <MaterialCommunityIcons
-            name="check-circle"
-            size={24}
-            color={Colors.success}
-            />
-          )}
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No se encontraron clientes</Text>
-        }
-        />
-        </SafeAreaView>
-        </Modal>
 
-        {/* Vendedor Modal */}
-        <Modal visible={showVendedorModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Seleccionar Vendedor</Text>
-        <Pressable
-        onPress={() => setShowVendedorModal(false)}
-        style={styles.closeModalBtn}
-        >
-        <MaterialCommunityIcons name="close" size={24} color={Colors.error} />
-        </Pressable>
-        </View>
-
-        <SearchBar
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-        placeholder="Buscar vendedor..."
-        style={styles.modalSearch}
-        />
-
-        <FlatList
-        data={filteredVendedores}
-        keyExtractor={(item) => `vendedor-${item.id_vendedor}`}
-        contentContainerStyle={styles.modalList}
-        renderItem={({ item }) => (
-          <Pressable
-          style={styles.municipioItem}
-          onPress={() => selectVendedor(item)}
-          >
-          <View>
-          <Text style={styles.municipioName}>{item.nombre_completo}</Text>
+          {/* Selector de Estado */}
+          <View style={styles.selectorContainer}>
+          <Text style={styles.selectorLabel}>
+          Estado *
+          </Text>
+          <View style={styles.estadosRow}>
+          {ESTADOS_PEDIDO.map((estado) => (
+            <Pressable
+            key={estado}
+            onPress={() => setField('estado', estado)}
+            style={[
+              styles.estadoChip,
+              form.estado === estado &&
+                styles.estadoChipSelected,
+            ]}
+            >
+            <Text
+            style={[
+              styles.estadoChipText,
+              form.estado === estado &&
+                styles.estadoChipTextSelected,
+            ]}
+            >
+            {estado}
+            </Text>
+            </Pressable>
+          ))}
           </View>
-          {form.vendedor_id === item.id_vendedor && (
-            <MaterialCommunityIcons
-            name="check-circle"
-            size={24}
-            color={Colors.success}
-            />
-          )}
-          </Pressable>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No se encontraron vendedores</Text>
-        }
-        />
-        </SafeAreaView>
-        </Modal>
+          </View>
+          </View>
+          </ScrollView>
 
-        <Toast
-        visible={toast.visible}
-        type={toast.type}
-        message={toast.message}
-        onHide={hideToast}
-        />
-        </SafeAreaView>
-        </NeobrutalistBackground>
+          {/* Botón fijo abajo para que no lo tape la barra */}
+          <View style={styles.bottomButtonContainer}>
+          <Button
+          title={
+            isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PEDIDO'
+          }
+          onPress={handleSubmit}
+          loading={submitting}
+          size="lg"
+          style={styles.submitBtn}
+          />
+          </View>
+
+          {/* Date Picker Modal */}
+          <DatePickerModal
+          visible={showDatePicker}
+          field={datePickerField}
+          value={form.fecha_entrega_estimada}
+          onConfirm={handleDateConfirm}
+          onCancel={() => setShowDatePicker(false)}
+          />
+
+          {/* Cliente Modal */}
+          <Modal
+          visible={showClienteModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          >
+          <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
+          Seleccionar Cliente
+          </Text>
+          <Pressable
+          onPress={() => setShowClienteModal(false)}
+          style={styles.closeModalBtn}
+          >
+          <MaterialCommunityIcons
+          name="close"
+          size={24}
+          color={Colors.error}
+          />
+          </Pressable>
+          </View>
+
+          <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Buscar cliente..."
+          style={styles.modalSearch}
+          />
+
+          <FlatList
+          data={filteredClientes}
+          keyExtractor={(item) =>
+            `cliente-${item.id_cliente}`
+          }
+          contentContainerStyle={styles.modalList}
+          renderItem={({ item }) => (
+            <Pressable
+            style={styles.municipioItem}
+            onPress={() => selectCliente(item)}
+            >
+            <View>
+            <Text style={styles.municipioName}>
+            {item.nombre_completo}
+            </Text>
+            {item.telefono && (
+              <Text style={styles.municipioState}>
+              {item.telefono}
+              </Text>
+            )}
+            </View>
+            {form.cliente_id === item.id_cliente && (
+              <MaterialCommunityIcons
+              name="check-circle"
+              size={24}
+              color={Colors.success}
+              />
+            )}
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+            No se encontraron clientes
+            </Text>
+          }
+          />
+          </SafeAreaView>
+          </Modal>
+
+          {/* Vendedor Modal */}
+          <Modal
+          visible={showVendedorModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          >
+          <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
+          Seleccionar Vendedor
+          </Text>
+          <Pressable
+          onPress={() => setShowVendedorModal(false)}
+          style={styles.closeModalBtn}
+          >
+          <MaterialCommunityIcons
+          name="close"
+          size={24}
+          color={Colors.error}
+          />
+          </Pressable>
+          </View>
+
+          <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Buscar vendedor..."
+          style={styles.modalSearch}
+          />
+
+          <FlatList
+          data={filteredVendedores}
+          keyExtractor={(item) =>
+            `vendedor-${item.id_vendedor}`
+          }
+          contentContainerStyle={styles.modalList}
+          renderItem={({ item }) => (
+            <Pressable
+            style={styles.municipioItem}
+            onPress={() => selectVendedor(item)}
+            >
+            <View>
+            <Text style={styles.municipioName}>
+            {item.nombre_completo}
+            </Text>
+            </View>
+            {form.vendedor_id === item.id_vendedor && (
+              <MaterialCommunityIcons
+              name="check-circle"
+              size={24}
+              color={Colors.success}
+              />
+            )}
+            </Pressable>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+            No se encontraron vendedores
+            </Text>
+          }
+          />
+          </SafeAreaView>
+          </Modal>
+
+          <Toast
+          visible={toast.visible}
+          type={toast.type}
+          message={toast.message}
+          onHide={hideToast}
+          />
+          </SafeAreaView>
+          </NeobrutalistBackground>
   );
 }
 
@@ -590,7 +813,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: Spacing.lg, // el botón va fuera
   },
   card: {
     backgroundColor: '#FFFFFF',
@@ -673,8 +896,13 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '700',
   },
+  bottomButtonContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingBottom: Spacing.lg, // espacio por encima de la barra inferior
+    paddingTop: Spacing.sm,
+    backgroundColor: 'transparent',
+  },
   submitBtn: {
-    marginTop: Spacing.sm,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
