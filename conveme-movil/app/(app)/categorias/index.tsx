@@ -119,9 +119,14 @@ export default function CategoriasScreen() {
                 <Text style={styles.title}>Categorías</Text>
                 <Text style={styles.subtitle}>{categorias.length} tipos de productos</Text>
             </View>
-            <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-                <MaterialCommunityIcons name="refresh" size={24} color={Colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/categorias/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
 
         <FlatList
@@ -129,7 +134,7 @@ export default function CategoriasScreen() {
           keyExtractor={(item) => String(item.id_categoria)}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <SearchBar value={search} onChangeText={setSearch} placeholder="Buscar categoría..." style={{ marginBottom: 25 }} />
+            <SearchBar value={search} onChangeText={setSearch} placeholder="BUSCAR CATEGORÍA..." style={{ marginBottom: 25 }} />
           }
           renderItem={({ item }) => {
             const isEditing = editId === item.id_categoria;
@@ -145,7 +150,7 @@ export default function CategoriasScreen() {
                       placeholder="Nombre de categoría"
                     />
                     <TouchableOpacity onPress={handleSaveEdit} disabled={saving} style={styles.saveMiniBtn}>
-                        <MaterialCommunityIcons name="check-bold" size={20} color="#FFF" />
+                        <MaterialCommunityIcons name="check-bold" size={20} color={Colors.dark} />
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setEditId(null)} style={styles.cancelMiniBtn}>
                         <MaterialCommunityIcons name="close-thick" size={20} color={Colors.dark} />
@@ -179,9 +184,9 @@ export default function CategoriasScreen() {
             ) : (
                 <EmptyState
                     icon="tag-multiple-outline"
-                    title="Sin categorías"
+                    title="SIN CATEGORÍAS"
                     message={search ? 'No se encontraron resultados.' : 'No hay categorías registradas.'}
-                    actionLabel="Agregar Categoría"
+                    actionLabel="AGREGAR CATEGORÍA"
                     onAction={() => router.push('/categorias/create')}
                 />
             )
@@ -189,18 +194,10 @@ export default function CategoriasScreen() {
           showsVerticalScrollIndicator={false}
         />
 
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/categorias/create')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
-
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar categoría"
-          message="¿Deseas eliminar esta categoría? Esta acción no se puede deshacer."
+          title="ELIMINAR CATEGORÍA"
+          message="¿Deseas eliminar esta categoría?"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           confirmText="ELIMINAR"
@@ -216,10 +213,12 @@ export default function CategoriasScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerActions: { flexDirection: 'row', gap: 10 },
   title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
   subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  list: { paddingHorizontal: 20, paddingBottom: 40 },
   card: { backgroundColor: '#FFF', borderRadius: 20, padding: 15, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
   cardEditing: { borderColor: Colors.primary },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -231,6 +230,4 @@ const styles = StyleSheet.create({
   editInput: { flex: 1, height: 45, backgroundColor: '#F9FAFB', borderWidth: 2, borderColor: Colors.dark, borderRadius: 12, paddingHorizontal: 12, fontWeight: '800', color: Colors.dark },
   saveMiniBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: Colors.success, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   cancelMiniBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
-  fab: { position: 'absolute', bottom: 100, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, zIndex: 999 },
-  fabIcon: { fontSize: 32, color: '#FFF', fontWeight: '900' }
 });
