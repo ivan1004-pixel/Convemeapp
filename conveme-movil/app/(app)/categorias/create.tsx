@@ -75,10 +75,9 @@ export default function CategoriaCreateScreen() {
                         setNombre(v);
                         if (error) setError('');
                     }}
-                    placeholder="Ej. ACCESORIOS, BASES, ETC."
+                    placeholder="Ej. Accesorios, Bases, etc."
                     error={error}
                     autoFocus
-                    autoCapitalize="characters"
                 />
 
                 <Button

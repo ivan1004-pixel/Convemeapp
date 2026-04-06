@@ -13,9 +13,18 @@ export class CategoriasService {
     ) {}
 
     async create(createCategoriaInput: CreateCategoriaInput): Promise<Categoria> {
-        // 👇 VALIDACIÓN: Evitar categorías duplicadas
+        // 👇 VALIDACIÓN: Buscar si ya existe (incluyendo inactivos)
         const existe = await this.categoriaRepository.findOne({ where: { nombre: createCategoriaInput.nombre } });
-        if (existe) throw new ConflictException(`La categoría "${createCategoriaInput.nombre}" ya existe.`);
+        
+        if (existe) {
+            if (existe.activo) {
+                throw new ConflictException(`La categoría "${createCategoriaInput.nombre}" ya existe.`);
+            } else {
+                // Si existe pero está inactivo, lo reactivamos
+                existe.activo = true;
+                return await this.categoriaRepository.save(existe);
+            }
+        }
 
         const nueva = this.categoriaRepository.create(createCategoriaInput);
         const guardada = await this.categoriaRepository.save(nueva);

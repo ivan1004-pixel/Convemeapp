@@ -156,7 +156,7 @@ export default function CategoriasScreen() {
                     <View style={styles.iconBox}>
                         <MaterialCommunityIcons name="tag-outline" size={22} color={Colors.primary} />
                     </View>
-                    <Text style={styles.cardName}>{item.nombre.toUpperCase()}</Text>
+                    <Text style={styles.cardName}>{item.nombre}</Text>
                     <View style={styles.cardActions}>
                       <TouchableOpacity onPress={() => startEdit(item)} style={styles.actionBtn}>
                         <MaterialCommunityIcons name="pencil-outline" size={20} color={Colors.dark} />

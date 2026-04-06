@@ -13,9 +13,18 @@ export class TamanosService {
     ) {}
 
     async create(createTamanoInput: CreateTamanoInput): Promise<Tamano> {
-        // 👇 VALIDACIÓN: Evitar tamaños duplicados
+        // 👇 VALIDACIÓN: Buscar si ya existe (incluyendo inactivos)
         const existe = await this.tamanoRepository.findOne({ where: { descripcion: createTamanoInput.descripcion } });
-        if (existe) throw new ConflictException(`El tamaño "${createTamanoInput.descripcion}" ya existe.`);
+        
+        if (existe) {
+            if (existe.activo) {
+                throw new ConflictException(`El tamaño "${createTamanoInput.descripcion}" ya existe.`);
+            } else {
+                // Si existe pero está inactivo, lo reactivamos
+                existe.activo = true;
+                return await this.tamanoRepository.save(existe);
+            }
+        }
 
         const nuevo = this.tamanoRepository.create(createTamanoInput);
         const guardado = await this.tamanoRepository.save(nuevo);
@@ -24,7 +33,8 @@ export class TamanosService {
 
     async findAll(): Promise<Tamano[]> {
         return this.tamanoRepository.find({
-            take: 50, // 👈 EL LÍMITE SALVAVIDAS
+            where: { activo: true }, // 👈 Solo activos
+            take: 50,
             order: { id_tamano: 'DESC' }
         });
     }
