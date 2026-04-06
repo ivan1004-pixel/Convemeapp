@@ -101,8 +101,7 @@ export default function CorteCreateScreen() {
             comision_vendedor: comision,
             monto_entregado: lastCreatedCorte.dinero_total_entregado,
             saldo_pendiente: Math.abs(lastCreatedCorte.diferencia_corte || 0),
-            notas: lastCreatedCorte.observaciones,
-            fecha_corte: lastCreatedCorte.fecha_corte
+            notas: lastCreatedCorte.observaciones
         });
         showToast('Comprobante guardado con éxito', 'success');
         setShowTicketModal(false);

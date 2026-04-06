@@ -29,7 +29,11 @@ export function CorteTicket({ corte }: CorteTicketProps) {
             />
             <View style={styles.headerRight}>
                 <Text style={styles.ticketType}>REPORTE DE LIQUIDACIÓN</Text>
-                <Text style={styles.brandName}>CONVEME</Text>
+                <Image
+                  source={require('../../../assets/images/logon.png')}
+                  style={styles.logoMarca}
+                  resizeMode="contain"
+                />
             </View>
         </View>
       </View>
@@ -88,7 +92,7 @@ export function CorteTicket({ corte }: CorteTicketProps) {
             
             <View style={[
                 styles.diffBadge, 
-                { backgroundColor: isOk ? Colors.success : (diff > 0 ? Colors.warning : Colors.error) }
+                { backgroundColor: Colors.blue }
             ]}>
                 <Text style={styles.diffLabel}>DIFERENCIA FINAL</Text>
                 <Text style={styles.diffValue}>
@@ -120,7 +124,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
   },
   header: {
-    backgroundColor: Colors.pink, // ROSA
+    backgroundColor: Colors.blue, // AZUL
     padding: Spacing.md,
     borderBottomWidth: 3,
     borderColor: Colors.dark,
@@ -147,10 +151,10 @@ const styles = StyleSheet.create({
     color: 'rgba(0,0,0,0.5)',
     letterSpacing: 1,
   },
-  brandName: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: Colors.dark,
+  logoMarca: {
+    width: 100,
+    height: 30,
+    marginTop: 2,
   },
   body: {
     padding: Spacing.md,
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 3,
     borderColor: Colors.dark,
-    backgroundColor: Colors.warning, // AMARILLO POR DEFECTO
+    backgroundColor: Colors.blue, // AZUL
     alignItems: 'center',
   },
   diffLabel: {

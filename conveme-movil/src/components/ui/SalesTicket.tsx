@@ -138,10 +138,10 @@ const styles = StyleSheet.create({
     color: 'rgba(0,0,0,0.5)',
     letterSpacing: 1,
   },
-  brandName: {
-    fontSize: 16,
-    fontWeight: '900',
-    color: Colors.dark,
+  logoMarca: {
+    width: 100,
+    height: 30,
+    marginTop: 2,
   },
   body: {
     padding: Spacing.md,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 3,
     borderColor: Colors.dark,
-    backgroundColor: Colors.warning, // AMARILLO
+    backgroundColor: Colors.pink, // ROSA
     alignItems: 'center',
   },
   totalFinalLabel: {

@@ -12,19 +12,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCortes, deleteCorte } from '../../../src/services/corte.service';
+import { createComprobante } from '../../../src/services/comprobante.service';
+import { useAuthStore } from '../../../src/store/authStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Shadows } from '../../../src/theme/shadows';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import { CorteTicket } from '../../../src/components/ui/CorteTicket';
 import { Button } from '../../../src/components/ui/Button';
 
+const COMISION_POR_UNIDAD = 6.5;
+
 export default function CorteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { toast, show: showToast, hide: hideToast } = useToast();
+  const { usuario } = useAuthStore();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
@@ -34,6 +41,7 @@ export default function CorteDetailScreen() {
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showTicket, setShowTicket] = useState(false);
+  const [isSavingComprobante, setIsSavingComprobante] = useState(false);
 
   const fetchCorte = useCallback(async () => {
     try {
@@ -41,11 +49,11 @@ export default function CorteDetailScreen() {
       const found = all.find((c: any) => String(c.id_corte) === String(id));
       setCorte(found ?? null);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, showToast]);
 
   useEffect(() => {
     fetchCorte();
@@ -57,10 +65,35 @@ export default function CorteDetailScreen() {
       await deleteCorte(Number(id));
       router.back();
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteVisible(false);
+    }
+  };
+
+  const handleSaveComprobante = async () => {
+    if (!corte) return;
+    setIsSavingComprobante(true);
+    try {
+        const bruteTotal = corte.detalles?.reduce((acc: number, d: any) => acc + (d.cantidad_vendida * (d.producto?.precio_unitario || 0)), 0) || 0;
+        const totalUnits = corte.detalles?.reduce((acc: number, d: any) => acc + d.cantidad_vendida, 0) || 0;
+        const comision = totalUnits * COMISION_POR_UNIDAD;
+
+        await createComprobante({
+            vendedor_id: Number(corte.vendedor?.id_vendedor),
+            admin_id: Number(usuario?.id_usuario),
+            total_vendido: bruteTotal,
+            comision_vendedor: comision,
+            monto_entregado: corte.dinero_total_entregado,
+            saldo_pendiente: Math.abs(corte.diferencia_corte || 0),
+            notas: corte.observaciones
+        });
+        showToast('Comprobante guardado con éxito', 'success');
+    } catch (err) {
+        showToast('Error al guardar comprobante', 'error');
+    } finally {
+        setIsSavingComprobante(false);
     }
   };
 
@@ -161,11 +194,19 @@ export default function CorteDetailScreen() {
 
         <View style={styles.actions}>
           <Button
-            title="VER TICKET DIGITAL"
+            title="GUARDAR COMPROBANTE"
             variant="primary"
+            onPress={handleSaveComprobante}
+            loading={isSavingComprobante}
+            style={styles.actionBtn}
+            leftIcon={<MaterialCommunityIcons name="content-save-check" size={20} color="#FFF" />}
+          />
+          <Button
+            title="VER TICKET DIGITAL"
+            variant="outline"
             onPress={() => setShowTicket(true)}
             style={styles.actionBtn}
-            leftIcon={<MaterialCommunityIcons name="receipt" size={20} color="#FFF" />}
+            leftIcon={<MaterialCommunityIcons name="receipt" size={20} color={Colors.primary} />}
           />
           <Button
             title="EDITAR CORTE"
@@ -201,6 +242,8 @@ export default function CorteDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
   );
 }
