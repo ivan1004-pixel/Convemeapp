@@ -20,6 +20,7 @@ import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError, formatDate, formatCurrency } from '../../../src/utils';
 import type { Evento } from '../../../src/types';
@@ -166,118 +167,98 @@ export default function EventosScreen() {
   const deleteTarget = eventos.find((e) => e.id_evento === deleteId);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-           </TouchableOpacity>
-           <Text style={styles.title}>Eventos</Text>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <View>
+                <Text style={styles.title}>Eventos</Text>
+                <Text style={styles.subtitle}>{eventos.length} registros</Text>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/eventos/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
-        <Text style={styles.count}>{filtered.length} registros</Text>
-      </View>
 
-      <View style={styles.searchSection}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre o escuela..."
-          containerStyle={styles.searchBar}
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR POR NOMBRE O ESCUELA..."
+            containerStyle={styles.searchBar}
+          />
+        </View>
+
+        {loading && !refreshing && eventos.length === 0 ? (
+          <LoadingSpinner message="Cargando..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_evento)}
+            contentContainerStyle={[
+              styles.listContent,
+              filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+              <EventoCard
+                item={item}
+                onPress={() => router.push(`/eventos/create?id=${item.id_evento}`)}
+                onLongPress={() => setDeleteId(item.id_evento)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                title="SIN EVENTOS"
+                message={search ? 'No hay resultados.' : 'No hay eventos registrados.'}
+                actionLabel="AGREGAR EVENTO"
+                onAction={() => router.push('/eventos/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar evento"
+          message={`¿Deseas eliminar "${deleteTarget?.nombre?.toUpperCase() ?? ''}"?`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
         />
-      </View>
 
-      {loading && !refreshing && eventos.length === 0 ? (
-        <LoadingSpinner message="Cargando..." />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_evento)}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <EventoCard
-              item={item}
-              onPress={() => router.push(`/eventos/create?id=${item.id_evento}`)}
-              onLongPress={() => setDeleteId(item.id_evento)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              title="Sin eventos"
-              message={search ? 'No hay resultados.' : 'No hay eventos registrados.'}
-              actionLabel="Agregar evento"
-              onAction={() => router.push('/eventos/create')}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/eventos/create')}
-        activeOpacity={0.9}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar evento"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre?.toUpperCase() ?? ''}"?`}
-        confirmText="Eliminar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
-  header: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  title: {
-    ...Typography.h2,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  count: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
-    color: 'rgba(26,26,26,0.5)',
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   searchSection: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
@@ -288,7 +269,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
   listEmpty: {
     flexGrow: 1,
@@ -375,26 +356,6 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.dark,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: Spacing.lg,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 999,
-  },
-  fabIcon: {
-    fontSize: 32,
-    color: '#ffffff',
-    fontWeight: '900',
-  },
+  fab: { display: 'none' },
+  fabIcon: { display: 'none' },
 });

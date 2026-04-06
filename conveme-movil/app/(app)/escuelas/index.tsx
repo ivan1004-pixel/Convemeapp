@@ -20,6 +20,7 @@ import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Escuela } from '../../../src/types';
@@ -70,7 +71,7 @@ function EscuelaCard({
       </View>
       
       <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>Editar escuela</Text>
+         <Text style={styles.footerAction}>EDITAR ESCUELA</Text>
          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.primary} />
       </View>
     </Pressable>
@@ -143,125 +144,110 @@ export default function EscuelasScreen() {
   const deleteTarget = escuelas.find((e) => e.id_escuela === deleteId);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-           </TouchableOpacity>
-           <Text style={styles.title}>Escuelas</Text>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>Escuelas</Text>
+                    <Text style={styles.subtitle}>{escuelas.length} registros</Text>
+                </View>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/escuelas/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
-        <Text style={styles.count}>{filtered.length} registros</Text>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre o siglas..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR POR NOMBRE O SIGLAS..."
+          />
+        </View>
+
+        {loading && escuelas.length === 0 ? (
+          <LoadingSpinner message="Cargando escuelas..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_escuela)}
+            contentContainerStyle={[
+              styles.listContent,
+              filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+              <EscuelaCard
+                item={item}
+                onPress={() => router.push(`/escuelas/create?id=${item.id_escuela}`)}
+                onLongPress={() => setDeleteId(item.id_escuela)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="school"
+                title="SIN ESCUELAS"
+                message={search ? 'No hay resultados.' : 'Aún no hay escuelas registradas.'}
+                actionLabel="AGREGAR ESCUELA"
+                onAction={() => router.push('/escuelas/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar escuela"
+          message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
         />
-      </View>
 
-      {loading && escuelas.length === 0 ? (
-        <LoadingSpinner message="Cargando escuelas..." />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_escuela)}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <EscuelaCard
-              item={item}
-              onPress={() => router.push(`/escuelas/create?id=${item.id_escuela}`)}
-              onLongPress={() => setDeleteId(item.id_escuela)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="school"
-              title="Sin escuelas"
-              message={search ? 'No hay resultados.' : 'Aún no hay escuelas registradas.'}
-              actionLabel="Agregar escuela"
-              onAction={() => router.push('/escuelas/create')}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/escuelas/create')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar escuela"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  title: {
-    ...Typography.h2,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  count: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
-    color: 'rgba(26,26,26,0.5)',
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 40,
   },
   listEmpty: {
     flexGrow: 1,
@@ -352,26 +338,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.primary,
   },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: Spacing.lg,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 999,
-  },
-  fabIcon: {
-    fontSize: 32,
-    color: '#ffffff',
-    fontWeight: '900',
-  },
+  fab: { display: 'none' },
+  fabIcon: { display: 'none' },
 });

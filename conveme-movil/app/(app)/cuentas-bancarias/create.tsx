@@ -4,34 +4,37 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getCuentasBancarias, createCuentaBancaria, updateCuentaBancaria } from '../../../src/services/cuenta-bancaria.service';
-import { useCuentaBancariaStore } from '../../../src/store/cuentaBancariaStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError } from '../../../src/utils';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { VendedorPicker } from '../../../src/components/ui/VendedorPicker';
 
 export default function CuentaBancariaCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-  const { addCuentaBancaria, updateCuentaBancaria: updateStore } = useCuentaBancariaStore();
+  const { toast, show: showToast, hide: hideToast } = useToast();
 
   const [banco, setBanco] = useState('');
   const [titular_cuenta, setTitular] = useState('');
   const [numero_cuenta, setNumeroCuenta] = useState('');
   const [clabe_interbancaria, setClabe] = useState('');
-  const [vendedor_id, setVendedorId] = useState('');
+  const [vendedor_id, setVendedorId] = useState<number | null>(null);
+  const [vendedorNombre, setVendedorNombre] = useState('Seleccionar vendedor');
+  const [showPicker, setShowPicker] = useState(false);
+  
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(isEdit);
 
@@ -46,10 +49,13 @@ export default function CuentaBancariaCreateScreen() {
           setTitular(found.titular_cuenta ?? '');
           setNumeroCuenta(found.numero_cuenta ?? '');
           setClabe(found.clabe_interbancaria ?? '');
-          setVendedorId(String(found.vendedor?.id_vendedor ?? ''));
+          if (found.vendedor) {
+            setVendedorId(found.vendedor.id_vendedor);
+            setVendedorNombre(found.vendedor.nombre_completo);
+          }
         }
       } catch (err) {
-        Alert.alert('Error', parseGraphQLError(err));
+        showToast(parseGraphQLError(err), 'error');
       } finally {
         setInitializing(false);
       }
@@ -57,128 +63,227 @@ export default function CuentaBancariaCreateScreen() {
   }, [id, isEdit]);
 
   const handleSubmit = async () => {
-    if (!banco || !titular_cuenta) {
-      Alert.alert('Validación', 'Banco y Titular son requeridos.');
+    if (!banco || !titular_cuenta || !numero_cuenta || !vendedor_id) {
+      showToast('Banco, Titular, No. Cuenta y Vendedor son obligatorios.', 'error');
       return;
     }
     setLoading(true);
     try {
-      const input: any = { banco, titular_cuenta };
-      if (numero_cuenta) input.numero_cuenta = numero_cuenta;
+      const input: any = { 
+        banco, 
+        titular_cuenta, 
+        numero_cuenta,
+        vendedor_id: vendedor_id,
+        activa: true
+      };
       if (clabe_interbancaria) input.clabe_interbancaria = clabe_interbancaria;
-      if (vendedor_id) input.vendedor_id = parseInt(vendedor_id, 10);
 
       if (isEdit) {
         input.id_cuenta = parseInt(id!, 10);
-        const updated = await updateCuentaBancaria(input);
-        updateStore(updated);
+        await updateCuentaBancaria(input);
+        showToast('Cuenta actualizada', 'success');
       } else {
-        const created = await createCuentaBancaria(input);
-        addCuentaBancaria(created);
+        await createCuentaBancaria(input);
+        showToast('Cuenta creada', 'success');
       }
-      router.back();
+      setTimeout(() => router.back(), 1500);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  if (initializing) return <LoadingSpinner />;
-
-  const inputStyle = [styles.input, { backgroundColor: theme.card, borderColor: theme.border, color: theme.text }];
+  if (initializing) return <LoadingSpinner fullScreen />;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <View style={styles.backRow}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={[styles.back, { color: Colors.primary }]}>← Volver</Text>
-          </TouchableOpacity>
-        </View>
-        <Text style={[styles.title, { color: theme.text }]}>{isEdit ? 'Editar Cuenta' : 'Nueva Cuenta Bancaria'}</Text>
-
-        <Text style={[styles.label, { color: theme.muted }]}>Banco *</Text>
-        <TextInput
-          style={inputStyle}
-          value={banco}
-          onChangeText={setBanco}
-          placeholder="Nombre del banco"
-          placeholderTextColor={theme.muted}
-        />
-
-        <Text style={[styles.label, { color: theme.muted }]}>Titular de la Cuenta *</Text>
-        <TextInput
-          style={inputStyle}
-          value={titular_cuenta}
-          onChangeText={setTitular}
-          placeholder="Nombre del titular"
-          placeholderTextColor={theme.muted}
-        />
-
-        <Text style={[styles.label, { color: theme.muted }]}>Número de Cuenta</Text>
-        <TextInput
-          style={inputStyle}
-          value={numero_cuenta}
-          onChangeText={setNumeroCuenta}
-          placeholder="Número de cuenta"
-          placeholderTextColor={theme.muted}
-          keyboardType="numeric"
-        />
-
-        <Text style={[styles.label, { color: theme.muted }]}>CLABE Interbancaria (18 dígitos)</Text>
-        <TextInput
-          style={inputStyle}
-          value={clabe_interbancaria}
-          onChangeText={setClabe}
-          placeholder="18 dígitos"
-          placeholderTextColor={theme.muted}
-          keyboardType="numeric"
-          maxLength={18}
-        />
-
-        <Text style={[styles.label, { color: theme.muted }]}>Vendedor ID</Text>
-        <TextInput
-          style={inputStyle}
-          value={vendedor_id}
-          onChangeText={setVendedorId}
-          placeholder="ID del vendedor"
-          placeholderTextColor={theme.muted}
-          keyboardType="numeric"
-        />
-
-        <TouchableOpacity
-          style={[styles.submitButton, { backgroundColor: Colors.primary }, loading && styles.disabledButton]}
-          onPress={handleSubmit}
-          disabled={loading}
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
         >
-          <Text style={styles.submitText}>{loading ? 'Guardando...' : isEdit ? 'Actualizar' : 'Crear Cuenta'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>{isEdit ? 'Editar Cuenta' : 'Nueva Cuenta'}</Text>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.scroll}>
+            <View style={styles.formCard}>
+              <Text style={styles.label}>Banco *</Text>
+              <TextInput
+                style={styles.input}
+                value={banco}
+                onChangeText={setBanco}
+                placeholder="Ej. BBVA, Santander..."
+                placeholderTextColor="rgba(0,0,0,0.3)"
+              />
+
+              <Text style={styles.label}>Titular de la Cuenta *</Text>
+              <TextInput
+                style={styles.input}
+                value={titular_cuenta}
+                onChangeText={setTitular}
+                placeholder="Nombre completo"
+                placeholderTextColor="rgba(0,0,0,0.3)"
+              />
+
+              <Text style={styles.label}>Número de Cuenta *</Text>
+              <TextInput
+                style={styles.input}
+                value={numero_cuenta}
+                onChangeText={setNumeroCuenta}
+                placeholder="10-16 dígitos"
+                placeholderTextColor="rgba(0,0,0,0.3)"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>CLABE Interbancaria</Text>
+              <TextInput
+                style={styles.input}
+                value={clabe_interbancaria}
+                onChangeText={setClabe}
+                placeholder="18 dígitos"
+                placeholderTextColor="rgba(0,0,0,0.3)"
+                keyboardType="numeric"
+                maxLength={18}
+              />
+
+              <Text style={styles.label}>Vendedor Asignado *</Text>
+              <TouchableOpacity 
+                style={styles.pickerTrigger}
+                onPress={() => setShowPicker(true)}
+              >
+                <MaterialCommunityIcons name="account-tie" size={20} color={Colors.primary} />
+                <Text style={[
+                  styles.pickerText, 
+                  vendedor_id ? { color: Colors.dark } : { color: 'rgba(0,0,0,0.3)' }
+                ]}>
+                  {vendedorNombre}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.submitButton, loading && styles.disabledButton]}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              <Text style={styles.submitText}>{loading ? 'GUARDANDO...' : isEdit ? 'ACTUALIZAR CUENTA' : 'CREAR CUENTA'}</Text>
+              {!loading && <MaterialCommunityIcons name="check-bold" size={20} color="#FFF" />}
+            </TouchableOpacity>
+          </ScrollView>
+        </KeyboardAvoidingView>
+
+        <VendedorPicker 
+          visible={showPicker}
+          onClose={() => setShowPicker(false)}
+          selectedId={vendedor_id ?? undefined}
+          onSelect={(v) => {
+            setVendedorId(v.id_vendedor);
+            setVendedorNombre(v.nombre_completo);
+          }}
+        />
+
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scroll: { padding: Spacing.md, paddingBottom: Spacing.xl },
-  backRow: { marginBottom: Spacing.sm },
-  back: { fontSize: 16, fontWeight: '500' },
-  title: { ...Typography.h2, marginBottom: Spacing.lg },
-  label: { fontSize: 13, marginBottom: 4, fontWeight: '500' },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    gap: 15,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: Colors.dark,
+  },
+  scroll: { padding: 20, paddingBottom: 100 },
+  formCard: {
+    backgroundColor: '#FFF',
+    borderRadius: BorderRadius.xl,
+    padding: 20,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: Colors.dark,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
   input: {
-    borderWidth: 1,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.sm,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
     fontSize: 15,
-    marginBottom: Spacing.md,
+    fontWeight: '700',
+    color: Colors.dark,
+    marginBottom: Spacing.lg,
+  },
+  pickerTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    gap: 10,
+  },
+  pickerText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
   },
   submitButton: {
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.primary,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.md,
+    justifyContent: 'center',
+    padding: Spacing.lg,
+    borderRadius: BorderRadius.xl,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    gap: 10,
   },
-  disabledButton: { opacity: 0.6 },
-  submitText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  submitText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  disabledButton: { opacity: 0.7 },
 });
+

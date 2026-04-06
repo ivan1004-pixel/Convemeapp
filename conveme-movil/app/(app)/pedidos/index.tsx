@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPedidos, deletePedido } from '../../../src/services/pedido.service';
 import { usePedidoStore } from '../../../src/store/pedidoStore';
 import { Colors } from '../../../src/theme/colors';
@@ -157,82 +158,73 @@ export default function PedidosScreen() {
     }
   }, [deleteId, removePedido]);
 
-  if (loading && pedidos.length === 0) {
-    return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
-          </View>
-          <LoadingSpinner fullScreen message="Cargando pedidos..." />
-        </SafeAreaView>
-      </NeobrutalistBackground>
-    );
-  }
-
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
-          <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+            <View>
+                <Text style={styles.title}>Pedidos</Text>
+                <Text style={styles.subtitle}>{pedidos.length} registros</Text>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
 
         <View style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por cliente, estado..."
+            placeholder="BUSCAR POR CLIENTE, ESTADO..."
           />
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_pedido)}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <PedidoCard
-              item={item}
-              onPress={() => router.push(`/pedidos/${item.id_pedido}`)}
-              onLongPress={() => setDeleteId(item.id_pedido)}
+        {loading && pedidos.length === 0 ? (
+            <LoadingSpinner message="Cargando pedidos..." />
+        ) : (
+            <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_pedido)}
+            contentContainerStyle={[
+                styles.listContent,
+                filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+                <PedidoCard
+                item={item}
+                onPress={() => router.push(`/pedidos/${item.id_pedido}`)}
+                onLongPress={() => setDeleteId(item.id_pedido)}
+                />
+            )}
+            refreshControl={
+                <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+                />
+            }
+            ListEmptyComponent={
+                <EmptyState
+                icon="package-variant"
+                title="SIN PEDIDOS"
+                message={
+                    search
+                    ? 'No hay pedidos que coincidan con tu búsqueda.'
+                    : 'Aún no hay pedidos registrados.'
+                }
+                actionLabel={!search ? 'CREAR PEDIDO' : undefined}
+                onAction={!search ? () => router.push('/pedidos/create') : undefined}
+                />
+            }
+            showsVerticalScrollIndicator={false}
             />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="package-variant"
-              title="Sin pedidos"
-              message={
-                search
-                  ? 'No hay pedidos que coincidan con tu búsqueda.'
-                  : 'Aún no hay pedidos registrados.'
-              }
-              actionLabel={!search ? 'Crear pedido' : undefined}
-              onAction={!search ? () => router.push('/pedidos/create') : undefined}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-
-        <TouchableOpacity
-          style={[styles.fab, Shadows.lg]}
-          onPress={() => router.push('/pedidos/create')}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel="Nuevo pedido"
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+        )}
 
         <ConfirmDialog
           visible={deleteId !== null}
@@ -250,23 +242,19 @@ export default function PedidosScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  title: { ...Typography.h3 },
-  count: { ...Typography.bodySmall },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl + Spacing.xl,
+    paddingBottom: 40,
   },
   listEmpty: {
     flexGrow: 1,
@@ -294,16 +282,6 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   cardMeta: { ...Typography.caption },
-  fab: {
-    position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabIcon: { fontSize: 28, color: '#ffffff', lineHeight: 32 },
+  fab: { display: 'none' },
+  fabIcon: { display: 'none' },
 });

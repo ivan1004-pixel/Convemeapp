@@ -79,7 +79,7 @@ export default function RegisterScreen() {
               El usuario <Text style={{ fontWeight: '900', color: Colors.primary }}>{username}</Text> fue creado exitosamente.
             </Text>
           </View>
-          <TouchableOpacity style={styles.backBtnSuccess} onPress={() => router.back()}>
+          <TouchableOpacity style={styles.backBtnSuccess} onPress={() => router.push('/(app)/mas')}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.textLight} />
             <Text style={styles.backBtnText}>VOLVER AL MENÚ</Text>
           </TouchableOpacity>

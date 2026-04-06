@@ -128,9 +128,14 @@ export default function TamanosScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Tamaños</Text>
-                <Text style={styles.subtitle}>{tamanos.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)/mas')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>Tamaños</Text>
+                    <Text style={styles.subtitle}>{tamanos.length} registros</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/tamanos/create')} style={styles.addBtn}>
@@ -206,11 +211,16 @@ export default function TamanosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
   subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   list: { paddingHorizontal: 20, paddingBottom: 40 },

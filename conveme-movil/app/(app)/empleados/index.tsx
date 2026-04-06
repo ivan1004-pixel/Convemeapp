@@ -26,6 +26,7 @@ import { Toast, useToast } from '../../../src/components/Toast';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Empleado } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 function EmpleadoCard({
   item,
@@ -145,107 +146,96 @@ export default function EmpleadosScreen() {
   const deleteTarget = empleados.find((e) => e.id_empleado === deleteId);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Empleados</Text>
-        <Text style={styles.count}>{filtered.length} registros</Text>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <View>
+                <Text style={styles.title}>Empleados</Text>
+                <Text style={styles.subtitle}>{filtered.length} registros</Text>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/empleados/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
+        </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre, puesto..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por nombre, puesto..."
+          />
+        </View>
+
+        {loading && empleados.length === 0 ? (
+          <LoadingSpinner fullScreen message="Cargando empleados..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_empleado)}
+            contentContainerStyle={[
+              styles.listContent,
+              filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+              <EmpleadoCard
+                item={item}
+                onPress={() => router.push(`/empleados/${item.id_empleado}`)}
+                onLongPress={() => setDeleteId(item.id_empleado)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="account-group"
+                title="Sin empleados"
+                message={search ? 'No hay resultados.' : 'Aún no hay empleados.'}
+                actionLabel="Agregar empleado"
+                onAction={() => router.push('/empleados/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar empleado"
+          message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
         />
-      </View>
 
-      {loading && empleados.length === 0 ? (
-        <LoadingSpinner fullScreen message="Cargando empleados..." />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_empleado)}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <EmpleadoCard
-              item={item}
-              onPress={() => router.push(`/empleados/${item.id_empleado}`)}
-              onLongPress={() => setDeleteId(item.id_empleado)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="account-group"
-              title="Sin empleados"
-              message={search ? 'No hay resultados.' : 'Aún no hay empleados.'}
-              actionLabel="Agregar empleado"
-              onAction={() => router.push('/empleados/create')}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/empleados/create')}
-        activeOpacity={0.85}
-        accessibilityLabel="Agregar empleado"
-        accessibilityRole="button"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar empleado"
-        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
-        confirmText="Eliminar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.beige,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  title: {
-    ...Typography.h2,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  count: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
-    color: 'rgba(26,26,26,0.5)',
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.sm,
@@ -313,27 +303,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: 'rgba(26,26,26,0.6)',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 90,
-    right: Spacing.lg,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 10,
-    zIndex: 999,
-  },
-  fabIcon: {
-    fontSize: 32,
-    color: '#ffffff',
-    fontWeight: '900',
   },
 });

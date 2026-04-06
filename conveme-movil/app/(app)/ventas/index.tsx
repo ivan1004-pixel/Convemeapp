@@ -86,12 +86,28 @@ export default function VentasScreen() {
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={{flex: 1}}>
+      <SafeAreaView style={{flex: 1}} edges={['top']}>
         <View style={styles.header}>
-          <Text style={styles.title}>Ventas</Text>
-          <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={styles.analyticsBtn}>
-            <MaterialCommunityIcons name="chart-bar" size={24} color={Colors.primary} />
-          </TouchableOpacity>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>Ventas</Text>
+                    <Text style={styles.subtitle}>{ventas.length} transacciones</Text>
+                </View>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="chart-bar" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => router.push('/ventas/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
 
         <FlatList
@@ -118,8 +134,6 @@ export default function VentasScreen() {
                 </View>
             </View>
         </Modal>
-
-        <TouchableOpacity style={styles.fab} onPress={() => router.push('/ventas/create')}><Text style={styles.fabIcon}>+</Text></TouchableOpacity>
       </SafeAreaView>
       <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
     </NeobrutalistBackground>
@@ -127,9 +141,14 @@ export default function VentasScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 10 },
-  title: { fontSize: 28, fontWeight: '900' },
-  analyticsBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   list: { paddingHorizontal: 20, paddingBottom: 150 },
   card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
   cardPressed: { transform: [{translateY: 2}, {translateX: 2}], shadowOffset: {width: 2, height: 2} },
@@ -146,6 +165,4 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.beige, borderRadius: 24, padding: 25, borderWidth: 4, borderColor: Colors.dark },
   modalTitle: { fontSize: 20, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
-  fab: { position: 'absolute', bottom: 100, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1 },
-  fabIcon: { fontSize: 32, color: '#FFF', fontWeight: '900' }
 });

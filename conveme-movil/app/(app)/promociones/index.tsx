@@ -15,7 +15,7 @@ import { getPromociones, deletePromocion } from '../../../src/services/promocion
 import { usePromocionStore } from '../../../src/store/promocionStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { Badge } from '../../../src/components/ui/Badge';
@@ -89,7 +89,7 @@ function PromocionCard({
       </View>
 
       <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>Ver detalles</Text>
+          <Text style={styles.footerText}>VER DETALLES</Text>
           <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.dark} />
       </View>
     </Pressable>
@@ -166,11 +166,16 @@ export default function PromocionesScreen() {
         <View style={styles.header}>
             <View>
                 <Text style={styles.title}>Promociones</Text>
-                <Text style={styles.subtitle}>{promociones.length} ofertas registradas</Text>
+                <Text style={styles.subtitle}>{promociones.length} registros</Text>
             </View>
-            <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-                <MaterialCommunityIcons name="refresh" size={24} color={Colors.primary} />
-            </TouchableOpacity>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/promociones/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
 
         <FlatList
@@ -181,7 +186,7 @@ export default function PromocionesScreen() {
             <SearchBar
               value={search}
               onChangeText={setSearch}
-              placeholder="Buscar promoción..."
+              placeholder="BUSCAR PROMOCIÓN..."
               style={{ marginBottom: 25 }}
             />
           }
@@ -206,23 +211,15 @@ export default function PromocionesScreen() {
             ) : (
                 <EmptyState
                     icon="tag-outline"
-                    title="Sin promociones"
+                    title="SIN PROMOCIONES"
                     message={search ? 'No se encontraron resultados.' : 'No hay promociones registradas aún.'}
-                    actionLabel="Agregar Promoción"
+                    actionLabel="AGREGAR PROMOCIÓN"
                     onAction={() => router.push('/promociones/create')}
                 />
             )
           }
           showsVerticalScrollIndicator={false}
         />
-
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/promociones/create')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
 
         <ConfirmDialog
           visible={deleteId !== null}
@@ -244,10 +241,14 @@ export default function PromocionesScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerActions: { flexDirection: 'row', gap: 10 },
   title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
   subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  list: { paddingHorizontal: 20, paddingBottom: 40 },
   card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
   cardPressed: { transform: [{ translateY: 2 }, { translateX: 2 }], shadowOffset: { width: 2, height: 2 } },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
@@ -264,6 +265,6 @@ const styles = StyleSheet.create({
   promoDates: { fontSize: 11, fontWeight: '800', color: Colors.dark },
   cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
   footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.3)' },
-  fab: { position: 'absolute', bottom: 100, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, zIndex: 999 },
-  fabIcon: { fontSize: 32, color: '#FFF', fontWeight: '900' }
+  fab: { display: 'none' },
+  fabIcon: { display: 'none' }
 });

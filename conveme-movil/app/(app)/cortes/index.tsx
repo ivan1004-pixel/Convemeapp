@@ -65,7 +65,7 @@ function CorteCard({
         <View style={styles.moneyRow}>
             <View style={styles.moneyItem}>
                 <Text style={styles.moneyLabel}>ESPERADO</Text>
-                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_esperado || 0)}</Text>
+                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}</Text>
             </View>
             <View style={styles.moneyDivider} />
             <View style={styles.moneyItem}>
@@ -90,7 +90,7 @@ function CorteCard({
       </View>
       
       <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>Ver detalles del corte</Text>
+         <Text style={styles.footerAction}>VER DETALLES DEL CORTE</Text>
          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.success} />
       </View>
     </Pressable>
@@ -160,20 +160,30 @@ export default function CortesScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-          <View style={styles.headerTitleRow}>
-             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-             </TouchableOpacity>
-             <Text style={styles.title}>Cortes</Text>
-          </View>
-          <Text style={styles.count}>{cortes.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)/mas')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>Cortes</Text>
+                    <Text style={styles.subtitle}>{cortes.length} registros</Text>
+                </View>
+            </View>
+            <View style={styles.headerActions}>
+                <TouchableOpacity onPress={() => router.push('/cortes/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+                </TouchableOpacity>
+            </View>
         </View>
 
         <View style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por vendedor..."
+            placeholder="BUSCAR POR VENDEDOR..."
           />
         </View>
 
@@ -205,23 +215,15 @@ export default function CortesScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon="cash-register"
-                title="Sin cortes"
+                title="SIN CORTES"
                 message={search ? 'No hay resultados.' : 'Aún no hay cortes registrados.'}
-                actionLabel="Realizar corte"
+                actionLabel="REALIZAR CORTE"
                 onAction={() => router.push('/cortes/create')}
               />
             }
             showsVerticalScrollIndicator={false}
           />
         )}
-
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/cortes/create')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
 
         <ConfirmDialog
           visible={deleteId !== null}
@@ -242,13 +244,16 @@ export default function CortesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  backBtn: { padding: Spacing.xs },
-  title: { ...Typography.h2, fontWeight: '900', color: '#1A1A1A' },
-  count: { ...Typography.bodySmall, fontWeight: '700', color: 'rgba(26,26,26,0.5)' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
   searchContainer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 120 },
+  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 40 },
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
   card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
   cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
@@ -271,6 +276,6 @@ const styles = StyleSheet.create({
   infoText: { fontSize: 13, fontWeight: '600', color: 'rgba(26,26,26,0.6)' },
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: Spacing.sm, gap: 4 },
   footerAction: { fontSize: 12, fontWeight: '800', color: Colors.success },
-  fab: { position: 'absolute', bottom: 90, right: Spacing.lg, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 10, zIndex: 999 },
-  fabIcon: { fontSize: 32, color: '#ffffff', fontWeight: '900' },
+  fab: { display: 'none' },
+  fabIcon: { display: 'none' },
 });

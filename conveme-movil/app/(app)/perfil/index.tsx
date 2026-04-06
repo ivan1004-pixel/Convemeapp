@@ -86,6 +86,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
     alignItems: 'center'
   },
+  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   screenTitle: { 
     ...Typography.h3, 
     fontWeight: '900', 
