@@ -9,8 +9,11 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { Colors } from '../theme/colors';
+import { BorderRadius } from '../theme/spacing';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const ITEM_WIDTH = SCREEN_WIDTH - 40; // Ancho con margen de 20px a cada lado
+const SPACING = 20; // Espacio entre items
 
 interface CarouselItem {
   id: string;
@@ -40,7 +43,10 @@ export const Carousel: React.FC<CarouselProps> = ({
 
     const timer = setInterval(() => {
       const nextIndex = (activeIndex + 1) % items.length;
-      flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+      flatListRef.current?.scrollToOffset({ 
+        offset: nextIndex * (ITEM_WIDTH + SPACING), 
+        animated: true 
+      });
       setActiveIndex(nextIndex);
     }, interval);
 
@@ -48,7 +54,7 @@ export const Carousel: React.FC<CarouselProps> = ({
   }, [autoPlay, interval, items.length, activeIndex]);
 
   const onScroll = (event: any) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const index = Math.round(event.nativeEvent.contentOffset.x / (ITEM_WIDTH + SPACING));
     if (index !== activeIndex) setActiveIndex(index);
   };
 
@@ -58,18 +64,22 @@ export const Carousel: React.FC<CarouselProps> = ({
         ref={flatListRef}
         data={items}
         horizontal
-        pagingEnabled
         showsHorizontalScrollIndicator={false}
         keyExtractor={(item) => item.id}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        snapToInterval={ITEM_WIDTH + SPACING}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingHorizontal: SPACING }}
         renderItem={({ item }) => (
-          <Image
-            source={item.source}
-            style={{ width: SCREEN_WIDTH, height }}
-            contentFit="cover"
-            transition={500}
-          />
+          <View style={{ width: ITEM_WIDTH, marginRight: SPACING }}>
+            <Image
+              source={item.source}
+              style={styles.image}
+              contentFit="cover"
+              transition={500}
+            />
+          </View>
         )}
       />
 
@@ -95,6 +105,13 @@ const styles = StyleSheet.create({
   container: {
     position: 'relative',
     overflow: 'hidden',
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    borderRadius: BorderRadius.xl,
+    borderWidth: 3,
+    borderColor: Colors.dark,
   },
   dots: {
     position: 'absolute',

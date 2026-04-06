@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import { Input } from '../../src/components/ui/Input';
 import { Button } from '../../src/components/ui/Button';
 import { Toast, useToast } from '../../src/components/Toast';
@@ -104,28 +105,32 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          {/* Back Button */}
+          <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+            <View style={styles.backIconCircle}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+            </View>
+          </TouchableOpacity>
+
           {/* Brand Header */}
           <View style={styles.brandHeader}>
             <View style={styles.mascotaWrapper}>
+              <View style={styles.mascotaGlow} />
               <Image
-                source={require('../../assets/images/mascota.png')}
+                source={require('../../assets/images/masconve.png')}
                 style={styles.mascota}
-                contentFit="contain"
+                contentFit="cover"
               />
             </View>
-            <Image
-              source={require('../../assets/images/logon.png')}
-              style={styles.logon}
-              contentFit="contain"
-            />
-            <Text style={styles.appName}>ConVeMe</Text>
+            <Text style={styles.appName}>Inicia Sesión</Text>
+            <Text style={styles.appSubtitle}>ConVeMe</Text>
           </View>
 
           {/* Form Card */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>Inicia Sesión</Text>
-              <View style={styles.underline} />
+              <MaterialCommunityIcons name="account-circle" size={32} color={Colors.primary} />
+              <Text style={styles.cardSubtitle}>Ingresa tus credenciales</Text>
             </View>
 
             <Input
@@ -166,7 +171,7 @@ export default function LoginScreen() {
             />
 
             <Button
-              title="ENTRAR AL SISTEMA"
+              title="ENTRAR"
               onPress={handleLogin}
               variant="primary"
               size="lg"
@@ -179,7 +184,8 @@ export default function LoginScreen() {
               style={styles.helpLink}
               onPress={() => showToast('Contacta a tu administrador.', 'info')}
             >
-              <Text style={styles.helpLinkText}>¿Problemas con tu acceso?</Text>
+              <MaterialCommunityIcons name="help-circle-outline" size={16} color="rgba(26,26,26,0.5)" />
+              <Text style={styles.helpLinkText}>¿Problemas para acceder?</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -203,99 +209,130 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.xl,
   },
+  backIcon: {
+    position: 'absolute',
+    top: Spacing.md,
+    left: Spacing.lg,
+    zIndex: 10,
+  },
+  backIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
   brandHeader: {
     alignItems: 'center',
-    paddingTop: Spacing.xl,
-    paddingBottom: Spacing.md,
-    gap: Spacing.xs,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.sm,
+    gap: 4,
   },
   mascotaWrapper: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#FFFFFF',
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.15,
-    shadowRadius: 10,
-    elevation: 8,
-    overflow: 'hidden', // Asegura que la imagen no se salga de los bordes circulares
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  mascota: {
+  mascotaGlow: {
+    position: 'absolute',
     width: 110,
     height: 110,
-    borderRadius: 55, // Redondeamos también la imagen para evitar esquinas cuadradas
+    borderRadius: 55,
+    backgroundColor: Colors.primary,
+    opacity: 0.1,
   },
-  logon: {
-    width: 160,
-    height: 40,
-    marginBottom: -10,
+  mascota: {
+    width: 115,
+    height: 115,
+    borderRadius: 57.5,
   },
   appName: {
-    fontSize: 52, // Reducido de 62 a 52
+    fontSize: 32,
     fontWeight: '900',
-    color: Colors.primary,
+    color: Colors.dark,
     textAlign: 'center',
-    letterSpacing: -1,
+    letterSpacing: 0,
+    marginTop: Spacing.xs,
+  },
+  appSubtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(26,26,26,0.4)',
+    textAlign: 'center',
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    // Sombras más pronunciadas para dar profundidad
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
   },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.xxl,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
     elevation: 8,
-    marginTop: Spacing.sm,
+    marginTop: Spacing.md,
+    borderWidth: 3,
+    borderColor: Colors.dark,
   },
   cardHeader: {
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.md,
+    alignItems: 'center',
   },
-  cardTitle: {
-    ...Typography.h3,
-    color: '#1A1A1A',
-    fontWeight: '900',
+  cardSubtitle: {
+    fontSize: 12,
+    color: 'rgba(26,26,26,0.5)',
+    fontWeight: '600',
+    marginTop: Spacing.xs,
     textAlign: 'center',
   },
-  underline: {
-    height: 4,
-    width: 40,
-    backgroundColor: Colors.primary,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 4,
-  },
   inputField: {
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   loginButton: {
-    marginTop: Spacing.lg,
+    marginTop: Spacing.md,
     borderRadius: BorderRadius.xl,
     shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 3,
+    borderColor: Colors.dark,
   },
   helpLink: {
     alignItems: 'center',
-    marginTop: Spacing.xl,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    marginTop: Spacing.lg,
+    paddingVertical: Spacing.sm,
   },
   helpLinkText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(26,26,26,0.4)',
+    fontSize: 12,
+    fontWeight: '600',
+    color: 'rgba(26,26,26,0.5)',
     textDecorationLine: 'underline',
   },
   fullScreen: {

@@ -5,6 +5,7 @@ export const Colors = {
   primaryLight: '#f88fea',   // brand-pink
   secondary: '#ede0d1',      // brand-beige
   success: '#00D084',
+  successLight: '#E6F9F3',   // Verde claro para fondos
   info: '#0301ff',
   warning: '#FFD600',
   error: '#FF0000',

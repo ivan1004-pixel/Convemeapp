@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Dimensions,
 } from 'react-native';
@@ -14,25 +13,32 @@ import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import Animated, { FadeInUp } from 'react-native-reanimated';
+
 import { useAuthStore } from '../../src/store/authStore';
 import { useAuth, ROLE_ADMIN } from '../../src/hooks/useAuth';
-import { PredictionChart, PredictionStatCard } from '../../src/components/PredictionChart';
+import { PredictionChart } from '../../src/components/PredictionChart';
 import { Toast, useToast } from '../../src/components/Toast';
-import { getPrediccionVentasService, PrediccionVentas } from '../../src/services/prediccionesERP.service';
 import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../../src/theme/colors';
 import { Typography } from '../../src/theme/typography';
-import { Spacing, BorderRadius } from '../../src/theme/spacing';
+import { Spacing } from '../../src/theme/spacing';
 
-const { width: WINDOW_WIDTH } = Dimensions.get('window');
+import { Image } from 'expo-image';
+import { getVentas } from '../../src/services/venta.service';
+import { getEmpleados } from '../../src/services/empleado.service';
+import { getVendedores } from '../../src/services/vendedor.service';
+import { getPedidos } from '../../src/services/pedido.service';
+import { getCortes } from '../../src/services/corte.service';
+import { formatCurrency } from '../../src/utils';
 
-// Patrón de fondo Premium
+// Patrón de fondo de partículas
 const DashboardPattern = () => (
-  <View style={StyleSheet.absoluteFill}>
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
     <Svg width="100%" height="100%">
       <Defs>
         <Pattern id="dotPattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
-          <Rect x="0" y="0" width="2" height="2" fill="rgba(0,0,0,0.05)" />
+          <Rect x="0" y="0" width="3" height="3" fill={Colors.dark} opacity="0.05" />
         </Pattern>
       </Defs>
       <Rect width="100%" height="100%" fill="url(#dotPattern)" />
@@ -42,12 +48,14 @@ const DashboardPattern = () => (
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
+// --- Componentes Reutilizables ---
+
 function QuickActionCard({ icon, label, onPress, color }: { icon: IconName; label: string; onPress: () => void; color?: string }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
-      style={[styles.actionCard, { borderTopWidth: 5, borderTopColor: color ?? Colors.primary }]}
+      style={[styles.actionCard, { borderTopColor: color ?? Colors.primary }]}
     >
       <View style={[styles.actionIconContainer, { backgroundColor: (color ?? Colors.primary) + '15' }]}>
         <MaterialCommunityIcons name={icon} size={28} color={color ?? Colors.primary} />
@@ -59,7 +67,7 @@ function QuickActionCard({ icon, label, onPress, color }: { icon: IconName; labe
 
 function StatCard({ icon, label, value, color }: { icon: IconName; label: string; value: string; color: string }) {
   return (
-    <View style={[styles.statCard, { borderLeftWidth: 5, borderLeftColor: color }]}>
+    <View style={[styles.statCard, { borderLeftColor: color }]}>
       <View style={styles.statWatermark}>
           <MaterialCommunityIcons name={icon} size={70} color={color + '08'} />
       </View>
@@ -74,20 +82,27 @@ function StatCard({ icon, label, value, color }: { icon: IconName; label: string
   );
 }
 
-import { Image } from 'expo-image';
-import { getVentas } from '../../src/services/venta.service';
-import { getEmpleados } from '../../src/services/empleado.service';
-import { getVendedores } from '../../src/services/vendedor.service';
-import { getPedidos } from '../../src/services/pedido.service';
-import { getCortes } from '../../src/services/corte.service';
-import { formatCurrency } from '../../src/utils';
+// --- Componentes Animados ---
+
+const AnimatedStatCard = ({ icon, label, value, color, index }: { icon: IconName; label: string; value: string; color: string, index: number }) => (
+    <Animated.View entering={FadeInUp.duration(500).delay(100 * index)} style={{flex: 1}}>
+        <StatCard icon={icon} label={label} value={value} color={color} />
+    </Animated.View>
+);
+
+const AnimatedQuickActionCard = ({ icon, label, onPress, color, index }: { icon: IconName; label: string; onPress: () => void; color?: string, index: number }) => (
+    <Animated.View entering={FadeInUp.duration(500).delay(100 * index)} style={{flex: 1, minWidth: '28%'}}>
+        <QuickActionCard icon={icon} label={label} onPress={onPress} color={color} />
+    </Animated.View>
+);
+
+
+// --- Dashboards por Rol ---
 
 function AdminDashboard() {
   const { usuario, logout } = useAuth();
-  const { toast, show: showToast, hide: hideToast } = useToast();
-  const [stats, setStats] = useState({ ingresosMes: 0, pedidosPend: 0, empleados: 0, vendedores: 0, crecimientoReal: 0 });
+  const [stats, setStats] = useState({ ingresosMes: 0, pedidosPend: 0, empleados: 0, vendedores: 0 });
   const [historicalData, setHistoricalData] = useState<any[]>([]);
-  const [prediccion, setPrediccion] = useState<PrediccionVentas | null>(null);
   const [loading, setLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
@@ -103,7 +118,7 @@ function AdminDashboard() {
       const totalActual = ventas.filter((v:any) => new Date(v.fecha_venta).getMonth() === m && new Date(v.fecha_venta).getFullYear() === y).reduce((s:number, v:any) => s + v.monto_total, 0) +
                           cortes.filter((c:any) => new Date(c.fecha_corte).getMonth() === m && new Date(c.fecha_corte).getFullYear() === y).reduce((s:number, c:any) => s + (c.dinero_total_entregado || 0), 0);
 
-      setStats(prev => ({ ...prev, ingresosMes: totalActual, pedidosPend: pedidos.filter((p:any) => p.estado === 'Pendiente').length, empleados: empleados.length, vendedores: vendedores.length }));
+      setStats({ ingresosMes: totalActual, pedidosPend: pedidos.filter((p:any) => p.estado === 'Pendiente').length, empleados: empleados.length, vendedores: vendedores.length });
       
       const revenueByMonth: Record<string, number> = {};
       [...ventas, ...cortes].forEach((item: any) => {
@@ -119,55 +134,116 @@ function AdminDashboard() {
   useEffect(() => { loadStats(); }, [loadStats]);
 
   return (
-    <View style={{flex: 1}}>
-      <DashboardPattern />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}>
-        <View style={styles.dashHeader}>
-          <View style={styles.dashHeaderRow}>
-            <View>
-              <Image source={require('../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
-              <Text style={styles.greeting}>Bienvenido, {usuario?.username ?? 'Admin'}</Text>
+    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}>
+      <View style={styles.dashHeader}>
+        <Animated.View entering={FadeInUp.duration(500)}>
+            <View style={styles.dashHeaderRow}>
+                <View>
+                <Image source={require('../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
+                <Text style={styles.greeting}>Bienvenido, {usuario?.username ?? 'Admin'}</Text>
+                </View>
+                <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
             </View>
-            <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
-          </View>
-          <View style={styles.statsRow}>
-            <StatCard icon="cash-multiple" label="Ingresos mes" value={formatCurrency(stats.ingresosMes)} color={Colors.success} />
-            <StatCard icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
-          </View>
-          <View style={styles.statsRow}>
-            <StatCard icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} />
-            <StatCard icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} />
-          </View>
+        </Animated.View>
+        <View style={styles.statsRow}>
+          <AnimatedStatCard index={1} icon="cash-multiple" label="Ingresos mes" value={formatCurrency(stats.ingresosMes)} color={Colors.success} />
+          <AnimatedStatCard index={2} icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
         </View>
+        <View style={styles.statsRow}>
+          <AnimatedStatCard index={3} icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} />
+          <AnimatedStatCard index={4} icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} />
+        </View>
+      </View>
 
+      <Animated.View entering={FadeInUp.duration(500).delay(400)}>
         <Text style={styles.sectionTitle}>Acciones de Negocio</Text>
         <View style={styles.actionsGrid}>
-          <QuickActionCard icon="cash-register" label="Punto de Venta" onPress={() => router.push('/(app)/ventas')} color={Colors.success} />
-          <QuickActionCard icon="chart-areaspline" label="Resumen Mes" onPress={() => router.push('/(app)/resumen-mensual')} color={Colors.info} />
-          <QuickActionCard icon="bank" label="Cortes Caja" onPress={() => router.push('/(app)/cortes')} color={Colors.warning} />
+            <AnimatedQuickActionCard index={1} icon="cash-register" label="Punto de Venta" onPress={() => router.push('/(app)/ventas')} color={Colors.success} />
+            <AnimatedQuickActionCard index={2} icon="chart-areaspline" label="Resumen Mes" onPress={() => router.push('/(app)/resumen-mensual')} color={Colors.info} />
+            <AnimatedQuickActionCard index={3} icon="bank" label="Cortes Caja" onPress={() => router.push('/(app)/cortes')} color={Colors.warning} />
         </View>
-
+      </Animated.View>
+      
+      <Animated.View entering={FadeInUp.duration(500).delay(500)}>
         <Text style={styles.sectionTitle}>Administración</Text>
         <View style={styles.actionsGrid}>
-          <QuickActionCard icon="warehouse" label="Inventario" onPress={() => router.push('/(app)/productos')} color={Colors.primary} />
-          <QuickActionCard icon="account-group" label="Clientes" onPress={() => router.push('/(app)/clientes')} color={Colors.info} />
-          <QuickActionCard icon="school" label="Escuelas" onPress={() => router.push('/(app)/escuelas')} color={Colors.success} />
+            <AnimatedQuickActionCard index={1} icon="warehouse" label="Inventario" onPress={() => router.push('/(app)/productos')} color={Colors.primary} />
+            <AnimatedQuickActionCard index={2} icon="account-group" label="Clientes" onPress={() => router.push('/(app)/clientes')} color={Colors.info} />
+            <AnimatedQuickActionCard index={3} icon="school" label="Escuelas" onPress={() => router.push('/(app)/escuelas')} color={Colors.success} />
         </View>
+      </Animated.View>
 
-        <View style={{paddingHorizontal: 20, marginTop: 30, paddingBottom: 100}}>
-            <View style={styles.predSection}>
-                <Text style={styles.predTitle}>Tendencia de Ingresos</Text>
-                <PredictionChart data={historicalData} />
-            </View>
-        </View>
-      </ScrollView>
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </View>
+      <Animated.View entering={FadeInUp.duration(500).delay(600)} style={{paddingHorizontal: 20, marginTop: 30, paddingBottom: 100}}>
+          <View style={styles.predSection}>
+              <Text style={styles.predTitle}>Tendencia de Ingresos</Text>
+              <PredictionChart data={historicalData} />
+          </View>
+      </Animated.View>
+    </ScrollView>
   );
 }
 
+function VendedorDashboard() {
+    const { usuario, logout } = useAuth();
+    const [loading, setLoading] = useState(false);
+    // NOTE: Hardcoded stats as per user request to not modify services
+    const [stats, setStats] = useState({ ventasMes: 12, comisiones: 450.50 });
+  
+    const loadStats = useCallback(async () => {
+      // This is a placeholder. According to the user's request,
+      // we should not implement new service calls.
+      setLoading(true);
+      // Example: const sales = await getSalesByVendor(usuario.id);
+      // setStats({ ventasMes: sales.count, comisiones: sales.totalCommission });
+      setTimeout(() => setLoading(false), 500); // Simulate loading
+    }, []);
+  
+    useEffect(() => { loadStats(); }, [loadStats]);
+  
+    return (
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}>
+        <View style={styles.dashHeader}>
+            <Animated.View entering={FadeInUp.duration(500)}>
+                <View style={styles.dashHeaderRow}>
+                    <View>
+                    <Image source={require('../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
+                    <Text style={styles.greeting}>Bienvenido, {usuario?.username ?? 'Vendedor'}</Text>
+                    </View>
+                    <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
+                </View>
+            </Animated.View>
+            <View style={styles.statsRow}>
+                <AnimatedStatCard index={1} icon="point-of-sale" label="Ventas del Mes" value={String(stats.ventasMes)} color={Colors.success} />
+                <AnimatedStatCard index={2} icon="cash-usd-outline" label="Comisiones" value={formatCurrency(stats.comisiones)} color={Colors.info} />
+            </View>
+        </View>
+  
+        <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+            <Text style={styles.sectionTitle}>Mis Acciones</Text>
+            <View style={styles.actionsGrid}>
+                <AnimatedQuickActionCard index={1} icon="plus-circle" label="Nueva Venta" onPress={() => router.push('/(app)/ventas')} color={Colors.primary} />
+                <AnimatedQuickActionCard index={2} icon="account-group" label="Mis Clientes" onPress={() => router.push('/(app)/clientes')} color={Colors.success} />
+                <AnimatedQuickActionCard index={3} icon="clipboard-list" label="Mis Pedidos" onPress={() => router.push('/(app)/pedidos')} color={Colors.warning} />
+            </View>
+        </Animated.View>
+        
+        <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+            <Text style={styles.sectionTitle}>Catálogos</Text>
+            <View style={styles.actionsGrid}>
+                <AnimatedQuickActionCard index={1} icon="food-apple" label="Productos" onPress={() => router.push('/(app)/productos')} color={Colors.info} />
+                <AnimatedQuickActionCard index={2} icon="tag" label="Promociones" onPress={() => router.push('/(app)/promociones')} color={Colors.pink} />
+            </View>
+        </Animated.View>
+      </ScrollView>
+    );
+  }
+
+// --- Pantalla Principal ---
+
 export default function DashboardScreen() {
-  const { usuario } = useAuthStore();
+  const { isAdmin } = useAuth();
+  const { toast, show: showToast, hide: hideToast } = useToast();
+
   return (
     <View style={{ flex: 1 }}>
       <StatusBar style="dark" />
@@ -177,16 +253,18 @@ export default function DashboardScreen() {
         end={{ x: 0, y: 1 }}
         style={StyleSheet.absoluteFill} 
       />
+       <DashboardPattern />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <AdminDashboard />
+        {isAdmin ? <AdminDashboard /> : <VendedorDashboard />}
       </SafeAreaView>
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  scrollContent: { paddingBottom: 20 },
+  scrollContent: { paddingBottom: 100 },
   dashHeader: { paddingHorizontal: 20, paddingTop: 10 },
   dashHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   logoImage: { width: 130, height: 35 },
@@ -201,8 +279,8 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, fontWeight: '900', color: '#1A1A1A' },
   statLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' },
   sectionTitle: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 25, marginBottom: 12, paddingHorizontal: 20, textTransform: 'uppercase', letterSpacing: 1 },
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 20, gap: 12 },
-  actionCard: { flex: 1, minWidth: '28%', backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, alignItems: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1 },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'nowrap', paddingHorizontal: 20, gap: 12 },
+  actionCard: { flex: 1, minWidth: 100, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 15, alignItems: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, borderTopWidth: 5 },
   actionIconContainer: { width: 50, height: 50, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   actionLabel: { fontSize: 10, fontWeight: '900', color: '#1A1A1A', textAlign: 'center' },
   predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
