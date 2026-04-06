@@ -4,62 +4,43 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   Alert,
-  Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getInsumos, deleteInsumo } from '../../../src/services/insumo.service';
 import { useInsumoStore } from '../../../src/store/insumoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
 import { Badge } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Insumo } from '../../../src/types';
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-  if (!value) return null;
+function DetailRow({ label, value, icon, color = Colors.dark }: { label: string; value: string; icon: any; color?: string }) {
   return (
-    <View style={infoStyles.row}>
-      <Text style={[infoStyles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[infoStyles.value, { color: theme.text }]}>{value}</Text>
+    <View style={styles.detailRow}>
+      <View style={[styles.detailIconBox, { backgroundColor: color + '10' }]}>
+        <MaterialCommunityIcons name={icon} size={20} color={color} />
+      </View>
+      <View style={styles.detailInfo}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={[styles.detailValue, { color }]}>{value}</Text>
+      </View>
     </View>
   );
 }
 
-const infoStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: Spacing.sm,
-  },
-  label: {
-    ...Typography.bodySmall,
-    flex: 1,
-  },
-  value: {
-    ...Typography.body,
-    flex: 2,
-    textAlign: 'right',
-  },
-});
-
 export default function InsumoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show, hide } = useToast();
   const { insumos, setInsumos, removeInsumo } = useInsumoStore();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -67,22 +48,22 @@ export default function InsumoDetailScreen() {
 
   const insumo: Insumo | undefined = insumos.find((i) => i.id_insumo === Number(id));
 
-  const fetchIfNeeded = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (insumo) return;
     setLoading(true);
     try {
       const data = await getInsumos();
       setInsumos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      show(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [insumo, setInsumos]);
+  }, [insumo, setInsumos, show]);
 
   useEffect(() => {
-    fetchIfNeeded();
-  }, [fetchIfNeeded]);
+    fetchData();
+  }, [fetchData]);
 
   const handleDelete = useCallback(async () => {
     if (!insumo) return;
@@ -90,29 +71,17 @@ export default function InsumoDetailScreen() {
     try {
       await deleteInsumo(insumo.id_insumo);
       removeInsumo(insumo.id_insumo);
-      router.back();
+      show('Insumo eliminado correctamente', 'success');
+      setTimeout(() => router.back(), 1500);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      show(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setShowConfirm(false);
     }
-  }, [insumo, removeInsumo]);
+  }, [insumo, removeInsumo, show]);
 
-  if (loading || !insumo) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Detalle</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-        <LoadingSpinner fullScreen message="Cargando..." />
-      </SafeAreaView>
-    );
-  }
+  if (loading || !insumo) return <LoadingSpinner fullScreen message="Cargando material..." />;
 
   const isLowStock =
     insumo.stock_minimo_alerta != null &&
@@ -120,135 +89,102 @@ export default function InsumoDetailScreen() {
     insumo.stock_actual <= insumo.stock_minimo_alerta;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Insumo</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero card */}
-        <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: isLowStock ? Colors.error : theme.border }, Shadows.sm]}>
-          <View style={[styles.heroIcon, { backgroundColor: isLowStock ? '#FEE2E2' : Colors.primaryLight }]}>
-            <Text style={styles.heroIconText}></Text>
-          </View>
-          <Text style={[styles.heroName, { color: theme.text }]}>{insumo.nombre}</Text>
-          {isLowStock && <Badge text="Stock bajo — Requiere reabastecimiento" color="error" />}
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+            </TouchableOpacity>
+            <Text style={styles.title}>Material</Text>
+            <TouchableOpacity onPress={() => router.push(`/insumos/create?id=${insumo.id_insumo}`)} style={styles.editBtn}>
+                <MaterialCommunityIcons name="pencil" size={20} color={Colors.primary} />
+            </TouchableOpacity>
         </View>
 
-        {/* Stock section */}
-        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Inventario</Text>
-          <InfoRow label="Unidad de medida" value={insumo.unidad_medida} />
-          <InfoRow label="Stock actual" value={insumo.stock_actual != null ? String(insumo.stock_actual) : null} />
-          <InfoRow label="Stock mínimo alerta" value={insumo.stock_minimo_alerta != null ? String(insumo.stock_minimo_alerta) : null} />
-        </View>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Main Info Card */}
+            <View style={[styles.mainCard, isLowStock && { borderColor: Colors.error }]}>
+                <View style={[styles.heroIcon, { backgroundColor: isLowStock ? Colors.error + '15' : Colors.info + '15' }]}>
+                    <MaterialCommunityIcons 
+                        name={isLowStock ? "alert-decagram" : "flask"} 
+                        size={40} 
+                        color={isLowStock ? Colors.error : Colors.info} 
+                    />
+                </View>
+                <Text style={styles.insumoName}>{insumo.nombre}</Text>
+                <Badge 
+                    text={isLowStock ? "REABASTECIMIENTO REQUERIDO" : "STOCK SALUDABLE"} 
+                    color={isLowStock ? "error" : "success"} 
+                    style={{ marginTop: 10 }}
+                />
+            </View>
 
-        <View style={styles.actions}>
-          <Button
-            title="Editar"
-            variant="outline"
-            onPress={() => router.push(`/insumos/create?id=${insumo.id_insumo}`)}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Eliminar"
-            variant="danger"
-            onPress={() => setShowConfirm(true)}
-            style={styles.actionBtn}
-          />
-        </View>
-      </ScrollView>
+            <Text style={styles.sectionTitle}>Estado de Inventario</Text>
+            
+            <View style={styles.detailsContainer}>
+                <DetailRow 
+                    label="Stock Actual" 
+                    value={`${insumo.stock_actual} ${insumo.unidad_medida}`} 
+                    icon="database-outline" 
+                    color={isLowStock ? Colors.error : Colors.success}
+                />
+                <View style={styles.divider} />
+                <DetailRow 
+                    label="Punto de Alerta" 
+                    value={`${insumo.stock_minimo_alerta || 0} ${insumo.unidad_medida}`} 
+                    icon="bell-ring-outline" 
+                    color={Colors.warning}
+                />
+                <View style={styles.divider} />
+                <DetailRow 
+                    label="Unidad de Medida" 
+                    value={insumo.unidad_medida?.toUpperCase() || 'N/A'} 
+                    icon="ruler" 
+                    color={Colors.info}
+                />
+            </View>
 
-      <ConfirmDialog
-        visible={showConfirm}
-        title="Eliminar insumo"
-        message={`¿Deseas eliminar "${insumo.nombre}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        onCancel={() => setShowConfirm(false)}
-        loading={deleting}
-        destructive
-      />
-    </SafeAreaView>
+            <TouchableOpacity style={styles.deleteBtn} onPress={() => setShowConfirm(true)}>
+                <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+                <Text style={styles.deleteBtnText}>ELIMINAR INSUMO</Text>
+            </TouchableOpacity>
+        </ScrollView>
+
+        <ConfirmDialog
+          visible={showConfirm}
+          title="Eliminar insumo"
+          message={`¿Deseas eliminar "${insumo.nombre}"? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setShowConfirm(false)}
+          loading={deleting}
+          destructive
+        />
+
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  backIcon: {
-    fontSize: 22,
-    fontWeight: '500',
-  },
-  headerTitle: {
-    ...Typography.h3,
-  },
-  headerPlaceholder: {
-    width: 34,
-  },
-  scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-    gap: Spacing.md,
-  },
-  heroCard: {
-    borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    padding: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  heroIcon: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroIconText: {
-    fontSize: 32,
-  },
-  heroName: {
-    ...Typography.h2,
-    textAlign: 'center',
-  },
-  section: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    padding: Spacing.md,
-  },
-  sectionTitle: {
-    ...Typography.label,
-    marginBottom: Spacing.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
-  actionBtn: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  editBtn: { width: 40, height: 40, borderRadius: 12, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
+  scrollContent: { padding: 20 },
+  mainCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 30, alignItems: 'center', borderWidth: 4, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1, marginBottom: 25 },
+  heroIcon: { width: 80, height: 80, borderRadius: 40, alignItems: 'center', justifyContent: 'center', marginBottom: 15 },
+  insumoName: { fontSize: 24, fontWeight: '900', color: Colors.dark, textAlign: 'center' },
+  sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 15, textTransform: 'uppercase', letterSpacing: 1 },
+  detailsContainer: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, marginBottom: 25 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 5 },
+  detailIconBox: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  detailInfo: { flex: 1 },
+  detailLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' },
+  detailValue: { fontSize: 16, fontWeight: '900' },
+  divider: { height: 2, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 12 },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, padding: 18, borderRadius: 15, borderWidth: 3, borderColor: Colors.error, backgroundColor: Colors.error + '05', marginBottom: 40 },
+  deleteBtnText: { color: Colors.error, fontWeight: '900', fontSize: 14, letterSpacing: 1 },
 });

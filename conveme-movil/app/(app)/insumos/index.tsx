@@ -11,18 +11,19 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getInsumos, deleteInsumo } from '../../../src/services/insumo.service';
 import { useInsumoStore } from '../../../src/store/insumoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
-import { Badge } from '../../../src/components/ui/Badge';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
+import { Badge } from '../../../src/components/ui/Badge';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Insumo } from '../../../src/types';
 
@@ -35,10 +36,6 @@ function InsumoCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const isLowStock =
     item.stock_minimo_alerta != null &&
     item.stock_actual != null &&
@@ -50,56 +47,49 @@ function InsumoCard({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card, borderColor: isLowStock ? Colors.error : theme.border },
-        Shadows.sm,
         pressed && styles.cardPressed,
+        isLowStock && { borderColor: Colors.error }
       ]}
-      accessibilityRole="button"
     >
-      <View style={styles.cardContent}>
-        <View style={[styles.cardIcon, { backgroundColor: isLowStock ? '#FEE2E2' : Colors.primaryLight }]}>
-          <Text style={[styles.cardIconText, { color: isLowStock ? Colors.error : Colors.primary }]}>
-            {isLowStock ? '!' : ''}
-          </Text>
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, { backgroundColor: isLowStock ? Colors.error + '15' : Colors.info + '15' }]}>
+            <MaterialCommunityIcons 
+                name={isLowStock ? "alert-outline" : "flask-outline"} 
+                size={24} 
+                color={isLowStock ? Colors.error : Colors.info} 
+            />
         </View>
-        <View style={styles.cardInfo}>
-          <View style={styles.cardRow}>
-            <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-              {item.nombre}
-            </Text>
-            {isLowStock && <Badge text="Stock bajo" color="error" size="sm" />}
-          </View>
-          <Text style={[styles.cardMeta, { color: theme.muted }]}>
-            {item.unidad_medida}
-          </Text>
-          <View style={styles.cardStock}>
-            <Text style={[styles.cardStockLabel, { color: theme.muted }]}>Stock: </Text>
-            <Text
-              style={[
-                styles.cardStockValue,
-                { color: isLowStock ? Colors.error : theme.text },
-              ]}
-            >
-              {item.stock_actual ?? 0}
-            </Text>
-            {item.stock_minimo_alerta != null && (
-              <Text style={[styles.cardStockMin, { color: theme.muted }]}>
-                {' '}/ mín {item.stock_minimo_alerta}
-              </Text>
-            )}
-          </View>
+        <View style={styles.headerText}>
+            <Text style={styles.cardName}>{item.nombre}</Text>
+            <Text style={styles.cardUnit}>{item.unidad_medida?.toUpperCase()}</Text>
         </View>
-        <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
+        {isLowStock && <Badge text="BAJO STOCK" color="error" size="sm" />}
+      </View>
+
+      <View style={styles.cardBody}>
+          <View style={styles.stockRow}>
+              <View style={styles.stockItem}>
+                  <Text style={styles.stockLabel}>ACTUAL</Text>
+                  <Text style={[styles.stockValue, isLowStock && { color: Colors.error }]}>{item.stock_actual}</Text>
+              </View>
+              <View style={styles.stockDivider} />
+              <View style={styles.stockItem}>
+                  <Text style={styles.stockLabel}>MÍNIMO</Text>
+                  <Text style={styles.stockValue}>{item.stock_minimo_alerta || 0}</Text>
+              </View>
+          </View>
+      </View>
+
+      <View style={styles.cardFooter}>
+          <Text style={styles.footerText}>Gestionar inventario</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.dark} />
       </View>
     </Pressable>
   );
 }
 
 export default function InsumosScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show, hide } = useToast();
   const { insumos, setInsumos, removeInsumo } = useInsumoStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -113,11 +103,11 @@ export default function InsumosScreen() {
       const data = await getInsumos();
       setInsumos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      show(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [setInsumos]);
+  }, [setInsumos, show]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -125,11 +115,11 @@ export default function InsumosScreen() {
       const data = await getInsumos();
       setInsumos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      show(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
-  }, [setInsumos]);
+  }, [setInsumos, show]);
 
   useEffect(() => {
     fetchData();
@@ -145,233 +135,126 @@ export default function InsumosScreen() {
     );
   }, [insumos, search]);
 
-  const lowStockCount = useMemo(
-    () =>
-      insumos.filter(
-        (i) => i.stock_minimo_alerta != null && i.stock_actual != null && i.stock_actual <= i.stock_minimo_alerta
-      ).length,
-    [insumos]
-  );
-
   const handleDelete = useCallback(async () => {
     if (deleteId == null) return;
     setDeleting(true);
     try {
       await deleteInsumo(deleteId);
       removeInsumo(deleteId);
+      show('Insumo eliminado correctamente', 'success');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      show(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeInsumo]);
+  }, [deleteId, removeInsumo, show]);
 
   const deleteTarget = insumos.find((i) => i.id_insumo === deleteId);
 
-  if (loading && insumos.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Insumos</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando insumos..." />
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Insumos</Text>
-        <View style={styles.headerRight}>
-          {lowStockCount > 0 && (
-            <Badge text={`${lowStockCount} bajo stock`} color="error" size="sm" />
-          )}
-          <Text style={[styles.count, { color: theme.muted }]}>{filtered.length}</Text>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <View>
+                <Text style={styles.title}>Insumos</Text>
+                <Text style={styles.subtitle}>{insumos.length} materiales registrados</Text>
+            </View>
+            <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                <MaterialCommunityIcons name="refresh" size={24} color={Colors.primary} />
+            </TouchableOpacity>
         </View>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre o unidad..."
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_insumo)}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <SearchBar
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar insumo..."
+              style={{ marginBottom: 25 }}
+            />
+          }
+          renderItem={({ item }) => (
+            <InsumoCard
+              item={item}
+              onPress={() => router.push(`/(app)/insumos/${item.id_insumo}`)}
+              onLongPress={() => setDeleteId(item.id_insumo)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            loading ? (
+                <LoadingSpinner message="Cargando materiales..." />
+            ) : (
+                <EmptyState
+                    icon="flask-empty-outline"
+                    title="Sin insumos"
+                    message={search ? 'No se encontraron resultados.' : 'No hay insumos registrados aún.'}
+                    actionLabel="Registrar Insumo"
+                    onAction={() => router.push('/insumos/create')}
+                />
+            )
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_insumo)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <InsumoCard
-            item={item}
-            onPress={() => router.push(`/insumos/${item.id_insumo}`)}
-            onLongPress={() => setDeleteId(item.id_insumo)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            title="Sin insumos"
-            message={search ? 'No hay resultados para tu búsqueda.' : 'Aún no hay insumos registrados.'}
-            actionLabel="Agregar insumo"
-            onAction={() => router.push('/insumos/create')}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/insumos/create')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/insumos/create')}
-        activeOpacity={0.85}
-        accessibilityLabel="Agregar insumo"
-        accessibilityRole="button"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar insumo"
+          message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"?`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
+        />
 
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar insumo"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  title: {
-    ...Typography.h2,
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  count: {
-    ...Typography.bodySmall,
-  },
-  searchContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 100,
-  },
-  listEmpty: {
-    flexGrow: 1,
-  },
-  card: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-    overflow: 'hidden',
-  },
-  cardPressed: {
-    opacity: 0.75,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  cardIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardIconText: {
-    fontSize: 20,
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 3,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  cardName: {
-    ...Typography.bodyMedium,
-    fontWeight: '600',
-    flex: 1,
-  },
-  cardMeta: {
-    ...Typography.bodySmall,
-  },
-  cardStock: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  cardStockLabel: {
-    ...Typography.bodySmall,
-  },
-  cardStockValue: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
-  },
-  cardStockMin: {
-    ...Typography.caption,
-  },
-  chevron: {
-    fontSize: 22,
-    fontWeight: '300',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-  fabIcon: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 32,
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
+  cardPressed: { transform: [{ translateY: 2 }, { translateX: 2 }], shadowOffset: { width: 2, height: 2 } },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
+  iconContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  headerText: { flex: 1 },
+  cardName: { fontSize: 18, fontWeight: '900', color: Colors.dark },
+  cardUnit: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)' },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 12 },
+  stockRow: { flexDirection: 'row', alignItems: 'center' },
+  stockItem: { flex: 1, alignItems: 'center' },
+  stockDivider: { width: 1, height: 30, backgroundColor: 'rgba(0,0,0,0.05)' },
+  stockLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  stockValue: { fontSize: 16, fontWeight: '900', color: Colors.dark },
+  cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
+  footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.3)' },
+  fab: { position: 'absolute', bottom: 100, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, zIndex: 999 },
+  fabIcon: { fontSize: 32, color: '#FFF', fontWeight: '900' }
 });

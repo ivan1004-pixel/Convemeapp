@@ -7,7 +7,7 @@ export const Colors = {
   success: '#00D084',
   info: '#0301ff',
   warning: '#FFD600',
-  error: '#FF4444',
+  error: '#FF0000',
   dark: '#1A1A1A',
   light: '#FFFFFF',
   textDark: '#1A1A1A',
@@ -17,6 +17,8 @@ export const Colors = {
   pink: '#f88fea',
   blue: '#0301ff',
   beige: '#ede0d1',
+  beigeDark: '#D7C2AB', // Beige más oscuro para degradados
+  lilac: '#D1C4E9',
 
   // Gradient stops
   gradientStart: '#f88fea',
@@ -24,12 +26,12 @@ export const Colors = {
 
   light2: {
     text: '#1A1A1A',
-    background: '#ede0d1',
+    background: '#ede0d1', // Revertido a beige
     tint: '#0301ff',
     icon: '#0301ff',
     tabIconDefault: '#6B7280',
     tabIconSelected: '#0301ff',
-    tabBarBackground: '#ede0d1', // Fondo beige para la barra inferior
+    tabBarBackground: '#ede0d1', // Revertido a beige
     border: '#1A1A1A',
     card: '#F9F4EE',
     muted: '#4B5563',
@@ -37,7 +39,7 @@ export const Colors = {
   },
   dark2: {
     text: '#1A1A1A',
-    background: '#ede0d1',
+    background: '#ede0d1', // Revertido a beige
     tint: '#0301ff',
     icon: '#0301ff',
     tabIconDefault: '#6B7280',

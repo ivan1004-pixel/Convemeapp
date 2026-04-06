@@ -26,6 +26,7 @@ import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, parseGraphQLError } from '../../../src/utils';
 import type { Producto } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COLUMN_GAP = Spacing.sm;
@@ -149,90 +150,94 @@ export default function ProductosScreen() {
 
   if (loading && productos.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Productos</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando productos..." />
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.text }]}>Productos</Text>
+          </View>
+          <LoadingSpinner fullScreen message="Cargando productos..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Productos</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} artículos</Text>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>Productos</Text>
+          <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} artículos</Text>
+        </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre, SKU..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por nombre, SKU..."
+          />
+        </View>
+
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_producto)}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+          contentContainerStyle={[
+            styles.listContent,
+            filtered.length === 0 && styles.listEmpty,
+          ]}
+          renderItem={({ item }) => (
+            <ProductoCard
+              item={item}
+              onPress={() => router.push(`/productos/${item.id_producto}`)}
+              onLongPress={() => setDeleteId(item.id_producto)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="shopping"
+              title="Sin productos"
+              message={
+                search
+                  ? 'No hay productos que coincidan con tu búsqueda.'
+                  : 'Aún no hay productos registrados.'
+              }
+              actionLabel={!search ? 'Agregar producto' : undefined}
+              onAction={!search ? () => router.push('/productos/create') : undefined}
+            />
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_producto)}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <ProductoCard
-            item={item}
-            onPress={() => router.push(`/productos/${item.id_producto}`)}
-            onLongPress={() => setDeleteId(item.id_producto)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="shopping"
-            title="Sin productos"
-            message={
-              search
-                ? 'No hay productos que coincidan con tu búsqueda.'
-                : 'Aún no hay productos registrados.'
-            }
-            actionLabel={!search ? 'Agregar producto' : undefined}
-            onAction={!search ? () => router.push('/productos/create') : undefined}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+        <TouchableOpacity
+          style={[styles.fab, Shadows.lg]}
+          onPress={() => router.push('/productos/create')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo producto"
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.fab, Shadows.lg]}
-        onPress={() => router.push('/productos/create')}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo producto"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar producto"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-        destructive
-      />
-    </SafeAreaView>
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar producto"
+          message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+          destructive
+        />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
@@ -250,7 +255,7 @@ const styles = StyleSheet.create({
   count: { ...Typography.bodySmall },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,

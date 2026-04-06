@@ -7,8 +7,8 @@ import {
   Alert,
   Pressable,
   ActivityIndicator,
-  Modal,             // <-- ¡Agregado!
-  TouchableOpacity,  // <-- ¡Agregado!
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -26,8 +26,8 @@ import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Venta } from '../../../src/types';
-
 import { SalesTicket } from '../../../src/components/ui/SalesTicket';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -36,9 +36,6 @@ const ESTADO_BADGE: Record<string, 'warning' | 'success' | 'error'> = {
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
   const bg = '#FFFFFF'; 
 
   return (
@@ -118,184 +115,190 @@ export default function VentaDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <LoadingSpinner fullScreen message="Cargando venta..." />
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <LoadingSpinner fullScreen message="Cargando venta..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   if (!venta) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-      <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-      <Text style={styles.backIcon}>←</Text>
-      </Pressable>
-      <Text style={[styles.title, { color: theme.text }]}>Venta</Text>
-      <View style={styles.headerPlaceholder} />
-      </View>
-      <View style={styles.notFound}>
-      <Text style={{ ...Typography.body, color: theme.muted }}>Venta no encontrada.</Text>
-      </View>
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
+              <Text style={styles.backIcon}>←</Text>
+            </Pressable>
+            <Text style={[styles.title, { color: theme.text }]}>Venta</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <View style={styles.notFound}>
+            <Text style={{ ...Typography.body, color: theme.muted }}>Venta no encontrada.</Text>
+          </View>
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-    <View style={styles.header}>
-    <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-    <Text style={styles.backIcon}>←</Text>
-    </Pressable>
-    <Text style={[styles.title, { color: theme.text }]}>Venta #{venta.id_venta}</Text>
-    <Pressable
-    onPress={() => setShowDelete(true)}
-    style={styles.deleteBtn}
-    accessibilityRole="button"
-    accessibilityLabel="Eliminar venta"
-    >
-    <Text style={styles.deleteIcon}>X</Text>
-    </Pressable>
-    </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
+            <Text style={styles.backIcon}>←</Text>
+          </Pressable>
+          <Text style={[styles.title, { color: theme.text }]}>Venta #{venta.id_venta}</Text>
+          <Pressable
+            onPress={() => setShowDelete(true)}
+            style={styles.deleteBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar venta"
+          >
+            <Text style={styles.deleteIcon}>X</Text>
+          </Pressable>
+        </View>
 
-    <ScrollView
-    contentContainerStyle={styles.scrollContent}
-    showsVerticalScrollIndicator={false}
-    >
-    {/* Summary Card */}
-    <Card style={styles.summaryCard}>
-    <View style={styles.summaryRow}>
-    <Text style={[styles.amountLabel, { color: theme.muted }]}>Monto Total</Text>
-    <Badge
-    text={venta.estado ?? 'Pendiente'}
-    color={ESTADO_BADGE[venta.estado ?? 'Pendiente'] ?? 'secondary'}
-    />
-    </View>
-    <Text style={[styles.amount, { color: Colors.primary }]}>
-    {formatCurrency(venta.monto_total)}
-    </Text>
-    </Card>
-
-    {/* Details Card */}
-    <Card title="Información" style={styles.sectionCard}>
-    <DetailRow label="Fecha" value={formatDate(venta.fecha_venta)} />
-    <DetailRow label="Método de pago" value={venta.metodo_pago ?? 'No especificado'} />
-    <DetailRow label="Estado" value={venta.estado ?? 'Pendiente'} />
-    <DetailRow
-    label="Vendedor"
-    value={venta.vendedor?.nombre_completo ?? 'No asignado'}
-    />
-    </Card>
-
-    {/* Detalles Card */}
-    {venta.detalles && venta.detalles.length > 0 && (
-      <Card
-        title={`Productos (${venta.detalles.reduce((acc, det) => acc + det.cantidad, 0)})`}
-        style={styles.sectionCard}
-      >
-      {venta.detalles.map((det, i) => (
-        <View
-        key={i}
-        style={[
-          styles.detalleRow,
-          { 
-            backgroundColor: '#FFFFFF', 
-            borderColor: 'rgba(26,26,26,0.05)', 
-            borderWidth: 1, 
-            borderRadius: BorderRadius.lg, 
-            marginBottom: Spacing.sm, 
-            paddingHorizontal: Spacing.md,
-            paddingVertical: Spacing.md,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.05,
-            shadowRadius: 5,
-            elevation: 2,
-          }
-        ]}
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-        <View style={styles.detalleInfo}>
-        <Text style={[styles.detalleName, { color: '#1A1A1A' }]}>
-        {det.producto?.nombre ?? 'Producto'}
-        </Text>
-        <Text style={[styles.detalleSku, { color: 'rgba(26,26,26,0.5)' }]}>
-        SKU: {det.producto?.sku ?? '-'}
-        </Text>
-        </View>
-        <View style={styles.detalleRight}>
-        <Text style={[styles.detalleCantidad, { color: Colors.blue, fontWeight: '700' }]}>
-        ×{det.cantidad}
-        </Text>
-        <Text style={[styles.detallePrecio, { color: Colors.success, fontWeight: '700' }]}>
-        {formatCurrency(det.precio_unitario)}
-        </Text>
-        </View>
-        </View>
-      ))}
-      </Card>
-    )}
+          {/* Summary Card */}
+          <Card style={styles.summaryCard}>
+            <View style={styles.summaryRow}>
+              <Text style={[styles.amountLabel, { color: theme.muted }]}>Monto Total</Text>
+              <Badge
+                text={venta.estado ?? 'Pendiente'}
+                color={ESTADO_BADGE[venta.estado ?? 'Pendiente'] ?? 'secondary'}
+              />
+            </View>
+            <Text style={[styles.amount, { color: Colors.primary }]}>
+              {formatCurrency(venta.monto_total)}
+            </Text>
+          </Card>
 
-    {/* Actions */}
-    <View style={styles.actions}>
-    <Button
-    title="Ver Ticket"
-    variant="primary"
-    onPress={() => setShowTicket(true)}
-    style={styles.actionBtn}
-    />
-    <Button
-    title="Editar venta"
-    variant="outline"
-    onPress={() => router.push(`/ventas/create?id=${venta.id_venta}`)}
-    style={styles.actionBtn}
-    />
-    <Button
-    title="Eliminar"
-    variant="danger"
-    onPress={() => setShowDelete(true)}
-    style={styles.actionBtn}
-    />
-    </View>
-    </ScrollView>
+          {/* Details Card */}
+          <Card title="Información" style={styles.sectionCard}>
+            <DetailRow label="Fecha" value={formatDate(venta.fecha_venta)} />
+            <DetailRow label="Método de pago" value={venta.metodo_pago ?? 'No especificado'} />
+            <DetailRow label="Estado" value={venta.estado ?? 'Pendiente'} />
+            <DetailRow
+              label="Vendedor"
+              value={venta.vendedor?.nombre_completo ?? 'No asignado'}
+            />
+          </Card>
 
-    <ConfirmDialog
-    visible={showDelete}
-    title="Eliminar venta"
-    message={`¿Deseas eliminar la venta #${venta.id_venta}? Esta acción no se puede deshacer.`}
-    onConfirm={handleDelete}
-    onCancel={() => setShowDelete(false)}
-    confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-    destructive
-    />
+          {/* Detalles Card */}
+          {venta.detalles && venta.detalles.length > 0 && (
+            <Card
+              title={`Productos (${venta.detalles.reduce((acc, det) => acc + det.cantidad, 0)})`}
+              style={styles.sectionCard}
+            >
+              {venta.detalles.map((det, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.detalleRow,
+                    { 
+                      backgroundColor: '#FFFFFF', 
+                      borderColor: 'rgba(26,26,26,0.05)', 
+                      borderWidth: 1, 
+                      borderRadius: BorderRadius.lg, 
+                      marginBottom: Spacing.sm, 
+                      paddingHorizontal: Spacing.md,
+                      paddingVertical: Spacing.md,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 5,
+                      elevation: 2,
+                    }
+                  ]}
+                >
+                  <View style={styles.detalleInfo}>
+                    <Text style={[styles.detalleName, { color: '#1A1A1A' }]}>
+                      {det.producto?.nombre ?? 'Producto'}
+                    </Text>
+                    <Text style={[styles.detalleSku, { color: 'rgba(26,26,26,0.5)' }]}>
+                      SKU: {det.producto?.sku ?? '-'}
+                    </Text>
+                  </View>
+                  <View style={styles.detalleRight}>
+                    <Text style={[styles.detalleCantidad, { color: Colors.blue, fontWeight: '700' }]}>
+                      ×{det.cantidad}
+                    </Text>
+                    <Text style={[styles.detallePrecio, { color: Colors.success, fontWeight: '700' }]}>
+                      {formatCurrency(det.precio_unitario)}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </Card>
+          )}
 
-    {/* Modal del Ticket */}
-    <Modal
-    visible={showTicket}
-    transparent
-    animationType="fade"
-    onRequestClose={() => setShowTicket(false)}
-    >
-    <View style={styles.ticketModalOverlay}>
-    <View style={styles.ticketModalContainer}>
-    <ScrollView
-    contentContainerStyle={styles.ticketScrollContent}
-    showsVerticalScrollIndicator={false}
-    >
-    <SalesTicket venta={venta} />
-    </ScrollView>
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Button
+              title="Ver Ticket"
+              variant="primary"
+              onPress={() => setShowTicket(true)}
+              style={styles.actionBtn}
+            />
+            <Button
+              title="Editar venta"
+              variant="outline"
+              onPress={() => router.push(`/ventas/create?id=${venta.id_venta}`)}
+              style={styles.actionBtn}
+            />
+            <Button
+              title="Eliminar"
+              variant="danger"
+              onPress={() => setShowDelete(true)}
+              style={styles.actionBtn}
+            />
+          </View>
+        </ScrollView>
 
-    {/* Botón cerrar */}
-    <TouchableOpacity
-    style={styles.closeTicketButton}
-    onPress={() => setShowTicket(false)}
-    activeOpacity={0.7}
-    >
-    <Text style={styles.closeTicketText}>✕ CERRAR</Text>
-    </TouchableOpacity>
-    </View>
-    </View>
-    </Modal>
-    </SafeAreaView>
+        <ConfirmDialog
+          visible={showDelete}
+          title="Eliminar venta"
+          message={`¿Deseas eliminar la venta #${venta.id_venta}? Esta acción no se puede deshacer.`}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDelete(false)}
+          confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+          destructive
+        />
+
+        {/* Modal del Ticket */}
+        <Modal
+          visible={showTicket}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowTicket(false)}
+        >
+          <View style={styles.ticketModalOverlay}>
+            <View style={styles.ticketModalContainer}>
+              <ScrollView
+                contentContainerStyle={styles.ticketScrollContent}
+                showsVerticalScrollIndicator={false}
+              >
+                <SalesTicket venta={venta} />
+              </ScrollView>
+
+              {/* Botón cerrar */}
+              <TouchableOpacity
+                style={styles.closeTicketButton}
+                onPress={() => setShowTicket(false)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.closeTicketText}>✕ CERRAR</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
@@ -315,7 +318,7 @@ const styles = StyleSheet.create({
   deleteIcon: { fontSize: 20 },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 120,
   },
   summaryCard: { marginBottom: Spacing.md },
   summaryRow: {
@@ -350,10 +353,10 @@ const styles = StyleSheet.create({
   // Estilos del modal del ticket
   ticketModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(237, 224, 209, 0.95)', // Beige con opacidad alta en lugar de negro
-                                 justifyContent: 'center',
-                                 alignItems: 'center',
-                                 padding: Spacing.lg,
+    backgroundColor: 'rgba(237, 224, 209, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.lg,
   },
   ticketModalContainer: {
     width: '100%',

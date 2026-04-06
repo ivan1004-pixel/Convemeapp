@@ -57,7 +57,8 @@ export default function LoginScreen() {
 
   if (screenState === 'network-error') {
     return (
-      <View style={[styles.fullScreen, { backgroundColor: Colors.beige }]}>
+      <View style={styles.fullScreen}>
+        <LinearGradient colors={[Colors.beige, Colors.beigeDark]} start={{x:0,y:0}} end={{x:0,y:1}} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.centered}>
           <Meme source={require('../../assets/images/memeerror.png')} size={180} />
           <Text style={[styles.errorTitle, { color: Colors.error }]}>Sin conexión</Text>
@@ -78,7 +79,8 @@ export default function LoginScreen() {
 
   if (screenState === 'success') {
     return (
-      <View style={[styles.fullScreen, { backgroundColor: Colors.beige }]}>
+      <View style={styles.fullScreen}>
+        <LinearGradient colors={[Colors.beige, Colors.beigeDark]} start={{x:0,y:0}} end={{x:0,y:1}} style={StyleSheet.absoluteFill} />
         <SafeAreaView style={styles.centered}>
           <Meme source={require('../../assets/images/memeok.png')} size={180} />
           <Text style={[styles.successTitle, { color: Colors.success }]}>Sesión Iniciada</Text>
@@ -90,7 +92,9 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <View style={styles.fullScreen}>
+      <LinearGradient colors={[Colors.beige, Colors.beigeDark]} start={{x:0,y:0}} end={{x:0,y:1}} style={StyleSheet.absoluteFill} />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -183,13 +187,13 @@ export default function LoginScreen() {
 
       <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
   keyboardView: {
     flex: 1,

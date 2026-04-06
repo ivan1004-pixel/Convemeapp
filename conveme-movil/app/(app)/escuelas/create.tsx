@@ -1,181 +1,208 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
-  Alert,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Modal,
+  FlatList,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { createEscuela, updateEscuela } from '../../../src/services/escuela.service';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { createEscuela, updateEscuela, deleteEscuela } from '../../../src/services/escuela.service';
+import { getMunicipios } from '../../../src/services/ubicacion.service';
 import { useEscuelaStore } from '../../../src/store/escuelaStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Input } from '../../../src/components/ui/Input';
 import { Button } from '../../../src/components/ui/Button';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { SearchBar } from '../../../src/components/ui/SearchBar';
+import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
+import { Toast, useToast } from '../../../src/components/Toast';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { parseGraphQLError } from '../../../src/utils';
-import type { Escuela } from '../../../src/types';
+import type { Escuela, Municipio } from '../../../src/types';
 
 export default function EscuelaCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
-  const { escuelas, addEscuela, updateEscuela: updateEscuelaStore } = useEscuelaStore();
+  const { toast, show: showToast, hide: hideToast } = useToast();
+  const { escuelas, addEscuela, updateEscuela: updateEscuelaStore, removeEscuela } = useEscuelaStore();
 
   const isEditing = !!id;
-  const existing: Escuela | undefined = isEditing
-    ? escuelas.find((e) => e.id_escuela === Number(id))
-    : undefined;
+  const existing = escuelas.find((e) => e.id_escuela === Number(id));
 
   const [form, setForm] = useState({
-    nombre: existing?.nombre ?? '',
-    siglas: existing?.siglas ?? '',
-    municipio_id: existing?.municipio?.id_municipio != null
-      ? String(existing.municipio.id_municipio)
-      : '',
+    nombre: '',
+    siglas: '',
+    municipio_id: null as number | null,
+    activa: true,
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [municipios, setMunicipios] = useState<Municipio[]>([]);
+  const [showMunicipioModal, setShowMunicipioModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  const setField = (field: string, value: string) => {
+  useEffect(() => {
+    (async () => {
+        const data = await getMunicipios();
+        setMunicipios(data || []);
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (isEditing && existing) {
+      setForm({
+        nombre: existing.nombre || '',
+        siglas: existing.siglas || '',
+        municipio_id: existing.municipio?.id_municipio ?? null,
+        activa: existing.activa ?? true,
+      });
+    }
+  }, [id, existing]);
+
+  const setField = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
-  };
-
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-    if (!form.nombre.trim()) {
-      newErrors.nombre = 'El nombre es requerido';
-    }
-    if (!form.siglas.trim()) {
-      newErrors.siglas = 'Las siglas son requeridas';
-    }
-    if (form.municipio_id.trim() && isNaN(Number(form.municipio_id))) {
-      newErrors.municipio_id = 'Ingresa un ID numérico válido';
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    if (!validate()) return;
+    if (!form.nombre.trim() || !form.siglas.trim() || !form.municipio_id) {
+      showToast('Completa los campos obligatorios', 'warning');
+      return;
+    }
     setSubmitting(true);
     try {
-      const input: Record<string, unknown> = {
+      const input = {
         nombre: form.nombre.trim(),
         siglas: form.siglas.trim().toUpperCase(),
+        municipio_id: Number(form.municipio_id),
+        activa: form.activa,
       };
-      if (form.municipio_id.trim()) input.municipio_id = parseInt(form.municipio_id, 10);
 
       if (isEditing && existing) {
-        const updated = await updateEscuela({ id_escuela: existing.id_escuela, ...input } as any);
-        updateEscuelaStore({ ...existing, ...updated });
+        const updated = await updateEscuela({ id_escuela: existing.id_escuela, ...input });
+        updateEscuelaStore({ 
+          ...existing, 
+          ...updated, 
+          municipio: municipios.find(m => m.id_municipio === form.municipio_id)
+        });
+        showToast('Escuela actualizada', 'success');
       } else {
-        const created = await createEscuela(input as any);
-        addEscuela(created);
+        const created = await createEscuela(input);
+        addEscuela({
+            ...created,
+            municipio: municipios.find(m => m.id_municipio === form.municipio_id)
+        });
+        showToast('Escuela creada', 'success');
       }
-      router.back();
+      setTimeout(() => router.back(), 1500);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>
-          {isEditing ? 'Editar Escuela' : 'Nueva Escuela'}
-        </Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={{flex: 1}}>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>{isEditing ? 'Editar Escuela' : 'Nueva Escuela'}</Text>
+            <View style={{width: 44}} />
+        </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Input
-          label="Nombre *"
-          value={form.nombre}
-          onChangeText={(v) => setField('nombre', v)}
-          placeholder="Nombre completo de la escuela"
-          error={errors.nombre}
-          autoCapitalize="words"
-        />
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+            <View style={styles.card}>
+                <Input label="NOMBRE *" value={form.nombre} onChangeText={v => setField('nombre', v)} placeholder="Nombre de la escuela" />
+                <Input label="SIGLAS *" value={form.siglas} onChangeText={v => setField('siglas', v)} placeholder="Ej: UNAM" />
+                
+                <Text style={styles.label}>UBICACIÓN *</Text>
+                <TouchableOpacity style={styles.selector} onPress={() => setShowMunicipioModal(true)}>
+                    <Text style={styles.selectorText}>{municipios.find(m => m.id_municipio === form.municipio_id)?.nombre || 'Seleccionar municipio'}</Text>
+                    <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
+                </TouchableOpacity>
 
-        <Input
-          label="Siglas *"
-          value={form.siglas}
-          onChangeText={(v) => setField('siglas', v.toUpperCase())}
-          placeholder="Ej. UNAM, IPN"
-          error={errors.siglas}
-          autoCapitalize="characters"
-          maxLength={10}
-        />
+                <View style={styles.statusRow}>
+                    <TouchableOpacity style={[styles.chip, form.activa && styles.chipActive]} onPress={() => setField('activa', true)}><Text style={styles.chipText}>ACTIVA</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.chip, !form.activa && styles.chipInactive]} onPress={() => setField('activa', false)}><Text style={styles.chipText}>INACTIVA</Text></TouchableOpacity>
+                </View>
+            </View>
 
-        <Input
-          label="ID Municipio"
-          value={form.municipio_id}
-          onChangeText={(v) => setField('municipio_id', v)}
-          placeholder="ID numérico del municipio"
-          error={errors.municipio_id}
-          keyboardType="numeric"
-          helperText="Ingresa el ID del municipio al que pertenece"
-        />
+            <Button title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR ESCUELA'} onPress={handleSubmit} loading={submitting} size="lg" style={styles.submit} />
+            
+            {isEditing && (
+                <TouchableOpacity style={styles.delete} onPress={() => setShowDeleteConfirm(true)}>
+                    <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+                    <Text style={styles.deleteText}>ELIMINAR ESCUELA</Text>
+                </TouchableOpacity>
+            )}
+        </ScrollView>
 
-        <Button
-          title={isEditing ? 'Guardar cambios' : 'Crear escuela'}
-          onPress={handleSubmit}
-          loading={submitting}
-          size="lg"
-          style={styles.submitBtn}
-        />
-      </ScrollView>
-    </SafeAreaView>
+        <Modal visible={showMunicipioModal} animationType="slide" transparent>
+            <SafeAreaView style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <View style={styles.modalHeader}>
+                        <Text style={styles.modalTitle}>MUNICIPIOS</Text>
+                        <TouchableOpacity onPress={() => setShowMunicipioModal(false)}><MaterialCommunityIcons name="close" size={24} color={Colors.dark} /></TouchableOpacity>
+                    </View>
+                    <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar..." />
+                    <FlatList
+                        data={municipios.filter(m => m.nombre.toLowerCase().includes(searchQuery.toLowerCase()))}
+                        keyExtractor={item => String(item.id_municipio)}
+                        renderItem={({item}) => (
+                            <TouchableOpacity style={styles.item} onPress={() => { setField('municipio_id', item.id_municipio); setShowMunicipioModal(false); }}>
+                                <Text style={styles.itemText}>{item.nombre.toUpperCase()}</Text>
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            </SafeAreaView>
+        </Modal>
+
+        <ConfirmDialog visible={showDeleteConfirm} title="Eliminar" message="¿Estás seguro?" onConfirm={async () => {
+            setDeleting(true);
+            await deleteEscuela(existing!.id_escuela);
+            removeEscuela(existing!.id_escuela);
+            router.back();
+        }} onCancel={() => setShowDeleteConfirm(false)} loading={deleting} />
+      </SafeAreaView>
+      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  backIcon: {
-    fontSize: 22,
-    fontWeight: '500',
-  },
-  title: {
-    ...Typography.h3,
-  },
-  headerPlaceholder: {
-    width: 34,
-  },
-  scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
-  },
-  submitBtn: {
-    marginTop: Spacing.lg,
-  },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: '900' },
+  scroll: { padding: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 25, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, elevation: 0, marginBottom: 25 },
+  label: { fontSize: 12, fontWeight: '900', marginBottom: 8 },
+  selector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 15, borderRadius: 12, borderWidth: 2, borderColor: Colors.dark, backgroundColor: '#F9FAFB', marginBottom: 20 },
+  selectorText: { fontSize: 14, fontWeight: '700' },
+  statusRow: { flexDirection: 'row', gap: 10 },
+  chip: { flex: 1, padding: 12, alignItems: 'center', borderRadius: 10, borderWidth: 2, borderColor: '#EEE' },
+  chipActive: { borderColor: Colors.success, backgroundColor: Colors.success + '10' },
+  chipInactive: { borderColor: Colors.error, backgroundColor: Colors.error + '10' },
+  chipText: { fontSize: 11, fontWeight: '900' },
+  submit: { height: 60, borderWidth: 3, borderColor: Colors.dark },
+  delete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 30, gap: 8 },
+  deleteText: { color: Colors.error, fontWeight: '900', fontSize: 14 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: Colors.beige, height: '80%', borderTopLeftRadius: 30, borderTopRightRadius: 30, padding: 25, borderTopWidth: 5, borderColor: Colors.dark },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  modalTitle: { fontSize: 18, fontWeight: '900' },
+  item: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  itemText: { fontSize: 15, fontWeight: '800' }
 });

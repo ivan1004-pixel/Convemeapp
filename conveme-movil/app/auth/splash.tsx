@@ -35,6 +35,11 @@ export default function SplashScreen() {
 
       {/* Contenido con fondo beige neobrutalista */}
       <View style={styles.contentContainer}>
+        <LinearGradient 
+          colors={[Colors.beige, Colors.beigeDark]} 
+          start={{x:0,y:0}} end={{x:0,y:1}} 
+          style={[StyleSheet.absoluteFill, { borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl }]} 
+        />
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
           {/* Logo + Mascota */}
           <View style={styles.brandRow}>
@@ -83,7 +88,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    backgroundColor: Colors.beige,
     borderTopWidth: 4,
     borderColor: Colors.dark,
     marginTop: -20,

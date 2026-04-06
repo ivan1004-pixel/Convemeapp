@@ -1,13 +1,21 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../theme/colors';
 
 export function NeobrutalistBackground({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.container}>
+      {/* Fondo con degradado suave */}
+      <LinearGradient
+        colors={[Colors.beige, Colors.beigeDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      
       {/* Patrón de fondo discreto */}
       <View style={styles.pattern}>
-        {/* Puntos pequeños como patrón */}
         {Array.from({ length: 50 }).map((_, i) => (
           <View
             key={i}
@@ -31,7 +39,6 @@ export function NeobrutalistBackground({ children }: { children: React.ReactNode
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
   pattern: {
     ...StyleSheet.absoluteFillObject,

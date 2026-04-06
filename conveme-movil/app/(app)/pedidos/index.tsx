@@ -25,6 +25,7 @@ import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Pedido } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -158,88 +159,92 @@ export default function PedidosScreen() {
 
   if (loading && pedidos.length === 0) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando pedidos..." />
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
+          </View>
+          <LoadingSpinner fullScreen message="Cargando pedidos..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.text }]}>Pedidos</Text>
+          <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
+        </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por cliente, estado..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por cliente, estado..."
+          />
+        </View>
+
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_pedido)}
+          contentContainerStyle={[
+            styles.listContent,
+            filtered.length === 0 && styles.listEmpty,
+          ]}
+          renderItem={({ item }) => (
+            <PedidoCard
+              item={item}
+              onPress={() => router.push(`/pedidos/${item.id_pedido}`)}
+              onLongPress={() => setDeleteId(item.id_pedido)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            <EmptyState
+              icon="package-variant"
+              title="Sin pedidos"
+              message={
+                search
+                  ? 'No hay pedidos que coincidan con tu búsqueda.'
+                  : 'Aún no hay pedidos registrados.'
+              }
+              actionLabel={!search ? 'Crear pedido' : undefined}
+              onAction={!search ? () => router.push('/pedidos/create') : undefined}
+            />
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_pedido)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <PedidoCard
-            item={item}
-            onPress={() => router.push(`/pedidos/${item.id_pedido}`)}
-            onLongPress={() => setDeleteId(item.id_pedido)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            icon="package-variant"
-            title="Sin pedidos"
-            message={
-              search
-                ? 'No hay pedidos que coincidan con tu búsqueda.'
-                : 'Aún no hay pedidos registrados.'
-            }
-            actionLabel={!search ? 'Crear pedido' : undefined}
-            onAction={!search ? () => router.push('/pedidos/create') : undefined}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+        <TouchableOpacity
+          style={[styles.fab, Shadows.lg]}
+          onPress={() => router.push('/pedidos/create')}
+          activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel="Nuevo pedido"
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.fab, Shadows.lg]}
-        onPress={() => router.push('/pedidos/create')}
-        activeOpacity={0.85}
-        accessibilityRole="button"
-        accessibilityLabel="Nuevo pedido"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar pedido"
-        message={`¿Deseas eliminar el pedido #${deleteId}? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-        destructive
-      />
-    </SafeAreaView>
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar pedido"
+          message={`¿Deseas eliminar el pedido #${deleteId}? Esta acción no se puede deshacer.`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+          destructive
+        />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
@@ -257,7 +262,7 @@ const styles = StyleSheet.create({
   count: { ...Typography.bodySmall },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,

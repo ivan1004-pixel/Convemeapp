@@ -23,6 +23,7 @@ import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError, formatPhone } from '../../../src/utils';
 import type { Cliente } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 function ClienteCard({
   item,
@@ -93,7 +94,7 @@ export default function ClientesScreen() {
     } finally {
       setLoading(false);
     }
-  }, [setClientes]);
+  }, [setClientes, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -105,7 +106,7 @@ export default function ClientesScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [setClientes]);
+  }, [setClientes, showToast]);
 
   useEffect(() => {
     fetchData();
@@ -135,93 +136,94 @@ export default function ClientesScreen() {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeCliente]);
+  }, [deleteId, removeCliente, showToast]);
 
   const deleteTarget = clientes.find((c) => c.id_cliente === deleteId);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Clientes</Text>
-        <Text style={styles.count}>{filtered.length} registros</Text>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Clientes</Text>
+          <Text style={styles.count}>{filtered.length} registros</Text>
+        </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre, email..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por nombre, email..."
+          />
+        </View>
+
+        {loading && clientes.length === 0 ? (
+          <LoadingSpinner fullScreen message="Cargando clientes..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_cliente)}
+            contentContainerStyle={[
+              styles.listContent,
+              filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+              <ClienteCard
+                item={item}
+                onPress={() => router.push(`/clientes/${item.id_cliente}`)}
+                onLongPress={() => setDeleteId(item.id_cliente)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="account-group"
+                title="Sin clientes"
+                message={search ? 'No hay resultados.' : 'Aún no hay clientes.'}
+                actionLabel="Agregar cliente"
+                onAction={() => router.push('/clientes/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/clientes/create')}
+          activeOpacity={0.85}
+          accessibilityLabel="Agregar cliente"
+          accessibilityRole="button"
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar cliente"
+          message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
         />
-      </View>
 
-      {loading && clientes.length === 0 ? (
-        <LoadingSpinner fullScreen message="Cargando clientes..." />
-      ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_cliente)}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <ClienteCard
-              item={item}
-              onPress={() => router.push(`/clientes/${item.id_cliente}`)}
-              onLongPress={() => setDeleteId(item.id_cliente)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="account-group"
-              title="Sin clientes"
-              message={search ? 'No hay resultados.' : 'Aún no hay clientes.'}
-              actionLabel="Agregar cliente"
-              onAction={() => router.push('/clientes/create')}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/clientes/create')}
-        activeOpacity={0.85}
-        accessibilityLabel="Agregar cliente"
-        accessibilityRole="button"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar cliente"
-        message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
-        confirmText="Eliminar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
   header: {
     flexDirection: 'row',

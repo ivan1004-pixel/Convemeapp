@@ -17,6 +17,7 @@ import { Button } from '../../src/components/ui/Button';
 import { Toast, useToast } from '../../src/components/Toast';
 import { Meme } from '../../src/components/Meme';
 import { createUserService } from '../../src/services/user.service';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '../../src/theme/colors';
 import { Typography } from '../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../src/theme/spacing';
@@ -88,7 +89,9 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+    <View style={styles.fullScreen}>
+      <LinearGradient colors={[Colors.beige, Colors.beigeDark]} start={{x:0,y:0}} end={{x:0,y:1}} style={StyleSheet.absoluteFill} />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -234,13 +237,13 @@ export default function RegisterScreen() {
 
       <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
     </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
   keyboardView: {
     flex: 1,

@@ -1,9 +1,10 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { StatusBar } from 'expo-status-bar';
 import { Colors } from '../../theme/colors';
 import { Spacing } from '../../theme/spacing';
-import { useColorScheme } from '../../hooks/use-color-scheme';
 
 interface SafeAreaContainerProps {
   children: React.ReactNode;
@@ -16,24 +17,27 @@ export const SafeAreaContainer: React.FC<SafeAreaContainerProps> = ({
   style,
   padding = false,
 }) => {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   return (
-    <SafeAreaView
-      style={[styles.safe, { backgroundColor: theme.background }]}
-    >
-      <View
-        style={[
-          styles.container,
-          padding && styles.withPadding,
-          style,
-        ]}
-      >
-        {children}
-      </View>
-    </SafeAreaView>
+    <View style={styles.safe}>
+      <StatusBar style="dark" />
+      <LinearGradient
+        colors={[Colors.beige, Colors.beigeDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+        <View
+          style={[
+            styles.container,
+            padding && styles.withPadding,
+            style,
+          ]}
+        >
+          {children}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 };
 

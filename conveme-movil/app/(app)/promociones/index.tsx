@@ -6,32 +6,32 @@ import {
   RefreshControl,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPromociones, deletePromocion } from '../../../src/services/promocion.service';
 import { usePromocionStore } from '../../../src/store/promocionStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
+import { Spacing } from '../../../src/theme/spacing';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { Badge } from '../../../src/components/ui/Badge';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { parseGraphQLError, formatDate, formatCurrency } from '../../../src/utils';
 import type { Promocion } from '../../../src/types';
 
 function formatDescuento(promocion: Promocion): string {
   if (promocion.valor_descuento == null) return '';
   if (promocion.tipo_promocion === 'PORCENTAJE') {
-    return `${promocion.valor_descuento}% de descuento`;
+    return `${promocion.valor_descuento}%`;
   }
-  return `${formatCurrency(promocion.valor_descuento)} de descuento`;
+  return formatCurrency(promocion.valor_descuento);
 }
 
 function PromocionCard({
@@ -43,63 +43,61 @@ function PromocionCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   return (
     <Pressable
       onPress={onPress}
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: theme.card, borderColor: theme.border },
-        Shadows.sm,
         pressed && styles.cardPressed,
+        !item.activa && { opacity: 0.7, backgroundColor: '#F3F4F6' }
       ]}
-      accessibilityRole="button"
     >
-      <View style={styles.cardContent}>
-        <View style={styles.cardInfo}>
-          <View style={styles.cardRow}>
-            <Text style={[styles.cardName, { color: theme.text }]} numberOfLines={1}>
-              {item.nombre}
-            </Text>
-            <Badge
-              text={item.activa ? 'Activa' : 'Inactiva'}
-              color={item.activa ? 'success' : 'secondary'}
-              size="sm"
+      <View style={styles.cardHeader}>
+        <View style={[styles.iconContainer, { backgroundColor: item.activa ? Colors.success + '15' : Colors.dark + '10' }]}>
+            <MaterialCommunityIcons 
+                name={item.tipo_promocion === 'PORCENTAJE' ? "percent" : "cash"} 
+                size={24} 
+                color={item.activa ? Colors.success : Colors.dark} 
             />
-          </View>
-          <View style={styles.cardTipoRow}>
-            <Badge
-              text={item.tipo_promocion === 'PORCENTAJE' ? '% Porcentaje' : '$ Monto fijo'}
-              color="primary"
-              size="sm"
-            />
-            {item.valor_descuento != null && (
-              <Text style={[styles.cardDescuento, { color: Colors.primary }]}>
-                {formatDescuento(item)}
-              </Text>
-            )}
-          </View>
-          {(item.fecha_inicio || item.fecha_fin) && (
-            <Text style={[styles.cardMeta, { color: theme.muted }]}>
-              📅 {formatDate(item.fecha_inicio)} — {formatDate(item.fecha_fin)}
-            </Text>
-          )}
         </View>
-        <Text style={[styles.chevron, { color: theme.muted }]}>›</Text>
+        <View style={styles.headerText}>
+            <Text style={styles.cardName}>{item.nombre}</Text>
+            <Text style={styles.cardTipo}>{item.tipo_promocion === 'PORCENTAJE' ? 'PORCENTAJE' : 'MONTO FIJO'}</Text>
+        </View>
+        <Badge
+          text={item.activa ? 'ACTIVA' : 'INACTIVA'}
+          color={item.activa ? 'success' : 'secondary'}
+          size="sm"
+        />
+      </View>
+
+      <View style={styles.cardBody}>
+          <View style={styles.promoRow}>
+              <View style={styles.promoItem}>
+                  <Text style={styles.promoLabel}>DESCUENTO</Text>
+                  <Text style={styles.promoValue}>{formatDescuento(item)}</Text>
+              </View>
+              <View style={styles.promoDivider} />
+              <View style={styles.promoItem}>
+                  <Text style={styles.promoLabel}>VIGENCIA</Text>
+                  <Text style={styles.promoDates}>
+                      {item.fecha_inicio ? formatDate(item.fecha_inicio) : 'INICIO'} - {item.fecha_fin ? formatDate(item.fecha_fin) : 'FIN'}
+                  </Text>
+              </View>
+          </View>
+      </View>
+
+      <View style={styles.cardFooter}>
+          <Text style={styles.footerText}>Ver detalles</Text>
+          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.dark} />
       </View>
     </Pressable>
   );
 }
 
 export default function PromocionesScreen() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const { promociones, setPromociones, removePromocion } = usePromocionStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -113,11 +111,11 @@ export default function PromocionesScreen() {
       const data = await getPromociones();
       setPromociones(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [setPromociones]);
+  }, [setPromociones, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -125,11 +123,11 @@ export default function PromocionesScreen() {
       const data = await getPromociones();
       setPromociones(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
-  }, [setPromociones]);
+  }, [setPromociones, showToast]);
 
   useEffect(() => {
     fetchData();
@@ -151,195 +149,121 @@ export default function PromocionesScreen() {
     try {
       await deletePromocion(deleteId);
       removePromocion(deleteId);
+      showToast('Promoción eliminada con éxito', 'success');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removePromocion]);
+  }, [deleteId, removePromocion, showToast]);
 
   const deleteTarget = promociones.find((p) => p.id_promocion === deleteId);
 
-  if (loading && promociones.length === 0) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.text }]}>Promociones</Text>
-        </View>
-        <LoadingSpinner fullScreen message="Cargando promociones..." />
-      </SafeAreaView>
-    );
-  }
-
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.text }]}>Promociones</Text>
-        <Text style={[styles.count, { color: theme.muted }]}>{filtered.length} registros</Text>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <View>
+                <Text style={styles.title}>Promociones</Text>
+                <Text style={styles.subtitle}>{promociones.length} ofertas registradas</Text>
+            </View>
+            <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+                <MaterialCommunityIcons name="refresh" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+        </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por nombre o tipo..."
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => String(item.id_promocion)}
+          contentContainerStyle={styles.list}
+          ListHeaderComponent={
+            <SearchBar
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Buscar promoción..."
+              style={{ marginBottom: 25 }}
+            />
+          }
+          renderItem={({ item }) => (
+            <PromocionCard
+              item={item}
+              onPress={() => router.push(`/(app)/promociones/${item.id_promocion}`)}
+              onLongPress={() => setDeleteId(item.id_promocion)}
+            />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
+            />
+          }
+          ListEmptyComponent={
+            loading ? (
+                <LoadingSpinner message="Cargando promociones..." />
+            ) : (
+                <EmptyState
+                    icon="tag-outline"
+                    title="Sin promociones"
+                    message={search ? 'No se encontraron resultados.' : 'No hay promociones registradas aún.'}
+                    actionLabel="Agregar Promoción"
+                    onAction={() => router.push('/promociones/create')}
+                />
+            )
+          }
+          showsVerticalScrollIndicator={false}
         />
-      </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => String(item.id_promocion)}
-        contentContainerStyle={[
-          styles.listContent,
-          filtered.length === 0 && styles.listEmpty,
-        ]}
-        renderItem={({ item }) => (
-          <PromocionCard
-            item={item}
-            onPress={() => router.push(`/promociones/${item.id_promocion}`)}
-            onLongPress={() => setDeleteId(item.id_promocion)}
-          />
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={[Colors.primary]}
-            tintColor={Colors.primary}
-          />
-        }
-        ListEmptyComponent={
-          <EmptyState
-            title="Sin promociones"
-            message={search ? 'No hay resultados para tu búsqueda.' : 'Aún no hay promociones registradas.'}
-            actionLabel="Agregar promoción"
-            onAction={() => router.push('/promociones/create')}
-          />
-        }
-        showsVerticalScrollIndicator={false}
-      />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/promociones/create')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/promociones/create')}
-        activeOpacity={0.85}
-        accessibilityLabel="Agregar promoción"
-        accessibilityRole="button"
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar promoción"
+          message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"?`}
+          confirmText="ELIMINAR"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
+        />
 
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar promoción"
-        message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  title: {
-    ...Typography.h2,
-  },
-  count: {
-    ...Typography.bodySmall,
-  },
-  searchContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  listContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 100,
-  },
-  listEmpty: {
-    flexGrow: 1,
-  },
-  card: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    marginBottom: Spacing.sm,
-    overflow: 'hidden',
-  },
-  cardPressed: {
-    opacity: 0.75,
-  },
-  cardContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: Spacing.md,
-    gap: Spacing.md,
-  },
-  cardInfo: {
-    flex: 1,
-    gap: 5,
-  },
-  cardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: Spacing.sm,
-  },
-  cardName: {
-    ...Typography.bodyMedium,
-    fontWeight: '600',
-    flex: 1,
-  },
-  cardTipoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    flexWrap: 'wrap',
-  },
-  cardDescuento: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
-  },
-  cardMeta: {
-    ...Typography.caption,
-  },
-  chevron: {
-    fontSize: 22,
-    fontWeight: '300',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: Spacing.xl,
-    right: Spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-  fabIcon: {
-    fontSize: 28,
-    color: '#fff',
-    lineHeight: 32,
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  list: { paddingHorizontal: 20, paddingBottom: 120 },
+  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
+  cardPressed: { transform: [{ translateY: 2 }, { translateX: 2 }], shadowOffset: { width: 2, height: 2 } },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
+  iconContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  headerText: { flex: 1 },
+  cardName: { fontSize: 18, fontWeight: '900', color: Colors.dark },
+  cardTipo: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)' },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 12 },
+  promoRow: { flexDirection: 'row', alignItems: 'center' },
+  promoItem: { flex: 1, alignItems: 'center' },
+  promoDivider: { width: 1, height: 30, backgroundColor: 'rgba(0,0,0,0.05)' },
+  promoLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  promoValue: { fontSize: 16, fontWeight: '900', color: Colors.primary },
+  promoDates: { fontSize: 11, fontWeight: '800', color: Colors.dark },
+  cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
+  footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.3)' },
+  fab: { position: 'absolute', bottom: 100, right: 20, width: 60, height: 60, borderRadius: 30, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, zIndex: 999 },
+  fabIcon: { fontSize: 32, color: '#FFF', fontWeight: '900' }
 });

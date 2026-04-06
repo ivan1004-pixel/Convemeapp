@@ -20,43 +20,39 @@ import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { formatCurrency, formatDate } from '../../../src/utils';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { Button } from '../../../src/components/ui/Button';
+import { Toast, useToast } from '../../../src/components/Toast';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 export default function DetalleMesScreen() {
+  const { toast, show, hide } = useToast();
   const [loading, setLoading] = useState(true);
   const [ventas, setVentas] = useState<any[]>([]);
   const [cortes, setCortes] = useState<any[]>([]);
   const [showWinnerModal, setShowWinnerModal] = useState(false);
+  const [expandedTicket, setExpandedTicket] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [vData, cData] = await Promise.all([getVentas(), getCortes()]);
       const now = new Date();
-      
       const esteMesV = vData.filter((v: any) => {
         const d = new Date(v.fecha_venta);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
-
       const esteMesC = cData.filter((c: any) => {
         const d = new Date(c.fecha_corte);
         return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
       });
-
       setVentas(esteMesV);
       setCortes(esteMesC);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error(err); } 
+    finally { setLoading(false); }
   }, []);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const groupedByDay = useMemo(() => {
     const days: Record<string, { ventas: number, cortes: number, total: number, date: string }> = {};
@@ -91,15 +87,7 @@ export default function DetalleMesScreen() {
   const bestVendor = vendorBreakdown.length > 0 ? vendorBreakdown[0] : null;
   const totalMensual = groupedByDay.reduce((acc, d) => acc + d.total, 0);
 
-  if (loading) {
-    return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container}>
-          <ActivityIndicator size="large" color={Colors.primary} style={{ flex: 1 }} />
-        </SafeAreaView>
-      </NeobrutalistBackground>
-    );
-  }
+  if (loading) return <LoadingSpinner message="Generando auditoría..." />;
 
   return (
     <NeobrutalistBackground>
@@ -116,7 +104,7 @@ export default function DetalleMesScreen() {
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           
-          <Text style={styles.sectionTitle}>Resumen por Día</Text>
+          <Text style={styles.sectionTitle}>Actividad por Día</Text>
           {groupedByDay.map((day, i) => (
               <View key={i} style={styles.dayCard}>
                   <View style={styles.dayHeader}>
@@ -137,15 +125,13 @@ export default function DetalleMesScreen() {
               </View>
           ))}
 
-          {/* TICKET DE REPORTE FINAL MULTICOLOR */}
+          {/* TICKET DE REPORTE FINAL ESCALABLE */}
           <View style={styles.ticketContainer}>
-              <View style={styles.ticketHeader}>
-                  <View style={styles.pinkHeader}>
-                      <Image source={require('../../../assets/images/mascota.png')} style={styles.ticketMascota} />
-                      <View>
-                          <Text style={styles.ticketTitle}>CIERRE DE MES</Text>
-                          <Text style={styles.ticketSub}>{new Date().toLocaleString('es-MX', { month: 'long' }).toUpperCase()}</Text>
-                      </View>
+              <View style={styles.pinkHeader}>
+                  <Image source={require('../../../assets/images/mascota.png')} style={styles.ticketMascota} />
+                  <View>
+                      <Text style={styles.ticketTitle}>CIERRE DE MES</Text>
+                      <Text style={styles.ticketSub}>{new Date().toLocaleString('es-MX', { month: 'long' }).toUpperCase()}</Text>
                   </View>
               </View>
               
@@ -157,22 +143,24 @@ export default function DetalleMesScreen() {
 
                   <View style={styles.dashedLine} />
 
-                  <Text style={styles.ticketSectionTitle}>RENDIMIENTO POR VENDEDOR</Text>
-                  {vendorBreakdown.map((v, i) => (
+                  <Text style={styles.ticketSectionTitle}>RENDIMIENTO VENDEDORES</Text>
+                  {vendorBreakdown.slice(0, expandedTicket ? 100 : 5).map((v, i) => (
                       <View key={i} style={styles.vendorRow}>
                           <Text style={styles.vendorName} numberOfLines={1}>• {v.name.toUpperCase()}</Text>
                           <Text style={[styles.vendorAmount, {color: Colors.blue}]}>{formatCurrency(v.amount)}</Text>
                       </View>
                   ))}
 
+                  {vendorBreakdown.length > 5 && (
+                      <TouchableOpacity onPress={() => setExpandedTicket(!expandedTicket)} style={styles.expandBtn}>
+                          <Text style={styles.expandBtnText}>{expandedTicket ? "VER MENOS" : `VER ${vendorBreakdown.length - 5} MÁS...`}</Text>
+                      </TouchableOpacity>
+                  )}
+
                   <View style={styles.dashedLine} />
                   
                   {bestVendor && (
-                      <TouchableOpacity 
-                        style={styles.winnerBtn} 
-                        onPress={() => setShowWinnerModal(true)}
-                        activeOpacity={0.8}
-                      >
+                      <TouchableOpacity style={styles.winnerBtn} onPress={() => setShowWinnerModal(true)}>
                           <MaterialCommunityIcons name="trophy" size={24} color="#FFF" />
                           <Text style={styles.winnerBtnText}>VENDEDOR DEL MES</Text>
                       </TouchableOpacity>
@@ -199,64 +187,59 @@ export default function DetalleMesScreen() {
                     <View style={styles.winnerAmountBadge}>
                         <Text style={styles.winnerAmount}>{formatCurrency(bestVendor?.amount || 0)}</Text>
                     </View>
-                    <Text style={styles.winnerQuote}>"¡Gracias por tu gran esfuerzo este mes!"</Text>
                     
-                    <TouchableOpacity 
-                        style={styles.closeWinner} 
-                        onPress={() => setShowWinnerModal(false)}
-                    >
+                    <TouchableOpacity style={styles.closeWinner} onPress={() => setShowWinnerModal(false)}>
                         <Text style={styles.closeWinnerText}>CERRAR</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         </Modal>
 
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
       </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
 
+import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.md },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   refreshBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { ...Typography.h4, fontWeight: '900', color: Colors.dark },
-  scrollContent: { paddingHorizontal: Spacing.lg },
-  sectionTitle: { ...Typography.label, fontWeight: '900', marginBottom: 15, textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)', letterSpacing: 1 },
-  
+  title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
+  scrollContent: { paddingHorizontal: 20 },
+  sectionTitle: { fontSize: 12, fontWeight: '900', marginBottom: 15, textTransform: 'uppercase', color: 'rgba(0,0,0,0.5)', letterSpacing: 1 },
   dayCard: { backgroundColor: '#FFF', borderRadius: BorderRadius.xl, borderWidth: 3, borderColor: Colors.dark, marginBottom: Spacing.md, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, overflow: 'hidden' },
-  dayHeader: { padding: Spacing.md, backgroundColor: Colors.dark, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  dayDate: { color: '#FFF', fontWeight: '900', fontSize: 12 },
-  dayTotal: { color: Colors.warning, fontWeight: '900', fontSize: 16 },
-  dayDetails: { flexDirection: 'row', padding: Spacing.md, alignItems: 'center' },
+  dayHeader: { padding: 12, backgroundColor: Colors.dark, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  dayDate: { color: '#FFF', fontWeight: '900', fontSize: 11 },
+  dayTotal: { color: Colors.warning, fontWeight: '900', fontSize: 15 },
+  dayDetails: { flexDirection: 'row', padding: 12, alignItems: 'center' },
   miniStat: { flex: 1, alignItems: 'center' },
   miniLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 4 },
-  miniValue: { fontSize: 13, fontWeight: '800' },
+  miniValue: { fontSize: 12, fontWeight: '800' },
   dayDivider: { width: 1, height: 30, backgroundColor: 'rgba(0,0,0,0.05)' },
-
-  // TICKET MULTICOLOR
-  ticketContainer: { backgroundColor: '#FFF', borderRadius: BorderRadius.xl, borderWidth: 4, borderColor: Colors.dark, marginTop: Spacing.xl, overflow: 'hidden', shadowColor: Colors.dark, shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1 },
-  pinkHeader: { backgroundColor: Colors.pink, padding: Spacing.lg, flexDirection: 'row', alignItems: 'center', gap: 15, borderBottomWidth: 4, borderColor: Colors.dark },
+  ticketContainer: { backgroundColor: '#FFF', borderRadius: BorderRadius.xl, borderWidth: 4, borderColor: Colors.dark, marginTop: 20, overflow: 'hidden', shadowColor: Colors.dark, shadowOffset: { width: 8, height: 8 }, shadowOpacity: 1 },
+  pinkHeader: { backgroundColor: Colors.pink, padding: 20, flexDirection: 'row', alignItems: 'center', gap: 15, borderBottomWidth: 4, borderColor: Colors.dark },
   ticketMascota: { width: 50, height: 50, borderRadius: 25, borderWidth: 2, borderColor: Colors.dark, backgroundColor: '#FFF' },
   ticketTitle: { fontSize: 20, fontWeight: '900', color: Colors.dark },
   ticketSub: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)' },
-  ticketBody: { padding: Spacing.lg, backgroundColor: Colors.beige },
+  ticketBody: { padding: 20, backgroundColor: '#FFFFFF' }, // Fondo Blanco
   ticketSection: { alignItems: 'center' },
   ticketLabel: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.5)', marginBottom: 5 },
   ticketBigAmount: { fontSize: 34, fontWeight: '900', color: Colors.blue },
   dashedLine: { height: 2, backgroundColor: Colors.dark, marginVertical: 15, borderStyle: 'dashed' },
   ticketSectionTitle: { fontSize: 11, fontWeight: '900', color: Colors.dark, marginBottom: 15, textAlign: 'center' },
-  vendorRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, backgroundColor: '#FFF', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  vendorRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   vendorName: { fontSize: 11, fontWeight: '800', flex: 1 },
   vendorAmount: { fontSize: 11, fontWeight: '900' },
-  
-  winnerBtn: { backgroundColor: Colors.success, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 12, borderWidth: 3, borderColor: Colors.dark, gap: 10, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1 },
+  expandBtn: { alignItems: 'center', paddingVertical: 5 },
+  expandBtnText: { fontSize: 10, fontWeight: '900', color: Colors.primary, textDecorationLine: 'underline' },
+  winnerBtn: { backgroundColor: Colors.success, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 15, borderRadius: 12, borderWidth: 3, borderColor: Colors.dark, gap: 10 },
   winnerBtnText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
   ticketFooter: { marginTop: 20, alignItems: 'center' },
   footerBrand: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.3)' },
-
-  // WINNER MODAL
   winnerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' },
   winnerGif: { position: 'absolute', width: '100%', height: '100%', opacity: 0.4 },
   winnerCard: { width: '85%', backgroundColor: Colors.beige, borderRadius: 24, padding: 30, alignItems: 'center', borderWidth: 5, borderColor: Colors.dark, shadowColor: Colors.warning, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 1, shadowRadius: 20 },
@@ -264,7 +247,6 @@ const styles = StyleSheet.create({
   winnerName: { fontSize: 28, fontWeight: '900', color: Colors.dark, textAlign: 'center', marginVertical: 15 },
   winnerAmountBadge: { backgroundColor: Colors.warning, paddingHorizontal: 20, paddingVertical: 10, borderRadius: BorderRadius.full, borderWidth: 3, borderColor: Colors.dark },
   winnerAmount: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  winnerQuote: { fontSize: 14, fontStyle: 'italic', fontWeight: '700', color: 'rgba(0,0,0,0.5)', marginTop: 20, textAlign: 'center' },
-  closeWinner: { marginTop: 30, paddingVertical: 12, paddingHorizontal: 40, backgroundColor: Colors.dark, borderRadius: BorderRadius.full },
-  closeWinnerText: { color: '#FFF', fontWeight: '900', fontSize: 14 }
+  closeWinner: { marginTop: 15, paddingVertical: 8 },
+  closeWinnerText: { color: 'rgba(0,0,0,0.4)', fontWeight: '900', fontSize: 12 }
 });

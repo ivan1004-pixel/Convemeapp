@@ -27,7 +27,7 @@ import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
-import { parseGraphQLError } from '../../../src/utils';
+import { parseGraphQLError, formatDate } from '../../../src/utils';
 import type { Asignacion, Vendedor, Producto } from '../../../src/types';
 
 export default function AsignacionCreateScreen() {
@@ -37,6 +37,9 @@ export default function AsignacionCreateScreen() {
 
   const isEditing = !!id;
   const existing = asignaciones.find((a) => a.id_asignacion === Number(id));
+  
+  // REGLA: Si el estado es Finalizado, no se puede editar ni borrar
+  const isReadOnly = existing?.estado === 'Finalizado';
 
   const [form, setForm] = useState({
     vendedor_id: null as number | null,
@@ -85,11 +88,13 @@ export default function AsignacionCreateScreen() {
   };
 
   const setField = (field: string, value: any) => {
+    if (isReadOnly) return;
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
   const addProduct = (prod: Producto) => {
+    if (isReadOnly) return;
     if (form.detalles.some(d => d.producto_id === prod.id_producto)) {
         showToast('El producto ya está en la lista', 'warning');
         return;
@@ -102,6 +107,7 @@ export default function AsignacionCreateScreen() {
   };
 
   const removeProductFromList = (index: number) => {
+    if (isReadOnly) return;
     setForm(prev => ({
         ...prev,
         detalles: prev.detalles.filter((_, i) => i !== index)
@@ -109,6 +115,7 @@ export default function AsignacionCreateScreen() {
   };
 
   const updateQuantity = (index: number, qty: string) => {
+    if (isReadOnly) return;
     const val = parseInt(qty) || 0;
     const newDetalles = [...form.detalles];
     newDetalles[index].cantidad_asignada = val;
@@ -126,6 +133,7 @@ export default function AsignacionCreateScreen() {
   };
 
   const handleSubmit = async () => {
+    if (isReadOnly) return;
     if (!validate()) {
       showToast(errors.vendedor_id || errors.detalles || 'Completa los campos', 'warning');
       return;
@@ -158,7 +166,7 @@ export default function AsignacionCreateScreen() {
   };
 
   const handleDelete = useCallback(async () => {
-    if (!isEditing || !existing) return;
+    if (isReadOnly || !isEditing || !existing) return;
     setDeleting(true);
     try {
         await deleteAsignacion(existing.id_asignacion);
@@ -171,7 +179,7 @@ export default function AsignacionCreateScreen() {
         setDeleting(false);
         setShowDeleteConfirm(false);
     }
-  }, [isEditing, existing, removeAsignacion, showToast]);
+  }, [isEditing, existing, removeAsignacion, showToast, isReadOnly]);
 
   const selectedVendedor = vendedores.find(v => v.id_vendedor === form.vendedor_id);
   const filteredVendedores = vendedores.filter(v => v.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -185,32 +193,49 @@ export default function AsignacionCreateScreen() {
             <Pressable onPress={() => router.back()} style={styles.backBtn}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </Pressable>
-            <Text style={styles.title}>{isEditing ? 'Editar Asignación' : 'Nueva Asignación'}</Text>
+            <Text style={styles.title}>{isEditing ? (isReadOnly ? 'Detalles de Asignación' : 'Editar Asignación') : 'Nueva Asignación'}</Text>
             <View style={styles.headerPlaceholder} />
           </View>
 
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+            
+            {isReadOnly && (
+                <View style={styles.readonlyBadge}>
+                    <MaterialCommunityIcons name="lock" size={16} color={Colors.primary} />
+                    <Text style={styles.readonlyText}>ESTA ASIGNACIÓN HA SIDO FINALIZADA Y NO SE PUEDE EDITAR</Text>
+                </View>
+            )}
+
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Vendedor</Text>
               <TouchableOpacity
-                style={[styles.selector, errors.vendedor_id && styles.selectorError]}
-                onPress={() => { setSearchQuery(''); setShowVendedorModal(true); }}
+                style={[styles.selector, errors.vendedor_id && styles.selectorError, isReadOnly && styles.disabledSelector]}
+                onPress={() => { if(!isReadOnly) { setSearchQuery(''); setShowVendedorModal(true); } }}
+                disabled={isReadOnly}
               >
-                <MaterialCommunityIcons name="account-tie-outline" size={20} color={Colors.primary} />
+                <MaterialCommunityIcons name="account-tie-outline" size={20} color={isReadOnly ? 'rgba(0,0,0,0.2)' : Colors.primary} />
                 <Text style={[styles.selectorText, !selectedVendedor && styles.placeholderText]}>
                   {selectedVendedor ? selectedVendedor.nombre_completo.toUpperCase() : 'SELECCIONAR VENDEDOR'}
                 </Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />
+                {!isReadOnly && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />}
               </TouchableOpacity>
+              {isEditing && (
+                  <View style={{marginTop: 10}}>
+                      <Text style={styles.infoLabel}>FECHA: {formatDate(existing?.fecha_asignacion)}</Text>
+                      <Text style={styles.infoLabel}>ESTADO: {existing?.estado?.toUpperCase()}</Text>
+                  </View>
+              )}
             </View>
 
             <View style={styles.card}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>Productos</Text>
-                <TouchableOpacity onPress={() => { setSearchQuery(''); setShowProductoModal(true); }} style={styles.addBtn}>
-                    <MaterialCommunityIcons name="plus-circle" size={20} color={Colors.primary} />
-                    <Text style={styles.addBtnText}>AÑADIR</Text>
-                </TouchableOpacity>
+                {!isReadOnly && (
+                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowProductoModal(true); }} style={styles.addBtn}>
+                        <MaterialCommunityIcons name="plus-circle" size={20} color={Colors.primary} />
+                        <Text style={styles.addBtnText}>AÑADIR</Text>
+                    </TouchableOpacity>
+                )}
               </View>
 
               {form.detalles.length === 0 ? (
@@ -223,32 +248,40 @@ export default function AsignacionCreateScreen() {
                           </View>
                           <View style={styles.qtyContainer}>
                               <Text style={styles.qtyLabel}>CANT:</Text>
-                              <Input
-                                value={String(det.cantidad_asignada)}
-                                onChangeText={(v) => updateQuantity(index, v)}
-                                keyboardType="numeric"
-                                containerStyle={styles.qtyInput}
-                                inputStyle={styles.qtyInputField}
-                              />
+                              {isReadOnly ? (
+                                  <Text style={styles.readonlyQty}>{det.cantidad_asignada}</Text>
+                              ) : (
+                                  <Input
+                                    value={String(det.cantidad_asignada)}
+                                    onChangeText={(v) => updateQuantity(index, v)}
+                                    keyboardType="numeric"
+                                    containerStyle={styles.qtyInput}
+                                    inputStyle={styles.qtyInputField}
+                                  />
+                              )}
                           </View>
-                          <TouchableOpacity onPress={() => removeProductFromList(index)} style={styles.removeBtn}>
-                              <MaterialCommunityIcons name="trash-can-outline" size={22} color={Colors.error} />
-                          </TouchableOpacity>
+                          {!isReadOnly && (
+                              <TouchableOpacity onPress={() => removeProductFromList(index)} style={styles.removeBtn}>
+                                  <MaterialCommunityIcons name="trash-can-outline" size={22} color={Colors.error} />
+                              </TouchableOpacity>
+                          )}
                       </View>
                   ))
               )}
               {errors.detalles && <Text style={styles.errorText}>{errors.detalles}</Text>}
             </View>
 
-            <Button
-              title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR ASIGNACIÓN'}
-              onPress={handleSubmit}
-              loading={submitting}
-              size="lg"
-              style={styles.submitBtn}
-            />
+            {!isReadOnly && (
+                <Button
+                    title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR ASIGNACIÓN'}
+                    onPress={handleSubmit}
+                    loading={submitting}
+                    size="lg"
+                    style={styles.submitBtn}
+                />
+            )}
 
-            {isEditing && (
+            {(isEditing && !isReadOnly) && (
                 <TouchableOpacity style={styles.deleteBtn} onPress={() => setShowDeleteConfirm(true)}>
                     <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
                     <Text style={styles.deleteBtnText}>ELIMINAR ASIGNACIÓN</Text>
@@ -328,14 +361,16 @@ const styles = StyleSheet.create({
   backBtn: { padding: Spacing.xs },
   title: { ...Typography.h3, fontWeight: '900', color: '#1A1A1A' },
   headerPlaceholder: { width: 34 },
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 120 },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 150 },
   card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   sectionTitle: { ...Typography.bodySmall, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
   selector: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, backgroundColor: '#FFFFFF', gap: Spacing.sm },
+  disabledSelector: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
   selectorError: { borderColor: Colors.error },
   selectorText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
   placeholderText: { color: 'rgba(0,0,0,0.3)' },
+  infoLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', marginTop: 2 },
   addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   addBtnText: { fontSize: 12, fontWeight: '900', color: Colors.primary },
   emptyText: { textAlign: 'center', color: 'rgba(0,0,0,0.3)', paddingVertical: 20, fontWeight: '700' },
@@ -345,11 +380,14 @@ const styles = StyleSheet.create({
   qtyLabel: { fontSize: 11, fontWeight: '900', color: 'rgba(0,0,0,0.4)' },
   qtyInput: { width: 80, marginBottom: 0 },
   qtyInputField: { textAlign: 'center', height: 50, fontSize: 18, fontWeight: '900', color: Colors.primary },
+  readonlyQty: { fontSize: 18, fontWeight: '900', color: Colors.dark, paddingHorizontal: 15 },
   removeBtn: { padding: 5 },
   submitBtn: { marginTop: Spacing.sm, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,0,0,0.1)' },
   deleteBtnText: { color: Colors.error, fontWeight: '900', fontSize: 14 },
   errorText: { color: Colors.error, fontSize: 10, fontWeight: '800', marginTop: 10, textAlign: 'center' },
+  readonlyBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary + '10', padding: 12, borderRadius: 12, marginBottom: 15, gap: 8, borderWidth: 1, borderColor: Colors.primary + '30' },
+  readonlyText: { fontSize: 9, fontWeight: '900', color: Colors.primary, flex: 1 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalListContent: { backgroundColor: Colors.beige, width: '100%', borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl, padding: Spacing.lg, height: '80%', position: 'absolute', bottom: 0, borderTopWidth: 4, borderColor: Colors.dark },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },

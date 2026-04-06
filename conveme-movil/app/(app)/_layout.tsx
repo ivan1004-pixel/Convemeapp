@@ -66,6 +66,9 @@ export default function AppLayout() {
             <TabIcon name="home" color={color} size={size} />
           ),
         }}
+        listeners={{
+          tabPress: () => router.push('/(app)'),
+        }}
       />
       <Tabs.Screen
         name="ventas"
@@ -74,6 +77,9 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="cash-register" color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)/ventas'),
         }}
       />
       <Tabs.Screen
@@ -84,6 +90,9 @@ export default function AppLayout() {
             <TabIcon name="package-variant" color={color} size={size} />
           ),
         }}
+        listeners={{
+          tabPress: () => router.push('/(app)/pedidos'),
+        }}
       />
       <Tabs.Screen
         name="productos"
@@ -93,6 +102,9 @@ export default function AppLayout() {
             <TabIcon name="shopping" color={color} size={size} />
           ),
         }}
+        listeners={{
+          tabPress: () => router.push('/(app)/productos'),
+        }}
       />
       <Tabs.Screen
         name="mas"
@@ -101,6 +113,9 @@ export default function AppLayout() {
           tabBarIcon: ({ color, size }) => (
             <TabIcon name={isAdmin ? 'shield-crown' : 'menu'} color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)/mas'),
         }}
       />
 
@@ -120,6 +135,7 @@ export default function AppLayout() {
       <Tabs.Screen name="produccion" options={HIDDEN} />
       <Tabs.Screen name="cuentas-bancarias" options={HIDDEN} />
       <Tabs.Screen name="perfil" options={HIDDEN} />
+      <Tabs.Screen name="resumen-mensual/index" options={HIDDEN} />
     </Tabs>
   );
 }

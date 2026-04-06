@@ -23,6 +23,7 @@ import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { parseGraphQLError, formatDate, formatCurrency } from '../../../src/utils';
 import type { Corte } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 function CorteCard({
   item,
@@ -156,89 +157,91 @@ export default function CortesScreen() {
   }, [deleteId, removeCorte, showToast]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-           </TouchableOpacity>
-           <Text style={styles.title}>Cortes</Text>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <View style={styles.headerTitleRow}>
+             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+             </TouchableOpacity>
+             <Text style={styles.title}>Cortes</Text>
+          </View>
+          <Text style={styles.count}>{cortes.length} registros</Text>
         </View>
-        <Text style={styles.count}>{cortes.length} registros</Text>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <SearchBar
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Buscar por vendedor..."
+        <View style={styles.searchContainer}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Buscar por vendedor..."
+          />
+        </View>
+
+        {loading && cortes.length === 0 ? (
+          <LoadingSpinner message="Cargando cortes..." />
+        ) : (
+          <FlatList
+            data={cortes}
+            keyExtractor={(item) => String(item.id_corte)}
+            contentContainerStyle={[
+              styles.listContent,
+              cortes.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item }) => (
+              <CorteCard
+                item={item}
+                onPress={() => router.push(`/cortes/${item.id_corte}`)}
+                onLongPress={() => setDeleteId(item.id_corte)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="cash-register"
+                title="Sin cortes"
+                message={search ? 'No hay resultados.' : 'Aún no hay cortes registrados.'}
+                actionLabel="Realizar corte"
+                onAction={() => router.push('/cortes/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/cortes/create')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.fabIcon}>+</Text>
+        </TouchableOpacity>
+
+        <ConfirmDialog
+          visible={deleteId !== null}
+          title="Eliminar corte"
+          message={`¿Deseas eliminar el corte #${deleteId}? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteId(null)}
+          loading={deleting}
+          destructive
         />
-      </View>
 
-      {loading && cortes.length === 0 ? (
-        <LoadingSpinner message="Cargando cortes..." />
-      ) : (
-        <FlatList
-          data={cortes}
-          keyExtractor={(item) => String(item.id_corte)}
-          contentContainerStyle={[
-            styles.listContent,
-            cortes.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <CorteCard
-              item={item}
-              onPress={() => router.push(`/cortes/${item.id_corte}`)}
-              onLongPress={() => setDeleteId(item.id_corte)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="cash-register"
-              title="Sin cortes"
-              message={search ? 'No hay resultados.' : 'Aún no hay cortes registrados.'}
-              actionLabel="Realizar corte"
-              onAction={() => router.push('/cortes/create')}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/cortes/create')}
-        activeOpacity={0.85}
-      >
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
-      <ConfirmDialog
-        visible={deleteId !== null}
-        title="Eliminar corte"
-        message={`¿Deseas eliminar el corte #${deleteId}? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteId(null)}
-        loading={deleting}
-        destructive
-      />
-
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.beige },
+  container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   backBtn: { padding: Spacing.xs },

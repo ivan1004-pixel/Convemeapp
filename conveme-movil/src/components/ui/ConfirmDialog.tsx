@@ -58,12 +58,12 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
               style={({ pressed }) => [
                 styles.button,
                 styles.cancelButton,
-                { borderColor: theme.border },
+                { borderColor: Colors.dark, borderWidth: 3, backgroundColor: '#FFF' },
                 pressed && styles.pressed,
               ]}
               accessibilityRole="button"
             >
-              <Text style={[styles.cancelText, { color: theme.text }]}>
+              <Text style={[styles.cancelText, { color: Colors.dark, fontWeight: '900' }]}>
                 {cancelText}
               </Text>
             </Pressable>
@@ -73,13 +73,14 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
                 styles.button,
                 styles.confirmButton,
                 destructive
-                  ? { backgroundColor: Colors.error }
-                  : { backgroundColor: Colors.primary },
+                  ? { backgroundColor: Colors.error, borderWidth: 3, borderColor: Colors.dark }
+                  : { backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark },
                 pressed && styles.pressed,
+                destructive && { shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1 }
               ]}
               accessibilityRole="button"
             >
-              <Text style={styles.confirmText}>{confirmText}</Text>
+              <Text style={[styles.confirmText, { fontWeight: '900' }]}>{confirmText}</Text>
             </Pressable>
           </View>
         </Pressable>

@@ -15,6 +15,7 @@ import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -129,39 +130,40 @@ export default function MasScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Image
-          source={require('../../../assets/images/logon.png')}
-          style={styles.logoImage}
-          contentFit="contain"
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Image
+            source={require('../../../assets/images/logon.png')}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
+          <Text style={styles.titleText}>{isAdmin ? 'Administración' : 'Más opciones'}</Text>
+        </View>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => item.route}
+          renderItem={renderItem}
+          renderSectionHeader={renderSectionHeader}
+          stickySectionHeadersEnabled={false}
+          contentContainerStyle={styles.list}
+          ListFooterComponent={
+            <TouchableOpacity style={styles.logoutRow} onPress={logout} activeOpacity={0.8}>
+              <View style={[styles.iconWrap, { backgroundColor: `${Colors.error}22`, borderWidth: 1, borderColor: Colors.error }]}>
+                <MaterialCommunityIcons name="logout" size={20} color={Colors.error} />
+              </View>
+              <Text style={[styles.itemTitle, { color: Colors.error, fontWeight: '900' }]}>Cerrar Sesión</Text>
+            </TouchableOpacity>
+          }
         />
-        <Text style={styles.titleText}>{isAdmin ? 'Administración' : 'Más opciones'}</Text>
-      </View>
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.route}
-        renderItem={renderItem}
-        renderSectionHeader={renderSectionHeader}
-        stickySectionHeadersEnabled={false}
-        contentContainerStyle={styles.list}
-        ListFooterComponent={
-          <TouchableOpacity style={styles.logoutRow} onPress={logout} activeOpacity={0.8}>
-            <View style={[styles.iconWrap, { backgroundColor: `${Colors.error}22`, borderWidth: 1, borderColor: Colors.error }]}>
-              <MaterialCommunityIcons name="logout" size={20} color={Colors.error} />
-            </View>
-            <Text style={[styles.itemTitle, { color: Colors.error, fontWeight: '900' }]}>Cerrar Sesión</Text>
-          </TouchableOpacity>
-        }
-      />
-    </SafeAreaView>
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.beige,
   },
   header: {
     paddingHorizontal: Spacing.lg,
