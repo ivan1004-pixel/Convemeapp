@@ -107,8 +107,7 @@ function PedidoCard({
 }
 
 export default function PedidosScreen() {
-  const { usuario } = useAuth();
-  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
+  const { usuario, isAdmin } = useAuth();
 
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const [loading, setLoading] = useState(false);
@@ -146,15 +145,19 @@ export default function PedidosScreen() {
   }, [fetchData]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return pedidos;
+    let list = pedidos;
+    if (!isAdmin) {
+      list = pedidos.filter(p => p.id_vendedor === usuario?.id_vendedor || p.vendedor?.username === usuario?.username || p.vendedor_id === usuario?.id_vendedor);
+    }
+    if (!search.trim()) return list;
     const q = search.toLowerCase();
-    return pedidos.filter(
+    return list.filter(
       (p) =>
         p.cliente?.nombre_completo?.toLowerCase().includes(q) ||
         String(p.id_pedido).includes(q) ||
         p.estado?.toLowerCase().includes(q)
     );
-  }, [pedidos, search]);
+  }, [pedidos, search, isAdmin, usuario]);
 
   const handleDelete = useCallback(async () => {
     if (deleteId == null) return;
@@ -184,11 +187,9 @@ export default function PedidosScreen() {
                 </View>
             </View>
             <View style={styles.headerActions}>
-                {!isAdmin && (
-                  <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
-                      <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-                  </TouchableOpacity>
-                )}
+                <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
+                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                </TouchableOpacity>
                 <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>

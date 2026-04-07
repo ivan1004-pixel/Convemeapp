@@ -43,12 +43,18 @@ function InfoRow({ label, value, icon }: { label: string; value?: string | null;
   );
 }
 
+import { useAuth } from '../../../src/hooks/useAuth';
+import { SalesTicket } from '../../../src/components/ui/SalesTicket';
+import { Modal } from 'react-native';
+
 export default function PedidoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { isAdmin } = useAuth();
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showTicket, setShowTicket] = useState(false);
 
   const pedidoId = Number(id);
   const pedido: Pedido | undefined = pedidos.find((p) => p.id_pedido === pedidoId);
@@ -110,9 +116,11 @@ export default function PedidoDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>DETALLE DE PEDIDO</Text>
-          <TouchableOpacity onPress={() => setShowDelete(true)} style={styles.deleteHeaderBtn}>
-            <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
-          </TouchableOpacity>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => setShowDelete(true)} style={styles.deleteHeaderBtn}>
+              <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -165,11 +173,20 @@ export default function PedidoDetailScreen() {
 
           <View style={styles.actions}>
             <Button
-              title="EDITAR PEDIDO"
-              onPress={() => router.push(`/pedidos/create?id=${pedido.id_pedido}`)}
+              title="VER TICKET"
+              onPress={() => setShowTicket(true)}
               style={styles.actionBtn}
               size="lg"
             />
+            {isAdmin && (
+              <Button
+                title="EDITAR PEDIDO"
+                onPress={() => router.push(`/pedidos/create?id=${pedido.id_pedido}`)}
+                style={[styles.actionBtn, { marginTop: 15 }]}
+                variant="outline"
+                size="lg"
+              />
+            )}
           </View>
         </ScrollView>
 
@@ -182,6 +199,22 @@ export default function PedidoDetailScreen() {
           loading={deleting}
           destructive
         />
+
+        <Modal visible={showTicket} transparent animationType="fade">
+          <View style={styles.ticketOverlay}>
+            <View style={styles.ticketModalContainer}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
+                <SalesTicket venta={pedido as any} />
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeTicketButton}
+                onPress={() => setShowTicket(false)}
+              >
+                <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </NeobrutalistBackground>
   );
@@ -238,4 +271,8 @@ const styles = StyleSheet.create({
   detPrice: { fontSize: 13, fontWeight: '800', color: Colors.dark },
   actions: { marginTop: Spacing.sm },
   actionBtn: { shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  ticketOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  ticketModalContainer: { width: '100%', maxHeight: '90%' },
+  closeTicketButton: { backgroundColor: Colors.dark, padding: 15, borderRadius: BorderRadius.full, marginTop: 20, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  closeTicketText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 });

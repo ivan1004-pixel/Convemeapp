@@ -40,7 +40,12 @@ export default function PerfilScreen() {
         setEmpleado(emp || null);
       } else {
         const vendedores = await getVendedores();
-        const vend = vendedores.find(v => v.nombre_completo.toLowerCase().includes(username.toLowerCase()));
+        // Buscar vendedor por ID de vendedor si está disponible, sino por ID de usuario o nombre
+        const vend = vendedores.find(v => 
+          (usuario?.id_vendedor && v.id_vendedor === usuario.id_vendedor) || 
+          v.usuario?.id_usuario === usuario?.id_usuario ||
+          v.nombre_completo.toLowerCase().includes(username.toLowerCase())
+        );
         setVendedor(vend || null);
       }
     } catch (error) {

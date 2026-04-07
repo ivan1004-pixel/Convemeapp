@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo } from 'react';
+import React, { useState, useEffect, memo, useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,7 +27,7 @@ import { Toast, useToast } from '../../../src/components/Toast';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Pedido, Cliente, Vendedor } from '../../../src/types';
-import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
+import { useAuth } from '../../../src/hooks/useAuth';
 
 const ESTADOS_PEDIDO = ['Pendiente', 'Confirmado', 'Entregado', 'Cancelado'];
 
@@ -38,18 +38,8 @@ const DatePickerModal = memo(
       (_, i) => new Date().getFullYear() + i - 1
     );
     const months = [
-      '01',
-      '02',
-      '03',
-      '04',
-      '05',
-      '06',
-      '07',
-      '08',
-      '09',
-      '10',
-      '11',
-      '12',
+      '01', '02', '03', '04', '05', '06',
+      '07', '08', '09', '10', '11', '12',
     ];
     const days = Array.from(
       { length: 31 },
@@ -116,37 +106,31 @@ const DatePickerModal = memo(
 
 export default function PedidoCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { usuario } = useAuth();
-  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
+  const { usuario, isAdmin } = useAuth();
 
   const { toast, show: showToast, hide: hideToast } = useToast();
-  const { pedidos, addPedido, updatePedido: updatePedidoStore } =
-  usePedidoStore();
+  const { pedidos, addPedido, updatePedido: updatePedidoStore } = usePedidoStore();
 
   const isEditing = !!id;
   const existing: Pedido | undefined = isEditing
-  ? pedidos.find((p) => p.id_pedido === Number(id))
-  : undefined;
+    ? pedidos.find((p) => p.id_pedido === Number(id))
+    : undefined;
 
-  // Protección: Si es admin, redirigir a la lista de pedidos
+  // Bloquear edición para no-admins
   useEffect(() => {
-    if (isAdmin) {
-      showToast('Solo los vendedores pueden crear pedidos', 'error');
-      router.replace('/pedidos');
+    if (isEditing && !isAdmin) {
+      showToast('No tienes permisos para editar pedidos', 'error');
+      setTimeout(() => router.back(), 2000);
     }
-  }, [isAdmin]);
+  }, [isEditing, isAdmin]);
 
   const [form, setForm] = useState({
-    cliente_id: (existing?.cliente?.id_cliente ??
-    null) as number | null,
-    vendedor_id: (existing?.vendedor?.id_vendedor ??
-    null) as number | null,
+    cliente_id: (existing?.cliente?.id_cliente ?? null) as number | null,
+    vendedor_id: (existing?.vendedor?.id_vendedor ?? (isAdmin ? null : usuario?.id_vendedor)) as number | null,
     estado: existing?.estado ?? 'Pendiente',
     monto_total: existing ? String(existing.monto_total) : '',
-                                   anticipo:
-                                   existing?.anticipo != null ? String(existing.anticipo) : '',
-                                   fecha_entrega_estimada:
-                                   existing?.fecha_entrega_estimada ?? '',
+    anticipo: existing?.anticipo != null ? String(existing.anticipo) : '',
+    fecha_entrega_estimada: existing?.fecha_entrega_estimada ?? '',
   });
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -171,10 +155,18 @@ export default function PedidoCreateScreen() {
     try {
       const [clientesData, vendedoresData] = await Promise.all([
         getClientes(),
-                                                               getVendedores(),
+        getVendedores(),
       ]);
       setClientes(clientesData || []);
       setVendedores(vendedoresData || []);
+      
+      // AUTO-SELECCIÓN PARA VENDEDORES
+      if (!isAdmin && usuario) {
+        const yo = vendedoresData.find((v: any) => v.id_vendedor === usuario.id_vendedor || v.username === usuario.username);
+        if (yo) {
+          setForm(prev => ({ ...prev, vendedor_id: yo.id_vendedor }));
+        }
+      }
     } catch (err) {
       console.error('Error loading data:', err);
     } finally {
@@ -199,104 +191,66 @@ export default function PedidoCreateScreen() {
     setSearchQuery('');
   };
 
-  const selectedCliente = clientes.find(
-    (c) => c.id_cliente === form.cliente_id
-  );
-  const selectedVendedor = vendedores.find(
-    (v) => v.id_vendedor === form.vendedor_id
-  );
+  const selectedCliente = clientes.find((c) => c.id_cliente === form.cliente_id);
+  const selectedVendedor = vendedores.find((v) => v.id_vendedor === form.vendedor_id);
 
   const filteredClientes = clientes.filter((c) =>
-  c.nombre_completo
-  .toLowerCase()
-  .includes(searchQuery.toLowerCase())
+    c.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredVendedores = vendedores.filter((v) =>
-  v.nombre_completo
-  .toLowerCase()
-  .includes(searchQuery.toLowerCase())
-  );
+  const filteredVendedores = useMemo(() => {
+    let list = vendedores;
+    if (!isAdmin) {
+      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor || v.username === usuario?.username);
+    }
+    return searchQuery.trim()
+      ? list.filter((v) => v.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()))
+      : list;
+  }, [vendedores, isAdmin, usuario, searchQuery]);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!form.cliente_id) {
-      newErrors.cliente_id = 'El cliente es requerido';
-    }
-
+    if (!form.cliente_id) newErrors.cliente_id = 'El cliente es requerido';
     if (!form.monto_total.trim()) {
       newErrors.monto_total = 'El monto total es requerido';
-    } else if (
-      isNaN(Number(form.monto_total)) ||
-      Number(form.monto_total) < 0
-    ) {
+    } else if (isNaN(Number(form.monto_total)) || Number(form.monto_total) < 0) {
       newErrors.monto_total = 'Ingresa un monto válido';
     }
-
-    if (
-      form.anticipo &&
-        (isNaN(Number(form.anticipo)) ||
-        Number(form.anticipo) < 0)
-    ) {
+    if (form.anticipo && (isNaN(Number(form.anticipo)) || Number(form.anticipo) < 0)) {
       newErrors.anticipo = 'Ingresa un anticipo válido';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
     if (!validate()) {
-      showToast(
-        'Por favor completa los campos requeridos',
-        'warning'
-      );
+      showToast('Por favor completa los campos requeridos', 'warning');
       return;
     }
 
     setSubmitting(true);
     try {
-      // Construimos el input exactamente con lo que el backend puede esperar
       const input: any = {
-        cliente_id: form.cliente_id, // Int!
-        estado: form.estado, // String / enum
-        monto_total: Number(form.monto_total), // Float/Int
+        cliente_id: form.cliente_id,
+        estado: form.estado,
+        monto_total: Number(form.monto_total),
       };
-
-      if (form.vendedor_id) {
-        input.vendedor_id = form.vendedor_id;
-      }
-      if (form.anticipo) {
-        input.anticipo = Number(form.anticipo);
-      }
-      if (form.fecha_entrega_estimada.trim()) {
-        // Ya viene como "YYYY-MM-DD" desde el DatePicker
-        input.fecha_entrega_estimada =
-        form.fecha_entrega_estimada.trim();
-      }
+      if (form.vendedor_id) input.vendedor_id = form.vendedor_id;
+      if (form.anticipo) input.anticipo = Number(form.anticipo);
+      if (form.fecha_entrega_estimada.trim()) input.fecha_entrega_estimada = form.fecha_entrega_estimada.trim();
 
       if (isEditing && existing) {
-        // SOLO actualizamos estado vía updateEstadoPedido (según tu servicio)
-        const updated = await updateEstadoPedido(
-          existing.id_pedido,
-          form.estado
-        );
-        updatePedidoStore({
-          ...existing,
-          ...updated,
-          estado: form.estado,
-        });
+        const updated = await updateEstadoPedido(existing.id_pedido, form.estado);
+        updatePedidoStore({ ...existing, ...updated, estado: form.estado });
         showToast('Pedido actualizado con éxito', 'success');
       } else {
         const created = await createPedido(input);
         addPedido(created);
         showToast('Pedido creado con éxito', 'success');
       }
-
       setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
-      console.log('Error al crear/actualizar pedido:', err);
       showToast(parseGraphQLError(err), 'error');
     } finally {
       setSubmitting(false);
@@ -308,678 +262,176 @@ export default function PedidoCreateScreen() {
     setShowDatePicker(false);
   };
 
-  const openDatePicker = (field: string) => {
-    setDatePickerField(field);
-    setShowDatePicker(true);
-  };
-
   if (loading) {
     return (
       <NeobrutalistBackground>
-      <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-      <Pressable
-      onPress={() => router.push('/(app)')}
-      style={styles.backBtn}
-      >
-      <MaterialCommunityIcons
-      name="arrow-left"
-      size={24}
-      color={Colors.primary}
-      />
-      </Pressable>
-      <Text style={styles.title}>Cargando...</Text>
-      <View style={styles.headerPlaceholder} />
-      </View>
-      <View style={styles.loadingContainer}>
-      <ActivityIndicator
-      size="large"
-      color={Colors.primary}
-      />
-      <Text style={styles.loadingText}>
-      Cargando datos...
-      </Text>
-      </View>
-      </SafeAreaView>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={Colors.primary} />
+            <Text style={styles.loadingText}>Cargando datos...</Text>
+          </View>
+        </SafeAreaView>
       </NeobrutalistBackground>
     );
   }
 
   return (
     <NeobrutalistBackground>
-    <SafeAreaView style={styles.container}>
-    {/* Header */}
-    <View style={styles.header}>
-    <Pressable
-    onPress={() => router.push('/(app)')}
-    style={styles.backBtn}
-    >
-    <MaterialCommunityIcons
-    name="arrow-left"
-    size={24}
-    color={Colors.primary}
-    />
-    </Pressable>
-    <Text style={styles.title}>
-    {isEditing ? 'Editar Pedido' : 'Nuevo Pedido'}
-    </Text>
-    <View style={styles.headerPlaceholder} />
-    </View>
-
-    {/* Contenido scrollable */}
-    <ScrollView
-    contentContainerStyle={styles.scrollContent}
-    showsVerticalScrollIndicator={false}
-    keyboardShouldPersistTaps="handled"
-    >
-    {/* Información del Cliente y Vendedor */}
-    <View style={styles.card}>
-    <Text style={styles.sectionTitle}>Asignación</Text>
-
-    {/* Selector de Cliente */}
-    <View style={styles.selectorContainer}>
-    <Text style={styles.selectorLabel}>Cliente *</Text>
-    <Pressable
-    onPress={() => {
-      setSearchQuery('');
-      setShowClienteModal(true);
-    }}
-    style={[
-      styles.selectorButton,
-      errors.cliente_id && styles.selectorError,
-    ]}
-    >
-    <MaterialCommunityIcons
-    name="account-outline"
-    size={20}
-    color={Colors.primary}
-    />
-    <Text
-    style={[
-      styles.selectorValue,
-      !selectedCliente &&
-      styles.selectorPlaceholder,
-    ]}
-    >
-    {selectedCliente
-      ? selectedCliente.nombre_completo
-      : 'Seleccionar cliente'}
-      </Text>
-      <MaterialCommunityIcons
-      name="chevron-down"
-      size={20}
-      color="rgba(26,26,26,0.3)"
-      />
-      </Pressable>
-      {errors.cliente_id && (
-        <Text style={styles.errorText}>
-        {errors.cliente_id}
-        </Text>
-      )}
-      </View>
-
-      {/* Selector de Vendedor */}
-      <View style={styles.selectorContainer}>
-      <Text style={styles.selectorLabel}>Vendedor</Text>
-      <Pressable
-      onPress={() => {
-        setSearchQuery('');
-        setShowVendedorModal(true);
-      }}
-      style={styles.selectorButton}
-      >
-      <MaterialCommunityIcons
-      name="account-tie-outline"
-      size={20}
-      color={Colors.primary}
-      />
-      <Text
-      style={[
-        styles.selectorValue,
-        !selectedVendedor &&
-        styles.selectorPlaceholder,
-      ]}
-      >
-      {selectedVendedor
-        ? selectedVendedor.nombre_completo
-        : 'Seleccionar vendedor (opcional)'}
-        </Text>
-        <MaterialCommunityIcons
-        name="chevron-down"
-        size={20}
-        color="rgba(26,26,26,0.3)"
-        />
-        </Pressable>
-        </View>
-        </View>
-
-        {/* Información Financiera */}
-        <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
-        Información Financiera
-        </Text>
-
-        <Input
-        label="Monto Total *"
-        value={form.monto_total}
-        onChangeText={(v) => setField('monto_total', v)}
-        placeholder="0.00"
-        keyboardType="decimal-pad"
-        error={errors.monto_total}
-        leftIcon={
-          <MaterialCommunityIcons
-          name="currency-usd"
-          size={20}
-          color={Colors.primary}
-          />
-        }
-        />
-
-        <Input
-        label="Anticipo"
-        value={form.anticipo}
-        onChangeText={(v) => setField('anticipo', v)}
-        placeholder="0.00"
-        keyboardType="decimal-pad"
-        error={errors.anticipo}
-        leftIcon={
-          <MaterialCommunityIcons
-          name="cash"
-          size={20}
-          color={Colors.primary}
-          />
-        }
-        />
-        </View>
-
-        {/* Fecha y Estado */}
-        <View style={styles.card}>
-        <Text style={styles.sectionTitle}>
-        Detalles del Pedido
-        </Text>
-
-        {/* Selector de Fecha */}
-        <View style={styles.selectorContainer}>
-        <Text style={styles.selectorLabel}>
-        Fecha de Entrega Estimada
-        </Text>
-        <Pressable
-        onPress={() =>
-          openDatePicker('fecha_entrega_estimada')
-        }
-        style={styles.selectorButton}
-        >
-        <MaterialCommunityIcons
-        name="calendar-outline"
-        size={20}
-        color={Colors.primary}
-        />
-        <Text
-        style={[
-          styles.selectorValue,
-          !form.fecha_entrega_estimada &&
-          styles.selectorPlaceholder,
-        ]}
-        >
-        {form.fecha_entrega_estimada
-          ? new Date(
-            form.fecha_entrega_estimada
-          ).toLocaleDateString('es-MX', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })
-          : 'Seleccionar fecha (opcional)'}
-          </Text>
-          <MaterialCommunityIcons
-          name="chevron-down"
-          size={20}
-          color="rgba(26,26,26,0.3)"
-          />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.push('/(app)')} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </Pressable>
-          </View>
+          <Text style={styles.title}>{isEditing ? 'Editar Pedido' : 'Nuevo Pedido'}</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
 
-          {/* Selector de Estado */}
-          <View style={styles.selectorContainer}>
-          <Text style={styles.selectorLabel}>
-          Estado *
-          </Text>
-          <View style={styles.estadosRow}>
-          {ESTADOS_PEDIDO.map((estado) => (
-            <Pressable
-            key={estado}
-            onPress={() => setField('estado', estado)}
-            style={[
-              styles.estadoChip,
-              form.estado === estado &&
-                styles.estadoChipSelected,
-            ]}
-            >
-            <Text
-            style={[
-              styles.estadoChipText,
-              form.estado === estado &&
-                styles.estadoChipTextSelected,
-            ]}
-            >
-            {estado}
-            </Text>
-            </Pressable>
-          ))}
-          </View>
-          </View>
-          </View>
-          </ScrollView>
-
-          {/* Botón fijo abajo para que no lo tape la barra */}
-          <View style={styles.bottomButtonContainer}>
-          <Button
-          title={
-            isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PEDIDO'
-          }
-          onPress={handleSubmit}
-          loading={submitting}
-          size="lg"
-          style={styles.submitBtn}
-          />
-          </View>
-
-          {/* Date Picker Modal */}
-          <DatePickerModal
-          visible={showDatePicker}
-          field={datePickerField}
-          value={form.fecha_entrega_estimada}
-          onConfirm={handleDateConfirm}
-          onCancel={() => setShowDatePicker(false)}
-          />
-
-          {/* Cliente Modal */}
-          <Modal
-          visible={showClienteModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          >
-          <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>
-          Seleccionar Cliente
-          </Text>
-          <Pressable
-          onPress={() => setShowClienteModal(false)}
-          style={styles.closeModalBtn}
-          >
-          <MaterialCommunityIcons
-          name="close"
-          size={24}
-          color={Colors.error}
-          />
-          </Pressable>
-          </View>
-
-          <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Buscar cliente..."
-          style={styles.modalSearch}
-          />
-
-          <FlatList
-          data={filteredClientes}
-          keyExtractor={(item) =>
-            `cliente-${item.id_cliente}`
-          }
-          contentContainerStyle={styles.modalList}
-          renderItem={({ item }) => (
-            <Pressable
-            style={styles.municipioItem}
-            onPress={() => selectCliente(item)}
-            >
-            <View>
-            <Text style={styles.municipioName}>
-            {item.nombre_completo}
-            </Text>
-            {item.telefono && (
-              <Text style={styles.municipioState}>
-              {item.telefono}
-              </Text>
-            )}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Asignación</Text>
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>Cliente *</Text>
+              <Pressable onPress={() => { setSearchQuery(''); setShowClienteModal(true); }} style={[styles.selectorButton, errors.cliente_id && styles.selectorError]}>
+                <MaterialCommunityIcons name="account-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.selectorValue, !selectedCliente && styles.selectorPlaceholder]}>
+                  {selectedCliente ? selectedCliente.nombre_completo : 'Seleccionar cliente'}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+              </Pressable>
+              {errors.cliente_id && <Text style={styles.errorText}>{errors.cliente_id}</Text>}
             </View>
-            {form.cliente_id === item.id_cliente && (
-              <MaterialCommunityIcons
-              name="check-circle"
-              size={24}
-              color={Colors.success}
-              />
-            )}
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-            No se encontraron clientes
-            </Text>
-          }
-          />
-          </SafeAreaView>
-          </Modal>
 
-          {/* Vendedor Modal */}
-          <Modal
-          visible={showVendedorModal}
-          animationType="slide"
-          presentationStyle="pageSheet"
-          >
-          <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>
-          Seleccionar Vendedor
-          </Text>
-          <Pressable
-          onPress={() => setShowVendedorModal(false)}
-          style={styles.closeModalBtn}
-          >
-          <MaterialCommunityIcons
-          name="close"
-          size={24}
-          color={Colors.error}
-          />
-          </Pressable>
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>Vendedor</Text>
+              <Pressable 
+                onPress={() => { setSearchQuery(''); setShowVendedorModal(true); }} 
+                style={[styles.selectorButton, !isAdmin && { backgroundColor: 'rgba(26,26,26,0.05)' }]}
+              >
+                <MaterialCommunityIcons name="account-tie-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.selectorValue, !selectedVendedor && styles.selectorPlaceholder]}>
+                  {selectedVendedor ? selectedVendedor.nombre_completo : 'Seleccionar vendedor'}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+              </Pressable>
+            </View>
           </View>
 
-          <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Buscar vendedor..."
-          style={styles.modalSearch}
-          />
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Información Financiera</Text>
+            <Input label="Monto Total *" value={form.monto_total} onChangeText={(v) => setField('monto_total', v)} placeholder="0.00" keyboardType="decimal-pad" error={errors.monto_total} leftIcon={<MaterialCommunityIcons name="currency-usd" size={20} color={Colors.primary} />} />
+            <Input label="Anticipo" value={form.anticipo} onChangeText={(v) => setField('anticipo', v)} placeholder="0.00" keyboardType="decimal-pad" error={errors.anticipo} leftIcon={<MaterialCommunityIcons name="cash" size={20} color={Colors.primary} />} />
+          </View>
 
-          <FlatList
-          data={filteredVendedores}
-          keyExtractor={(item) =>
-            `vendedor-${item.id_vendedor}`
-          }
-          contentContainerStyle={styles.modalList}
-          renderItem={({ item }) => (
-            <Pressable
-            style={styles.municipioItem}
-            onPress={() => selectVendedor(item)}
-            >
-            <View>
-            <Text style={styles.municipioName}>
-            {item.nombre_completo}
-            </Text>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Detalles del Pedido</Text>
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>Fecha de Entrega Estimada</Text>
+              <Pressable onPress={() => { setDatePickerField('fecha_entrega_estimada'); setShowDatePicker(true); }} style={styles.selectorButton}>
+                <MaterialCommunityIcons name="calendar-outline" size={20} color={Colors.primary} />
+                <Text style={[styles.selectorValue, !form.fecha_entrega_estimada && styles.selectorPlaceholder]}>
+                  {form.fecha_entrega_estimada ? new Date(form.fecha_entrega_estimada).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Seleccionar fecha (opcional)'}
+                </Text>
+                <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+              </Pressable>
             </View>
-            {form.vendedor_id === item.id_vendedor && (
-              <MaterialCommunityIcons
-              name="check-circle"
-              size={24}
-              color={Colors.success}
-              />
-            )}
-            </Pressable>
-          )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>
-            No se encontraron vendedores
-            </Text>
-          }
-          />
-          </SafeAreaView>
-          </Modal>
 
-          <Toast
-          visible={toast.visible}
-          type={toast.type}
-          message={toast.message}
-          onHide={hideToast}
-          />
+            <View style={styles.selectorContainer}>
+              <Text style={styles.selectorLabel}>Estado *</Text>
+              <View style={styles.estadosRow}>
+                {ESTADOS_PEDIDO.map((estado) => (
+                  <Pressable key={estado} onPress={() => setField('estado', estado)} style={[styles.estadoChip, form.estado === estado && styles.estadoChipSelected]}>
+                    <Text style={[styles.estadoChipText, form.estado === estado && styles.estadoChipTextSelected]}>{estado}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <View style={{ marginTop: 20, marginBottom: 80 }}>
+            <Button title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PEDIDO'} onPress={handleSubmit} loading={submitting} size="lg" style={styles.submitBtn} />
+          </View>
+        </ScrollView>
+
+        <DatePickerModal visible={showDatePicker} field={datePickerField} value={form.fecha_entrega_estimada} onConfirm={handleDateConfirm} onCancel={() => setShowDatePicker(false)} />
+
+        <Modal visible={showClienteModal} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Cliente</Text>
+              <Pressable onPress={() => setShowClienteModal(false)}><MaterialCommunityIcons name="close" size={24} color={Colors.error} /></Pressable>
+            </View>
+            <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar cliente..." style={styles.modalSearch} />
+            <FlatList data={filteredClientes} keyExtractor={(item) => `cliente-${item.id_cliente}`} contentContainerStyle={styles.modalList} renderItem={({ item }) => (
+              <Pressable style={styles.municipioItem} onPress={() => selectCliente(item)}>
+                <View><Text style={styles.municipioName}>{item.nombre_completo}</Text>{item.telefono && <Text style={styles.municipioState}>{item.telefono}</Text>}</View>
+                {form.cliente_id === item.id_cliente && <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />}
+              </Pressable>
+            )} />
           </SafeAreaView>
-          </NeobrutalistBackground>
+        </Modal>
+
+        <Modal visible={showVendedorModal} animationType="slide" presentationStyle="pageSheet">
+          <SafeAreaView style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Vendedor</Text>
+              <Pressable onPress={() => setShowVendedorModal(false)}><MaterialCommunityIcons name="close" size={24} color={Colors.error} /></Pressable>
+            </View>
+            <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar vendedor..." style={styles.modalSearch} />
+            <FlatList data={filteredVendedores} keyExtractor={(item) => `vendedor-${item.id_vendedor}`} contentContainerStyle={styles.modalList} renderItem={({ item }) => (
+              <Pressable style={styles.municipioItem} onPress={() => selectVendedor(item)}>
+                <View><Text style={styles.municipioName}>{item.nombre_completo}</Text></View>
+                {form.vendedor_id === item.id_vendedor && <MaterialCommunityIcons name="check-circle" size={24} color={Colors.success} />}
+              </Pressable>
+            )} />
+          </SafeAreaView>
+        </Modal>
+
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.sm,
-  },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  title: {
-    ...Typography.h3,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  headerPlaceholder: {
-    width: 34,
-  },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.lg, // el botón va fuera
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.xxl,
-    padding: Spacing.lg,
-    marginBottom: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  sectionTitle: {
-    ...Typography.bodySmall,
-    fontWeight: '900',
-    color: Colors.primary,
-    marginBottom: Spacing.md,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  selectorContainer: {
-    marginBottom: Spacing.md,
-  },
-  selectorLabel: {
-    ...Typography.label,
-    marginBottom: Spacing.xs,
-    color: 'rgba(26,26,26,0.6)',
-                                 fontWeight: '700',
-  },
-  selectorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(26,26,26,0.03)',
-                                 borderRadius: BorderRadius.lg,
-                                 padding: Spacing.md,
-                                 borderWidth: 1,
-                                 borderColor: 'rgba(26,26,26,0.05)',
-                                 gap: Spacing.sm,
-  },
-  selectorError: {
-    borderColor: Colors.error,
-  },
-  selectorValue: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1A1A1A',
-  },
-  selectorPlaceholder: {
-    color: 'rgba(26,26,26,0.3)',
-  },
-  errorText: {
-    ...Typography.caption,
-    color: Colors.error,
-    marginTop: 4,
-  },
-  estadosRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.sm,
-  },
-  estadoChip: {
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.md,
-    borderRadius: BorderRadius.full,
-    borderWidth: 1.5,
-    borderColor: 'rgba(26,26,26,0.1)',
-                                 backgroundColor: 'rgba(26,26,26,0.02)',
-  },
-  estadoChipSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primaryLight,
-  },
-  estadoChipText: {
-    ...Typography.bodySmall,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.5)',
-  },
-  estadoChipTextSelected: {
-    color: Colors.primary,
-    fontWeight: '700',
-  },
-  bottomButtonContainer: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.lg, // espacio por encima de la barra inferior
-    paddingTop: Spacing.sm,
-    backgroundColor: 'transparent',
-  },
-  submitBtn: {
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: Spacing.md,
-  },
-  loadingText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.5)',
-  },
-  // Modal styles
-  modalContainer: {
-    flex: 1,
-    backgroundColor: Colors.beige,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: Spacing.lg,
-  },
-  modalTitle: {
-    ...Typography.h4,
-    fontWeight: '900',
-  },
-  closeModalBtn: {
-    padding: Spacing.xs,
-  },
-  modalSearch: {
-    marginHorizontal: Spacing.lg,
-    marginBottom: Spacing.md,
-  },
-  modalList: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xl,
-  },
-  municipioItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: Spacing.lg,
-    borderRadius: BorderRadius.xl,
-    marginBottom: Spacing.sm,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  municipioName: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
-  },
-  municipioState: {
-    fontSize: 12,
-    color: 'rgba(26,26,26,0.5)',
-                                 fontWeight: '600',
-  },
-  emptyText: {
-    textAlign: 'center',
-    paddingVertical: Spacing.xxl,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.4)',
-  },
-  // Date Picker Modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  datePickerCard: {
-    backgroundColor: Colors.beige,
-    width: '85%',
-    borderRadius: BorderRadius.xl,
-    padding: Spacing.lg,
-    borderWidth: 3,
-    borderColor: Colors.dark,
-    shadowColor: Colors.dark,
-    shadowOffset: { width: 6, height: 6 },
-    shadowOpacity: 1,
-  },
-  datePickerTitle: {
-    fontSize: 18,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginBottom: 15,
-    color: Colors.dark,
-  },
-  datePickerLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 5,
-  },
-  columnLabel: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: Colors.primary,
-    opacity: 0.6,
-  },
-  datePickerRows: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dateItem: {
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  dateItemSel: {
-    backgroundColor: Colors.primary,
-  },
-  dateItemText: {
-    fontWeight: '800',
-    fontSize: 16,
-    color: Colors.dark,
-  },
-  dateItemTextSel: {
-    color: '#FFFFFF',
-  },
+  container: { flex: 1 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  backBtn: { padding: Spacing.xs },
+  title: { ...Typography.h3, fontWeight: '900', color: '#1A1A1A' },
+  headerPlaceholder: { width: 34 },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xxl, padding: Spacing.lg, marginBottom: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  sectionTitle: { ...Typography.bodySmall, fontWeight: '900', color: Colors.primary, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1 },
+  selectorContainer: { marginBottom: Spacing.md },
+  selectorLabel: { ...Typography.label, marginBottom: Spacing.xs, color: 'rgba(26,26,26,0.6)', fontWeight: '700' },
+  selectorButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(26,26,26,0.03)', borderRadius: BorderRadius.lg, padding: Spacing.md, borderWidth: 1, borderColor: 'rgba(26,26,26,0.05)', gap: Spacing.sm },
+  selectorError: { borderColor: Colors.error },
+  selectorValue: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1A1A1A' },
+  selectorPlaceholder: { color: 'rgba(26,26,26,0.3)' },
+  errorText: { ...Typography.caption, color: Colors.error, marginTop: 4 },
+  estadosRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  estadoChip: { paddingVertical: Spacing.sm, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.full, borderWidth: 1.5, borderColor: 'rgba(26,26,26,0.1)', backgroundColor: 'rgba(26,26,26,0.02)' },
+  estadoChipSelected: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  estadoChipText: { ...Typography.bodySmall, fontWeight: '600', color: 'rgba(26,26,26,0.5)' },
+  estadoChipTextSelected: { color: Colors.primary, fontWeight: '700' },
+  submitBtn: { shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: Spacing.md },
+  loadingText: { fontSize: 14, fontWeight: '600', color: 'rgba(26,26,26,0.5)' },
+  modalContainer: { flex: 1, backgroundColor: Colors.beige },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.lg },
+  modalTitle: { ...Typography.h4, fontWeight: '900' },
+  modalSearch: { marginHorizontal: Spacing.lg, marginBottom: Spacing.md },
+  modalList: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.xl },
+  municipioItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#FFFFFF', padding: Spacing.lg, borderRadius: BorderRadius.xl, marginBottom: Spacing.sm, elevation: 2 },
+  municipioName: { fontSize: 16, fontWeight: '700', color: '#1A1A1A' },
+  municipioState: { fontSize: 12, color: 'rgba(26,26,26,0.5)', fontWeight: '600' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
+  datePickerCard: { backgroundColor: Colors.beige, width: '85%', borderRadius: BorderRadius.xl, padding: Spacing.lg, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
+  datePickerTitle: { fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 15, color: Colors.dark },
+  datePickerLabels: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 5 },
+  columnLabel: { fontSize: 10, fontWeight: '900', color: Colors.primary, opacity: 0.6 },
+  datePickerRows: { flexDirection: 'row', justifyContent: 'space-between' },
+  dateItem: { padding: 10, alignItems: 'center', borderRadius: 8 },
+  dateItemSel: { backgroundColor: Colors.primary },
+  dateItemText: { fontWeight: '800', fontSize: 16, color: Colors.dark },
+  dateItemTextSel: { color: '#FFFFFF' },
 });

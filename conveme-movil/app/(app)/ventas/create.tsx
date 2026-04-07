@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -183,6 +183,14 @@ export default function VentaCreateScreen() {
         setClientes(cData);
         setVendedores(vData);
 
+        // AUTO-SELECCIÓN PARA VENDEDORES
+        if (!isAdmin && usuario) {
+          const yo = vData.find((v: any) => v.id_vendedor === usuario.id_vendedor || v.username === usuario.username);
+          if (yo) {
+            setField('vendedor_id', yo.id_vendedor);
+          }
+        }
+
         // Si estamos editando, cargar carrito
         if (isEditing && existing?.detalles) {
           const initialCart = existing.detalles.map((det) => ({
@@ -359,11 +367,15 @@ export default function VentaCreateScreen() {
       )
     : productos;
 
-  const filteredVendedores = searchVendedor.trim()
-    ? vendedores.filter((v) =>
-        v.nombre_completo.toLowerCase().includes(searchVendedor.toLowerCase())
-      )
-    : vendedores;
+  const filteredVendedores = useMemo(() => {
+    let list = vendedores;
+    if (!isAdmin) {
+      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor || v.username === usuario?.username);
+    }
+    return searchVendedor.trim()
+      ? list.filter((v) => v.nombre_completo.toLowerCase().includes(searchVendedor.toLowerCase()))
+      : list;
+  }, [vendedores, isAdmin, usuario, searchVendedor]);
 
   if (loading) {
     return (
@@ -411,16 +423,16 @@ export default function VentaCreateScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: textPrimary }]}>Vendedor *</Text>
           <Pressable
-            onPress={() => isAdmin && setShowVendedorModal(true)}
+            onPress={() => setShowVendedorModal(true)}
             style={[
               styles.selectButton,
-              { backgroundColor: isAdmin ? bgField : '#F3F4F6', borderColor: errors.vendedor_id ? Colors.error : theme.border }
+              { backgroundColor: bgField, borderColor: errors.vendedor_id ? Colors.error : theme.border }
             ]}
           >
             <Text style={[styles.selectButtonText, { color: selectedVendedor ? textPrimary : theme.muted }]}>
               {selectedVendedor ? selectedVendedor.nombre_completo : 'Seleccionar vendedor'}
             </Text>
-            {isAdmin && <Text style={styles.selectButtonIcon}>›</Text>}
+            <Text style={styles.selectButtonIcon}>›</Text>
           </Pressable>
           {errors.vendedor_id && <Text style={styles.errorText}>{errors.vendedor_id}</Text>}
         </View>

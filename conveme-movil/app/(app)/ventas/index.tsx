@@ -57,13 +57,28 @@ function VentaCard({ item, onPress, onLongPress }: { item: Venta; onPress: () =>
   );
 }
 
+import { useAuth } from '../../../src/hooks/useAuth';
+
 export default function VentasScreen() {
+  const { usuario, isAdmin } = useAuth();
   const { toast, show, hide } = useToast();
   const { ventas, setVentas, removeVenta } = useVentaStore();
   const [cortes, setCortes] = useState<Corte[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [showVendorAnalytics, setShowVendorAnalytics] = useState(false);
+
+  // Filtrar ventas según el rol
+  const filteredVentas = useMemo(() => {
+    let list = ventas;
+    if (!isAdmin) {
+      list = ventas.filter(v => v.id_vendedor === usuario?.id_vendedor || v.vendedor?.username === usuario?.username);
+    }
+    return list.filter(v => 
+        v.vendedor?.nombre_completo?.toLowerCase().includes(search.toLowerCase()) ||
+        v.id_venta.toString().includes(search)
+    );
+  }, [ventas, isAdmin, usuario, search]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -79,10 +94,27 @@ export default function VentasScreen() {
 
   const vendorData = useMemo(() => {
     const map: Record<string, number> = {};
-    ventas.forEach(v => { const n = v.vendedor?.nombre_completo || 'N/A'; map[n] = (map[n]||0) + v.monto_total; });
-    cortes.forEach(c => { const n = c.vendedor?.nombre_completo || 'N/A'; map[n] = (map[n]||0) + (c.dinero_total_entregado||0); });
-    return Object.entries(map).map(([label, value]) => ({ label: label.substring(0,8), value }));
-  }, [ventas, cortes]);
+    
+    // Filtrar datos para la gráfica de manera estricta
+    const ventasGrafica = isAdmin ? ventas : ventas.filter(v => v.id_vendedor === usuario?.id_vendedor || v.vendedor?.username === usuario?.username || v.vendedor_id === usuario?.id_vendedor);
+    const cortesGrafica = isAdmin ? cortes : cortes.filter(c => c.id_vendedor === usuario?.id_vendedor || c.vendedor?.username === usuario?.username || c.vendedor_id === usuario?.id_vendedor);
+
+    ventasGrafica.forEach(v => { 
+        const n = v.vendedor?.nombre_completo || v.vendedor?.username || 'MI RENDIMIENTO'; 
+        map[n] = (map[n]||0) + v.monto_total; 
+    });
+    cortesGrafica.forEach(c => { 
+        const n = c.vendedor?.nombre_completo || c.vendedor?.username || 'MI RENDIMIENTO'; 
+        map[n] = (map[n]||0) + (c.dinero_total_entregado||0); 
+    });
+    
+    // Si no es admin y el mapa está vacío, mostrar al menos una barra en cero con su nombre
+    if (!isAdmin && Object.keys(map).length === 0) {
+        map[usuario?.username || 'YO'] = 0;
+    }
+
+    return Object.entries(map).map(([label, value]) => ({ label: label.substring(0,8).toUpperCase(), value }));
+  }, [ventas, cortes, isAdmin, usuario]);
 
   return (
     <NeobrutalistBackground>
@@ -94,13 +126,15 @@ export default function VentasScreen() {
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>Ventas</Text>
-                    <Text style={styles.subtitle}>{ventas.length} transacciones</Text>
+                    <Text style={styles.subtitle}>{filteredVentas.length} transacciones</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
-                <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={styles.refreshBtn}>
-                    <MaterialCommunityIcons name="chart-bar" size={24} color={Colors.primary} />
-                </TouchableOpacity>
+                {isAdmin && (
+                  <TouchableOpacity onPress={() => setShowVendorAnalytics(true)} style={styles.refreshBtn}>
+                      <MaterialCommunityIcons name="chart-bar" size={24} color={Colors.primary} />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity onPress={() => router.push('/ventas/create')} style={styles.addBtn}>
                     <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
                 </TouchableOpacity>
@@ -111,10 +145,17 @@ export default function VentasScreen() {
         </View>
 
         <FlatList
-          data={ventas.filter(v => v.vendedor?.nombre_completo?.toLowerCase().includes(search.toLowerCase()))}
+          data={filteredVentas}
           keyExtractor={item => String(item.id_venta)}
           contentContainerStyle={styles.list}
-          ListHeaderComponent={<SearchBar value={search} onChangeText={setSearch} placeholder="Buscar vendedor..." style={{marginBottom: 30}} />}
+          ListHeaderComponent={
+            <SearchBar 
+              value={search} 
+              onChangeText={setSearch} 
+              placeholder={isAdmin ? "Buscar vendedor..." : "Buscar por ID de venta..."} 
+              style={{marginBottom: 30}} 
+            />
+          }
           renderItem={({ item }) => (
             <VentaCard 
                 item={item} 
@@ -128,7 +169,7 @@ export default function VentasScreen() {
         <Modal visible={showVendorAnalytics} transparent animationType="slide">
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Rendimiento Total</Text>
+                    <Text style={styles.modalTitle}>{isAdmin ? 'Rendimiento por Vendedor' : 'Mi Rendimiento Total'}</Text>
                     <BarChart data={vendorData} color={Colors.success} />
                     <Button title="CERRAR" onPress={() => setShowVendorAnalytics(false)} style={{marginTop: 20}} />
                 </View>
