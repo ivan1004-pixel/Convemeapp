@@ -90,7 +90,7 @@ export default function ProductoDetailScreen() {
     try {
       await deleteProducto(productoId);
       removeProducto(productoId);
-      router.back();
+      router.push('/(app)');
     } catch (err) {
       Alert.alert('Error', parseGraphQLError(err));
     } finally {
@@ -114,7 +114,7 @@ export default function ProductoDetailScreen() {
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </TouchableOpacity>
             <Text style={styles.title}>PRODUCTO</Text>
@@ -133,11 +133,11 @@ export default function ProductoDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>
-            DETALLE
+            DETALLE PRODUCTO
           </Text>
           <TouchableOpacity
             onPress={() => setShowDelete(true)}

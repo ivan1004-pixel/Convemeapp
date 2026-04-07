@@ -56,6 +56,13 @@ const DatePickerModal = memo(({ visible, field, value, onConfirm, onCancel }: an
         <View style={styles.modalOverlay}>
           <View style={styles.datePickerCard}>
             <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
+            
+            <View style={styles.datePickerLabels}>
+                <Text style={styles.columnLabel}>AÑO</Text>
+                <Text style={styles.columnLabel}>MES</Text>
+                <Text style={styles.columnLabel}>DÍA</Text>
+            </View>
+
             <View style={styles.datePickerRows}>
                <FlatList data={years} keyExtractor={y => `y-${y}`} renderItem={({item}) => (
                  <TouchableOpacity onPress={() => setSelYear(item.toString())} style={[styles.dateItem, selYear === item.toString() && styles.dateItemSel]}>
@@ -132,7 +139,7 @@ export default function PromocionCreateScreen() {
 
   const handleSubmit = async () => {
     if (!validate()) {
-      showToast('Por favor completa los campos requeridos', 'warning');
+      showToast('COMPLETA LOS CAMPOS REQUERIDOS', 'warning');
       return;
     }
     setSubmitting(true);
@@ -150,13 +157,13 @@ export default function PromocionCreateScreen() {
       if (isEditing && existing) {
         const updated = await updatePromocion({ id_promocion: existing.id_promocion, ...input });
         updatePromocionStore({ ...existing, ...updated, ...input });
-        showToast('Promoción actualizada con éxito', 'success');
+        showToast('PROMOCIÓN ACTUALIZADA', 'success');
       } else {
         const created = await createPromocion(input);
         addPromocion({ ...created, ...input });
-        showToast('Promoción creada con éxito', 'success');
+        showToast('PROMOCIÓN CREADA', 'success');
       }
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -172,11 +179,11 @@ export default function PromocionCreateScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </TouchableOpacity>
             <Text style={styles.title}>
-              {isEditing ? 'Editar Promoción' : 'Nueva Promoción'}
+              {isEditing ? 'EDITAR PROMOCIÓN' : 'NUEVA PROMOCIÓN'}
             </Text>
             <View style={{ width: 40 }} />
           </View>
@@ -186,24 +193,24 @@ export default function PromocionCreateScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>Detalles de la Oferta</Text>
+            <View style={styles.card}>
+                <Text style={styles.sectionTitle}>DETALLES DE LA OFERTA</Text>
                 
                 <Input
                   label="NOMBRE DE LA PROMOCIÓN *"
                   value={form.nombre}
                   onChangeText={(v) => setField('nombre', v)}
-                  placeholder="Ej: Descuento de Verano"
+                  placeholder="EJ: DESCUENTO DE VERANO"
                   error={errors.nombre}
-                  autoCapitalize="sentences"
+                  autoCapitalize="characters"
                 />
 
                 <Input
                   label="DESCRIPCIÓN"
                   value={form.descripcion}
                   onChangeText={(v) => setField('descripcion', v)}
-                  placeholder="Detalles adicionales..."
-                  autoCapitalize="sentences"
+                  placeholder="DETALLES ADICIONALES..."
+                  autoCapitalize="characters"
                   multiline
                   numberOfLines={3}
                   style={styles.multiline}
@@ -236,7 +243,7 @@ export default function PromocionCreateScreen() {
                       onPress={() => setField('tipo_promocion', 'MONTO')}
                     >
                       <MaterialCommunityIcons 
-                        name="cash" 
+                        name="cash-multiple" 
                         size={18} 
                         color={form.tipo_promocion === 'MONTO' ? '#FFF' : Colors.dark} 
                       />
@@ -290,14 +297,15 @@ export default function PromocionCreateScreen() {
                     thumbColor={form.activa ? Colors.success : '#9CA3AF'}
                   />
                 </View>
-
-                <Button
-                  title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PROMOCIÓN'}
-                  onPress={handleSubmit}
-                  loading={submitting}
-                  style={styles.submitBtn}
-                />
             </View>
+
+            <Button
+              title={isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PROMOCIÓN'}
+              onPress={handleSubmit}
+              loading={submitting}
+              size="lg"
+              style={styles.submitBtn}
+            />
           </ScrollView>
         </KeyboardAvoidingView>
 
@@ -321,30 +329,32 @@ export default function PromocionCreateScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
-  scrollContent: { padding: 20, paddingBottom: 160 },
-  formCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
-  sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 160 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 20, marginBottom: 25, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 3 },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 },
   multiline: { minHeight: 80, textAlignVertical: 'top' },
   fieldGroup: { marginBottom: Spacing.md },
-  fieldLabel: { fontSize: 11, fontWeight: '900', color: Colors.dark, marginBottom: 8, textTransform: 'uppercase' },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.4)', marginBottom: 6, textTransform: 'uppercase' },
   toggleRow: { flexDirection: 'row', gap: 10 },
-  toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: Colors.dark, backgroundColor: '#FFF' },
-  toggleBtnActive: { backgroundColor: Colors.primary },
-  toggleBtnText: { fontSize: 11, fontWeight: '900', color: Colors.dark },
+  toggleBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12, borderWidth: 2, borderColor: 'rgba(0,0,0,0.05)', backgroundColor: '#F9FAFB' },
+  toggleBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.dark },
+  toggleBtnText: { fontSize: 11, fontWeight: '900', color: 'rgba(0,0,0,0.3)' },
   toggleBtnTextActive: { color: '#FFF' },
   row: { flexDirection: 'row', marginBottom: Spacing.md },
-  selector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 2, borderColor: Colors.dark, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#FFF' },
+  selector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 2, borderColor: Colors.dark, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F9FAFB' },
   selectorText: { fontSize: 13, fontWeight: '800', color: Colors.dark },
   placeholderText: { color: 'rgba(0,0,0,0.3)' },
-  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 20 },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F9FAFB', padding: 15, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginTop: 10 },
   switchTitle: { fontSize: 12, fontWeight: '900', color: Colors.dark },
   switchSubtitle: { fontSize: 10, fontWeight: '700', color: 'rgba(0,0,0,0.4)' },
-  submitBtn: { marginTop: 10, height: 55 },
+  submitBtn: { marginTop: 10, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  datePickerCard: { backgroundColor: Colors.beige, width: '85%', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark },
-  datePickerTitle: { fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 20, color: Colors.dark },
+  datePickerCard: { backgroundColor: Colors.beige, width: '85%', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
+  datePickerTitle: { fontSize: 18, fontWeight: '900', textAlign: 'center', marginBottom: 15, color: Colors.dark },
+  datePickerLabels: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 5 },
+  columnLabel: { fontSize: 10, fontWeight: '900', color: Colors.primary, opacity: 0.6 },
   datePickerRows: { flexDirection: 'row', justifyContent: 'space-between' },
   dateItem: { padding: 10, alignItems: 'center', borderRadius: 8 },
   dateItemSel: { backgroundColor: Colors.primary },

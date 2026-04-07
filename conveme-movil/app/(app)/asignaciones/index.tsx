@@ -47,33 +47,36 @@ function AsignacionCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="account-tie" size={32} color={Colors.primary} />
+          <MaterialCommunityIcons name="clipboard-account" size={28} color={Colors.primary} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.vendedor?.nombre_completo || 'Sin vendedor'}</Text>
+          <Text style={styles.cardName}>{item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}</Text>
           <Text style={styles.cardMeta}>ASIGNACIÓN #{item.id_asignacion}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: item.estado === 'Entregado' ? Colors.success + '22' : Colors.warning + '22' }]}>
-          <Text style={[styles.statusText, { color: item.estado === 'Entregado' ? Colors.success : Colors.warning }]}>
-            {item.estado?.toUpperCase()}
+        <View style={[styles.statusBadge, { 
+          backgroundColor: (item.estado === 'Entregado' || item.estado === 'Finalizado') ? Colors.success + '22' : Colors.warning + '22', 
+          borderColor: (item.estado === 'Entregado' || item.estado === 'Finalizado') ? Colors.success : Colors.warning 
+        }]}>
+          <Text style={[styles.statusText, { color: (item.estado === 'Entregado' || item.estado === 'Finalizado') ? Colors.success : Colors.warning }]}>
+            {item.estado?.toUpperCase() || 'PENDIENTE'}
           </Text>
         </View>
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="package-variant" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{totalItems} productos asignados</Text>
+          <MaterialCommunityIcons name="package-variant" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{totalItems} PRODUCTOS ASIGNADOS</Text>
         </View>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="calendar-outline" size={16} color="rgba(26,26,26,0.5)" />
+          <MaterialCommunityIcons name="calendar-clock" size={16} color={Colors.primary} />
           <Text style={styles.infoText}>{formatDate(item.fecha_asignacion)}</Text>
         </View>
       </View>
       
       <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>VER DETALLES Y EDITAR</Text>
-         <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.primary} />
+         <Text style={styles.footerAction}>GESTIONAR ASIGNACIÓN</Text>
+         <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -129,7 +132,7 @@ export default function AsignacionesScreen() {
     try {
       await deleteAsignacion(deleteId);
       removeAsignacion(deleteId);
-      showToast('Asignación eliminada correctamente', 'success');
+      showToast('ASIGNACIÓN ELIMINADA', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -142,9 +145,14 @@ export default function AsignacionesScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Asignaciones</Text>
-                <Text style={styles.subtitle}>{asignaciones.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>ASIGNACIONES</Text>
+                    <Text style={styles.subtitle}>{asignaciones.length} REGISTROS</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/asignaciones/create')} style={styles.addBtn}>
@@ -165,7 +173,7 @@ export default function AsignacionesScreen() {
         </View>
 
         {loading && asignaciones.length === 0 ? (
-          <LoadingSpinner message="Cargando asignaciones..." />
+          <LoadingSpinner fullScreen message="CARGANDO..." />
         ) : (
           <FlatList
             data={asignaciones}
@@ -193,7 +201,7 @@ export default function AsignacionesScreen() {
               <EmptyState
                 icon="clipboard-list"
                 title="SIN ASIGNACIONES"
-                message={search ? 'No hay resultados.' : 'Aún no hay asignaciones registradas.'}
+                message={search ? 'No hay resultados que coincidan.' : 'Aún no hay asignaciones registradas.'}
                 actionLabel="AGREGAR ASIGNACIÓN"
                 onAction={() => router.push('/asignaciones/create')}
               />
@@ -204,9 +212,9 @@ export default function AsignacionesScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar asignación"
-          message={`¿Deseas eliminar la asignación #${deleteId}? Esta acción no se puede deshacer.`}
-          confirmText="Eliminar"
+          title="ELIMINAR ASIGNACIÓN"
+          message={`¿DESEAS ELIMINAR LA ASIGNACIÓN #${deleteId}?`}
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -225,27 +233,25 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 40 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 100 },
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
   cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  avatarContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: Colors.primary + '15', alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
+  avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.primary + '10', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   headerInfo: { flex: 1 },
-  cardName: { fontSize: 17, fontWeight: '800', color: '#1A1A1A' },
-  cardMeta: { fontSize: 10, fontWeight: '700', color: 'rgba(26,26,26,0.4)', letterSpacing: 0.5 },
-  statusBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.sm },
-  statusText: { fontSize: 9, fontWeight: '900' },
-  cardContent: { gap: Spacing.sm, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  cardName: { fontSize: 16, fontWeight: '900', color: Colors.dark },
+  cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusText: { fontSize: 8, fontWeight: '900' },
+  cardContent: { gap: 6, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12, paddingBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  infoText: { fontSize: 13, fontWeight: '600', color: 'rgba(26,26,26,0.6)' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: Spacing.sm, gap: 4 },
-  footerAction: { fontSize: 12, fontWeight: '800', color: Colors.primary },
-  fab: { display: 'none' },
-  fabIcon: { display: 'none' },
+  infoText: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.5)' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

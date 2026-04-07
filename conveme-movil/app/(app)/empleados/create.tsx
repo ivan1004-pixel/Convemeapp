@@ -107,12 +107,28 @@ export default function EmpleadoCreateScreen() {
       )
     : municipios;
 
-  const filteredUsuarios = searchUsuario.trim()
-    ? usuarios.filter(u => 
-        u.username.toLowerCase().includes(searchUsuario.toLowerCase()) ||
-        u.rol?.nombre.toLowerCase().includes(searchUsuario.toLowerCase())
-      )
-    : usuarios;
+  const filteredUsuarios = React.useMemo(() => {
+    // 1. IDs de usuarios ya asignados a empleados (excepto el actual si editamos)
+    const assignedUserIds = empleados
+      .map(emp => emp.usuario?.id_usuario)
+      .filter(id => id !== undefined && (isEditing ? id !== existing?.usuario?.id_usuario : true));
+
+    // 2. Filtrar por rol (Admin/Empleado = 1) y que no estén asignados
+    let filtered = usuarios.filter(u => 
+      u.rol?.id_rol === 1 && 
+      !assignedUserIds.includes(u.id_usuario)
+    );
+
+    // 3. Filtrar por búsqueda
+    if (searchUsuario.trim()) {
+      const q = searchUsuario.toLowerCase();
+      filtered = filtered.filter(u => 
+        u.username.toLowerCase().includes(q) || 
+        u.rol?.nombre.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [usuarios, empleados, searchUsuario, isEditing, existing]);
 
   const setField = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));

@@ -103,8 +103,11 @@ const selectorStyles = StyleSheet.create({
   chipTextSelected: { fontWeight: '600' },
 });
 
+import { useAuth } from '../../../src/hooks/useAuth';
+
 export default function VentaCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { usuario, isAdmin } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
@@ -113,6 +116,15 @@ export default function VentaCreateScreen() {
   const { ventas, addVenta, updateVenta: updateVentaStore } = useVentaStore();
 
   const isEditing = !!id;
+
+  // Bloquear edición para no-admins
+  useEffect(() => {
+    if (isEditing && !isAdmin) {
+      show('No tienes permisos para editar ventas', 'error');
+      setTimeout(() => router.back(), 2000);
+    }
+  }, [isEditing, isAdmin]);
+
   const existing: Venta | undefined = isEditing
     ? ventas.find((v) => v.id_venta === Number(id))
     : undefined;
@@ -120,9 +132,16 @@ export default function VentaCreateScreen() {
   // Estados del formulario
   const [form, setForm] = useState({
     cliente_id: existing?.cliente?.id_cliente ?? null,
-    vendedor_id: existing?.vendedor?.id_vendedor ?? null,
+    vendedor_id: existing?.vendedor?.id_vendedor ?? (isAdmin ? null : usuario?.id_vendedor),
     metodo_pago: existing?.metodo_pago ?? 'Efectivo',
   });
+
+  // Asegurar que el vendedor sea el usuario actual si no es admin
+  useEffect(() => {
+    if (!isAdmin && usuario?.id_vendedor) {
+      setForm(prev => ({ ...prev, vendedor_id: usuario.id_vendedor }));
+    }
+  }, [isAdmin, usuario]);
 
   // Carrito de productos
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -313,7 +332,7 @@ export default function VentaCreateScreen() {
         addVenta(created);
         show('Venta registrada correctamente', 'success');
       }
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
     } finally {
@@ -360,7 +379,7 @@ export default function VentaCreateScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
+          <Pressable onPress={() => router.push('/(app)')} style={styles.backBtn} accessibilityRole="button">
             <Text style={styles.backIcon}>←</Text>
           </Pressable>
           <Text style={[styles.title, { color: theme.text }]}>
@@ -392,16 +411,16 @@ export default function VentaCreateScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: textPrimary }]}>Vendedor *</Text>
           <Pressable
-            onPress={() => setShowVendedorModal(true)}
+            onPress={() => isAdmin && setShowVendedorModal(true)}
             style={[
               styles.selectButton,
-              { backgroundColor: bgField, borderColor: errors.vendedor_id ? Colors.error : theme.border }
+              { backgroundColor: isAdmin ? bgField : '#F3F4F6', borderColor: errors.vendedor_id ? Colors.error : theme.border }
             ]}
           >
             <Text style={[styles.selectButtonText, { color: selectedVendedor ? textPrimary : theme.muted }]}>
               {selectedVendedor ? selectedVendedor.nombre_completo : 'Seleccionar vendedor'}
             </Text>
-            <Text style={styles.selectButtonIcon}>›</Text>
+            {isAdmin && <Text style={styles.selectButtonIcon}>›</Text>}
           </Pressable>
           {errors.vendedor_id && <Text style={styles.errorText}>{errors.vendedor_id}</Text>}
         </View>

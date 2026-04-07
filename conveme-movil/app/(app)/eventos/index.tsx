@@ -155,7 +155,7 @@ export default function EventosScreen() {
     try {
       await deleteEvento(deleteId);
       removeEvento(deleteId);
-      showToast('Evento eliminado con éxito', 'success');
+      showToast('EVENTO ELIMINADO', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -170,9 +170,14 @@ export default function EventosScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Eventos</Text>
-                <Text style={styles.subtitle}>{eventos.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>EVENTOS</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/eventos/create')} style={styles.addBtn}>
@@ -189,12 +194,11 @@ export default function EventosScreen() {
             value={search}
             onChangeText={setSearch}
             placeholder="BUSCAR POR NOMBRE O ESCUELA..."
-            containerStyle={styles.searchBar}
           />
         </View>
 
         {loading && !refreshing && eventos.length === 0 ? (
-          <LoadingSpinner message="Cargando..." />
+          <LoadingSpinner message="CARGANDO..." />
         ) : (
           <FlatList
             data={filtered}
@@ -222,8 +226,8 @@ export default function EventosScreen() {
               <EmptyState
                 title="SIN EVENTOS"
                 message={search ? 'No hay resultados.' : 'No hay eventos registrados.'}
-                actionLabel="AGREGAR EVENTO"
-                onAction={() => router.push('/eventos/create')}
+                actionLabel={!search ? "AGREGAR EVENTO" : undefined}
+                onAction={!search ? () => router.push('/eventos/create') : undefined}
               />
             }
             showsVerticalScrollIndicator={false}
@@ -232,9 +236,9 @@ export default function EventosScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar evento"
-          message={`¿Deseas eliminar "${deleteTarget?.nombre?.toUpperCase() ?? ''}"?`}
-          confirmText="Eliminar"
+          title="ELIMINAR EVENTO"
+          message={`¿DESEAS ELIMINAR "${deleteTarget?.nombre?.toUpperCase() ?? ''}"?`}
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -255,21 +259,17 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
   searchSection: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
-  },
-  searchBar: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.lg,
+    paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 40,
+    paddingBottom: 140,
   },
   listEmpty: {
     flexGrow: 1,
@@ -280,11 +280,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 3,
   },
   cardPressed: {
     opacity: 0.9,
@@ -298,23 +299,25 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   cardName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '900',
+    color: Colors.dark,
     flex: 1,
   },
   statusBadge: {
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
     borderRadius: BorderRadius.sm,
+    borderWidth: 1.5,
+    borderColor: Colors.dark,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: '900',
     color: '#FFFFFF',
   },
   cardBody: {
-    gap: Spacing.xs,
+    gap: 6,
   },
   infoRow: {
     flexDirection: 'row',
@@ -322,9 +325,10 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   cardMeta: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.6)',
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
+    textTransform: 'uppercase',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -341,21 +345,21 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   cardDate: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    color: 'rgba(26,26,26,0.5)',
+    color: 'rgba(0,0,0,0.4)',
   },
   costBox: {
     backgroundColor: Colors.warning + '22',
     paddingHorizontal: Spacing.sm,
     paddingVertical: 2,
-    borderRadius: BorderRadius.sm,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.dark,
   },
   cardCosto: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     color: Colors.dark,
   },
-  fab: { display: 'none' },
-  fabIcon: { display: 'none' },
 });

@@ -75,10 +75,10 @@ export default function ComprobanteDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
-            <Text style={styles.title}>Vista de Ticket</Text>
+            <Text style={styles.title}>VISTA DE TICKET</Text>
             <View style={{ width: 40 }} />
         </View>
 

@@ -5,25 +5,21 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Pressable,
-  ActivityIndicator,
   Modal,
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { getVentas, deleteVenta, updateVenta } from '../../../src/services/venta.service';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { getVentas, deleteVenta } from '../../../src/services/venta.service';
 import { useVentaStore } from '../../../src/store/ventaStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
 import { Badge } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
-import { Card } from '../../../src/components/ui/Card';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Venta } from '../../../src/types';
 import { SalesTicket } from '../../../src/components/ui/SalesTicket';
@@ -35,43 +31,24 @@ const ESTADO_BADGE: Record<string, 'warning' | 'success' | 'error'> = {
   Cancelada: 'error',
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const bg = '#FFFFFF'; 
-
+function InfoRow({ label, value, icon }: { label: string; value?: string | null; icon?: string }) {
+  if (!value) return null;
   return (
-    <View style={[rowStyles.row, { backgroundColor: bg, borderColor: 'rgba(26,26,26,0.05)' }]}>
-    <Text style={[rowStyles.label, { color: 'rgba(26,26,26,0.6)' }]}>{label}</Text>
-    <Text style={[rowStyles.value, { color: '#1A1A1A' }]}>{value}</Text>
+    <View style={styles.infoRow}>
+      <View style={styles.labelContainer}>
+        {icon && <MaterialCommunityIcons name={icon as any} size={16} color="rgba(0,0,0,0.4)" style={{ marginRight: 6 }} />}
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Text style={styles.infoValue}>{value.toUpperCase()}</Text>
     </View>
   );
 }
 
-const rowStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.md,
-    marginBottom: Spacing.sm,
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
-  },
-  label: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
-  value: { fontSize: 14, fontWeight: '700', flexShrink: 1, textAlign: 'right', marginLeft: Spacing.sm },
-});
+import { useAuth } from '../../../src/hooks/useAuth';
 
 export default function VentaDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
+  const { isAdmin } = useAuth();
   const { ventas, setVentas, removeVenta } = useVentaStore();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -88,7 +65,7 @@ export default function VentaDetailScreen() {
         const data = await getVentas();
         setVentas(data);
       } catch (err) {
-        Alert.alert('Error', parseGraphQLError(err));
+        Alert.alert('ERROR', parseGraphQLError(err));
       } finally {
         setLoading(false);
       }
@@ -104,39 +81,27 @@ export default function VentaDetailScreen() {
     try {
       await deleteVenta(ventaId);
       removeVenta(ventaId);
-      router.back();
+      router.push('/(app)');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('ERROR', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowDelete(false);
     }
   }, [ventaId, removeVenta]);
 
-  if (loading) {
-    return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container}>
-          <LoadingSpinner fullScreen message="Cargando venta..." />
-        </SafeAreaView>
-      </NeobrutalistBackground>
-    );
-  }
-
-  if (!venta) {
+  if (loading || !venta) {
     return (
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-              <Text style={styles.backIcon}>←</Text>
-            </Pressable>
-            <Text style={[styles.title, { color: theme.text }]}>Venta</Text>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>DETALLE</Text>
             <View style={styles.headerPlaceholder} />
           </View>
-          <View style={styles.notFound}>
-            <Text style={{ ...Typography.body, color: theme.muted }}>Venta no encontrada.</Text>
-          </View>
+          <LoadingSpinner fullScreen message="CARGANDO..." />
         </SafeAreaView>
       </NeobrutalistBackground>
     );
@@ -146,153 +111,102 @@ export default function VentaDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={styles.backIcon}>←</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>Venta #{venta.id_venta}</Text>
-          <Pressable
-            onPress={() => setShowDelete(true)}
-            style={styles.deleteBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Eliminar venta"
-          >
-            <Text style={styles.deleteIcon}>X</Text>
-          </Pressable>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>DETALLE DE VENTA</Text>
+          {isAdmin && (
+            <TouchableOpacity onPress={() => setShowDelete(true)} style={styles.deleteHeaderBtn}>
+              <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+            </TouchableOpacity>
+          )}
         </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* Summary Card */}
-          <Card style={styles.summaryCard}>
-            <View style={styles.summaryRow}>
-              <Text style={[styles.amountLabel, { color: theme.muted }]}>Monto Total</Text>
-              <Badge
-                text={venta.estado ?? 'Pendiente'}
-                color={ESTADO_BADGE[venta.estado ?? 'Pendiente'] ?? 'secondary'}
-              />
+          <View style={styles.heroCard}>
+            <View style={styles.summaryTop}>
+                <Text style={styles.heroId}>VENTA #{venta.id_venta}</Text>
+                <Badge
+                    text={venta.estado?.toUpperCase() ?? 'PENDIENTE'}
+                    color={ESTADO_BADGE[venta.estado ?? 'Pendiente'] ?? 'warning'}
+                />
             </View>
-            <Text style={[styles.amount, { color: Colors.primary }]}>
-              {formatCurrency(venta.monto_total)}
-            </Text>
-          </Card>
+            <Text style={styles.heroAmount}>{formatCurrency(venta.monto_total)}</Text>
+            <View style={styles.metodoBox}>
+                <MaterialCommunityIcons name="credit-card-outline" size={16} color={Colors.primary} />
+                <Text style={styles.metodoText}>PAGO: {venta.metodo_pago?.toUpperCase() || 'NO ESPECIFICADO'}</Text>
+            </View>
+          </View>
 
-          {/* Details Card */}
-          <Card title="Información" style={styles.sectionCard}>
-            <DetailRow label="Fecha" value={formatDate(venta.fecha_venta)} />
-            <DetailRow label="Método de pago" value={venta.metodo_pago ?? 'No especificado'} />
-            <DetailRow label="Estado" value={venta.estado ?? 'Pendiente'} />
-            <DetailRow
-              label="Vendedor"
-              value={venta.vendedor?.nombre_completo ?? 'No asignado'}
-            />
-          </Card>
+          {/* Info Card */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>INFORMACIÓN GENERAL</Text>
+            <InfoRow label="FECHA" value={formatDate(venta.fecha_venta)} icon="calendar-outline" />
+            <InfoRow label="MÉTODO DE PAGO" value={venta.metodo_pago} icon="cash-multiple" />
+            <InfoRow label="VENDEDOR" value={venta.vendedor?.nombre_completo} icon="account-tie-outline" />
+            <InfoRow label="ESTADO" value={venta.estado} icon="check-circle-outline" />
+          </View>
 
-          {/* Detalles Card */}
+          {/* Products List */}
           {venta.detalles && venta.detalles.length > 0 && (
-            <Card
-              title={`Productos (${venta.detalles.reduce((acc, det) => acc + det.cantidad, 0)})`}
-              style={styles.sectionCard}
-            >
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>PRODUCTOS VENDIDOS ({venta.detalles.reduce((acc, det) => acc + det.cantidad, 0)})</Text>
               {venta.detalles.map((det, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.detalleRow,
-                    { 
-                      backgroundColor: '#FFFFFF', 
-                      borderColor: 'rgba(26,26,26,0.05)', 
-                      borderWidth: 1, 
-                      borderRadius: BorderRadius.lg, 
-                      marginBottom: Spacing.sm, 
-                      paddingHorizontal: Spacing.md,
-                      paddingVertical: Spacing.md,
-                      shadowColor: '#000',
-                      shadowOffset: { width: 0, height: 2 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 5,
-                      elevation: 2,
-                    }
-                  ]}
-                >
-                  <View style={styles.detalleInfo}>
-                    <Text style={[styles.detalleName, { color: '#1A1A1A' }]}>
-                      {det.producto?.nombre ?? 'Producto'}
-                    </Text>
-                    <Text style={[styles.detalleSku, { color: 'rgba(26,26,26,0.5)' }]}>
-                      SKU: {det.producto?.sku ?? '-'}
-                    </Text>
+                <View key={i} style={styles.detRow}>
+                  <View style={styles.detInfo}>
+                    <Text style={styles.detName}>{det.producto?.nombre?.toUpperCase() || 'PRODUCTO'}</Text>
+                    <Text style={styles.detSku}>SKU: {det.producto?.sku || 'N/A'}</Text>
                   </View>
-                  <View style={styles.detalleRight}>
-                    <Text style={[styles.detalleCantidad, { color: Colors.blue, fontWeight: '700' }]}>
-                      ×{det.cantidad}
-                    </Text>
-                    <Text style={[styles.detallePrecio, { color: Colors.success, fontWeight: '700' }]}>
-                      {formatCurrency(det.precio_unitario)}
-                    </Text>
+                  <View style={styles.detRight}>
+                    <Text style={styles.detQty}>×{det.cantidad}</Text>
+                    <Text style={styles.detPrice}>{formatCurrency(det.precio_unitario)}</Text>
                   </View>
                 </View>
               ))}
-            </Card>
+            </View>
           )}
 
-          {/* Actions */}
           <View style={styles.actions}>
             <Button
-              title="Ver Ticket"
-              variant="primary"
+              title="VER TICKET"
               onPress={() => setShowTicket(true)}
               style={styles.actionBtn}
+              size="lg"
             />
-            <Button
-              title="Editar venta"
-              variant="outline"
-              onPress={() => router.push(`/ventas/create?id=${venta.id_venta}`)}
-              style={styles.actionBtn}
-            />
-            <Button
-              title="Eliminar"
-              variant="danger"
-              onPress={() => setShowDelete(true)}
-              style={styles.actionBtn}
-            />
+            {isAdmin && (
+              <Button
+                title="EDITAR VENTA"
+                onPress={() => router.push(`/ventas/create?id=${venta.id_venta}`)}
+                style={[styles.actionBtn, { marginTop: 15 }]}
+                variant="outline"
+                size="lg"
+              />
+            )}
           </View>
         </ScrollView>
 
         <ConfirmDialog
           visible={showDelete}
-          title="Eliminar venta"
-          message={`¿Deseas eliminar la venta #${venta.id_venta}? Esta acción no se puede deshacer.`}
+          title="ELIMINAR VENTA"
+          message={`¿DESEAS ELIMINAR LA VENTA #${venta.id_venta}?`}
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}
-          confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+          loading={deleting}
           destructive
         />
 
-        {/* Modal del Ticket */}
-        <Modal
-          visible={showTicket}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowTicket(false)}
-        >
-          <View style={styles.ticketModalOverlay}>
+        <Modal visible={showTicket} transparent animationType="fade">
+          <View style={styles.ticketOverlay}>
             <View style={styles.ticketModalContainer}>
-              <ScrollView
-                contentContainerStyle={styles.ticketScrollContent}
-                showsVerticalScrollIndicator={false}
-              >
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
                 <SalesTicket venta={venta} />
               </ScrollView>
-
-              {/* Botón cerrar */}
               <TouchableOpacity
                 style={styles.closeTicketButton}
                 onPress={() => setShowTicket(false)}
-                activeOpacity={0.7}
               >
-                <Text style={styles.closeTicketText}>✕ CERRAR</Text>
+                <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -304,87 +218,57 @@ export default function VentaDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-  },
-  backBtn: { padding: Spacing.xs, marginRight: Spacing.sm },
-  backIcon: { fontSize: 22, color: Colors.primary },
-  title: { ...Typography.h4, flex: 1 },
-  headerPlaceholder: { width: 32 },
-  deleteBtn: { padding: Spacing.xs },
-  deleteIcon: { fontSize: 20 },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: 120,
-  },
-  summaryCard: { marginBottom: Spacing.md },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  amountLabel: { ...Typography.bodySmall },
-  amount: { ...Typography.h2, marginTop: Spacing.xs },
-  sectionCard: { marginBottom: Spacing.md },
-  detalleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  detalleInfo: { flex: 1, marginRight: Spacing.sm },
-  detalleName: { ...Typography.bodySmall, fontWeight: '600' },
-  detalleSku: { ...Typography.caption },
-  detalleRight: { alignItems: 'flex-end' },
-  detalleCantidad: { ...Typography.bodySmall },
-  detallePrecio: { ...Typography.bodySmall, fontWeight: '600' },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginTop: Spacing.sm,
-  },
-  actionBtn: { flex: 1 },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-
-  // Estilos del modal del ticket
-  ticketModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(237, 224, 209, 0.95)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: Spacing.lg,
-  },
-  ticketModalContainer: {
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '90%',
-  },
-  ticketScrollContent: {
-    alignItems: 'center',
-    paddingBottom: Spacing.xl,
-  },
-  closeTicketButton: {
-    backgroundColor: Colors.blue,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.full,
-    marginTop: Spacing.md,
-    borderWidth: 3,
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: Colors.dark, flex: 1, marginLeft: 15 },
+  headerPlaceholder: { width: 40 },
+  deleteHeaderBtn: { padding: Spacing.xs },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 100 },
+  heroCard: {
+    backgroundColor: '#FFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
     borderColor: Colors.dark,
-    alignItems: 'center',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    elevation: 6
+  },
+  summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  heroId: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  heroAmount: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  metodoBox: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: Colors.primary + '10', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  metodoText: { fontSize: 11, fontWeight: '900', color: Colors.primary },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
     shadowColor: Colors.dark,
     shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 0,
+    elevation: 3,
   },
-  closeTicketText: {
-    ...Typography.body,
-    fontWeight: '900',
-    color: Colors.light,
-    letterSpacing: 1,
-  },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1.5 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  labelContainer: { flexDirection: 'row', alignItems: 'center' },
+  infoLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
+  infoValue: { fontSize: 13, fontWeight: '800', color: Colors.dark, textAlign: 'right', flexShrink: 1, marginLeft: 10 },
+  detRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  detInfo: { flex: 1 },
+  detName: { fontSize: 14, fontWeight: '800', color: Colors.dark },
+  detSku: { fontSize: 10, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
+  detRight: { alignItems: 'flex-end' },
+  detQty: { fontSize: 12, fontWeight: '900', color: Colors.primary },
+  detPrice: { fontSize: 13, fontWeight: '800', color: Colors.dark },
+  actions: { marginTop: Spacing.sm },
+  actionBtn: { shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  ticketOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  ticketModalContainer: { width: '100%', maxHeight: '90%' },
+  closeTicketButton: { backgroundColor: Colors.dark, padding: 15, borderRadius: BorderRadius.full, marginTop: 20, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  closeTicketText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 });

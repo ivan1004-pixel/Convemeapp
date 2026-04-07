@@ -76,100 +76,39 @@ const DatePickerModal = memo(
 
     return (
       <Modal visible={visible} animationType="fade" transparent>
-      <View style={styles.modalOverlay}>
-      <View style={styles.datePickerCard}>
-      <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
-      <View style={styles.datePickerRows}>
-      <FlatList
-      data={years}
-      keyExtractor={(y) => `y-${y}`}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-        onPress={() => setSelYear(item.toString())}
-        style={[
-          styles.dateItem,
-          selYear === item.toString() && styles.dateItemSel,
-        ]}
-        >
-        <Text
-        style={[
-          styles.dateItemText,
-          selYear === item.toString() && styles.dateItemTextSel,
-        ]}
-        >
-        {item}
-        </Text>
-        </TouchableOpacity>
-      )}
-      style={{ height: 150 }}
-      showsVerticalScrollIndicator={false}
-      />
-      <FlatList
-      data={months}
-      keyExtractor={(m) => `m-${m}`}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-        onPress={() => setSelMonth(item)}
-        style={[
-          styles.dateItem,
-          selMonth === item && styles.dateItemSel,
-        ]}
-        >
-        <Text
-        style={[
-          styles.dateItemText,
-          selMonth === item && styles.dateItemTextSel,
-        ]}
-        >
-        {item}
-        </Text>
-        </TouchableOpacity>
-      )}
-      style={{ height: 150 }}
-      showsVerticalScrollIndicator={false}
-      />
-      <FlatList
-      data={days}
-      keyExtractor={(d) => `d-${d}`}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-        onPress={() => setSelDay(item)}
-        style={[
-          styles.dateItem,
-          selDay === item && styles.dateItemSel,
-        ]}
-        >
-        <Text
-        style={[
-          styles.dateItemText,
-          selDay === item && styles.dateItemTextSel,
-        ]}
-        >
-        {item}
-        </Text>
-        </TouchableOpacity>
-      )}
-      style={{ height: 150 }}
-      showsVerticalScrollIndicator={false}
-      />
-      </View>
-      <Button
-      title="CONFIRMAR"
-      onPress={() =>
-        onConfirm(field, `${selYear}-${selMonth}-${selDay}`)
-      }
-      style={{ marginTop: 20 }}
-      />
-      <TouchableOpacity
-      onPress={onCancel}
-      style={{ marginTop: 10, alignItems: 'center' }}
-      >
-      <Text style={{ fontWeight: '900', color: Colors.error }}>
-      CANCELAR
-      </Text>
-      </TouchableOpacity>
-      </View>
-      </View>
+        <View style={styles.modalOverlay}>
+          <View style={styles.datePickerCard}>
+            <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
+            
+            <View style={styles.datePickerLabels}>
+                <Text style={styles.columnLabel}>AÑO</Text>
+                <Text style={styles.columnLabel}>MES</Text>
+                <Text style={styles.columnLabel}>DÍA</Text>
+            </View>
+
+            <View style={styles.datePickerRows}>
+               <FlatList data={years} keyExtractor={y => `y-${y}`} renderItem={({item}) => (
+                 <TouchableOpacity onPress={() => setSelYear(item.toString())} style={[styles.dateItem, selYear === item.toString() && styles.dateItemSel]}>
+                   <Text style={[styles.dateItemText, selYear === item.toString() && styles.dateItemTextSel]}>{item}</Text>
+                 </TouchableOpacity>
+               )} style={{height: 150}} showsVerticalScrollIndicator={false} />
+               <FlatList data={months} keyExtractor={m => `m-${m}`} renderItem={({item}) => (
+                 <TouchableOpacity onPress={() => setSelMonth(item)} style={[styles.dateItem, selMonth === item && styles.dateItemSel]}>
+                   <Text style={[styles.dateItemText, selMonth === item && styles.dateItemTextSel]}>{item}</Text>
+                 </TouchableOpacity>
+               )} style={{height: 150}} showsVerticalScrollIndicator={false} />
+               <FlatList data={days} keyExtractor={d => `d-${d}`} renderItem={({item}) => (
+                 <TouchableOpacity onPress={() => setSelDay(item)} style={[styles.dateItem, selDay === item && styles.dateItemSel]}>
+                   <Text style={[styles.dateItemText, selDay === item && styles.dateItemTextSel]}>{item}</Text>
+                 </TouchableOpacity>
+               )} style={{height: 150}} showsVerticalScrollIndicator={false} />
+            </View>
+            <Button title="CONFIRMAR" onPress={() => onConfirm(field, `${selYear}-${selMonth}-${selDay}`)} style={{marginTop: 20}} />
+            <TouchableOpacity onPress={onCancel} style={{marginTop: 15, alignItems: 'center'}}>
+               <Text style={{fontWeight: '900', color: Colors.error}}>CANCELAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     );
   }
@@ -355,7 +294,7 @@ export default function PedidoCreateScreen() {
         showToast('Pedido creado con éxito', 'success');
       }
 
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       console.log('Error al crear/actualizar pedido:', err);
       showToast(parseGraphQLError(err), 'error');
@@ -380,7 +319,7 @@ export default function PedidoCreateScreen() {
       <SafeAreaView style={styles.container}>
       <View style={styles.header}>
       <Pressable
-      onPress={() => router.back()}
+      onPress={() => router.push('/(app)')}
       style={styles.backBtn}
       >
       <MaterialCommunityIcons
@@ -412,7 +351,7 @@ export default function PedidoCreateScreen() {
     {/* Header */}
     <View style={styles.header}>
     <Pressable
-    onPress={() => router.back()}
+    onPress={() => router.push('/(app)')}
     style={styles.backBtn}
     >
     <MaterialCommunityIcons
@@ -990,46 +929,57 @@ const styles = StyleSheet.create({
   // Date Picker Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-                                 justifyContent: 'center',
-                                 alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   datePickerCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.xxl,
-    padding: Spacing.xl,
-    marginHorizontal: Spacing.lg,
-    width: '90%',
-    maxWidth: 400,
+    backgroundColor: Colors.beige,
+    width: '85%',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
   },
   datePickerTitle: {
-    fontSize: 14,
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 15,
+    color: Colors.dark,
+  },
+  datePickerLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 5,
+  },
+  columnLabel: {
+    fontSize: 10,
     fontWeight: '900',
     color: Colors.primary,
-    textAlign: 'center',
-    marginBottom: Spacing.lg,
-    letterSpacing: 1,
+    opacity: 0.6,
   },
   datePickerRows: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    justifyContent: 'space-between',
   },
   dateItem: {
-    padding: Spacing.sm,
-    borderRadius: BorderRadius.md,
-    marginVertical: 4,
+    padding: 10,
     alignItems: 'center',
+    borderRadius: 8,
   },
   dateItemSel: {
     backgroundColor: Colors.primary,
   },
   dateItemText: {
+    fontWeight: '800',
     fontSize: 16,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.6)',
+    color: Colors.dark,
   },
   dateItemTextSel: {
     color: '#FFFFFF',
-    fontWeight: '900',
   },
 });

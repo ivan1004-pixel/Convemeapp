@@ -50,26 +50,26 @@ function PromocionCard({
       style={({ pressed }) => [
         styles.card,
         pressed && styles.cardPressed,
-        !item.activa && { opacity: 0.7, backgroundColor: '#F3F4F6' }
+        !item.activa && { opacity: 0.7 }
       ]}
     >
       <View style={styles.cardHeader}>
         <View style={[styles.iconContainer, { backgroundColor: item.activa ? Colors.success + '15' : Colors.dark + '10' }]}>
             <MaterialCommunityIcons 
-                name={item.tipo_promocion === 'PORCENTAJE' ? "percent" : "cash"} 
+                name={item.tipo_promocion === 'PORCENTAJE' ? "percent" : "cash-multiple"} 
                 size={24} 
                 color={item.activa ? Colors.success : Colors.dark} 
             />
         </View>
         <View style={styles.headerText}>
-            <Text style={styles.cardName}>{item.nombre}</Text>
-            <Text style={styles.cardTipo}>{item.tipo_promocion === 'PORCENTAJE' ? 'PORCENTAJE' : 'MONTO FIJO'}</Text>
+            <Text style={styles.cardName}>{item.nombre.toUpperCase()}</Text>
+            <Text style={styles.cardTipo}>{item.tipo_promocion?.toUpperCase() || 'PROMOCIÓN'}</Text>
         </View>
-        <Badge
-          text={item.activa ? 'ACTIVA' : 'INACTIVA'}
-          color={item.activa ? 'success' : 'secondary'}
-          size="sm"
-        />
+        <View style={[styles.statusBadge, { backgroundColor: item.activa ? Colors.success + '22' : Colors.error + '22', borderColor: item.activa ? Colors.success : Colors.error }]}>
+          <Text style={[styles.statusText, { color: item.activa ? Colors.success : Colors.error }]}>
+            {item.activa ? 'ACTIVA' : 'INACTIVA'}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.cardBody}>
@@ -82,15 +82,15 @@ function PromocionCard({
               <View style={styles.promoItem}>
                   <Text style={styles.promoLabel}>VIGENCIA</Text>
                   <Text style={styles.promoDates}>
-                      {item.fecha_inicio ? formatDate(item.fecha_inicio) : 'INICIO'} - {item.fecha_fin ? formatDate(item.fecha_fin) : 'FIN'}
+                      {item.fecha_inicio ? formatDate(item.fecha_inicio).toUpperCase() : 'INICIO'} - {item.fecha_fin ? formatDate(item.fecha_fin).toUpperCase() : 'FIN'}
                   </Text>
               </View>
           </View>
       </View>
 
       <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>VER DETALLES</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.dark} />
+          <Text style={styles.footerAction}>GESTIONAR PROMO</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -149,7 +149,7 @@ export default function PromocionesScreen() {
     try {
       await deletePromocion(deleteId);
       removePromocion(deleteId);
-      showToast('Promoción eliminada con éxito', 'success');
+      showToast('PROMOCIÓN ELIMINADA', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -164,9 +164,14 @@ export default function PromocionesScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Promociones</Text>
-                <Text style={styles.subtitle}>{promociones.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>PROMOS</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/promociones/create')} style={styles.addBtn}>
@@ -178,53 +183,53 @@ export default function PromocionesScreen() {
             </View>
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_promocion)}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder="BUSCAR PROMOCIÓN..."
-              style={{ marginBottom: 25 }}
-            />
-          }
-          renderItem={({ item }) => (
-            <PromocionCard
-              item={item}
-              onPress={() => router.push(`/(app)/promociones/${item.id_promocion}`)}
-              onLongPress={() => setDeleteId(item.id_promocion)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            loading ? (
-                <LoadingSpinner message="Cargando promociones..." />
-            ) : (
-                <EmptyState
-                    icon="tag-outline"
-                    title="SIN PROMOCIONES"
-                    message={search ? 'No se encontraron resultados.' : 'No hay promociones registradas aún.'}
-                    actionLabel="AGREGAR PROMOCIÓN"
-                    onAction={() => router.push('/promociones/create')}
-                />
-            )
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR PROMOCIÓN..."
+          />
+        </View>
+
+        {loading && promociones.length === 0 ? (
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_promocion)}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <PromocionCard
+                item={item}
+                onPress={() => router.push(`/(app)/promociones/${item.id_promocion}`)}
+                onLongPress={() => setDeleteId(item.id_promocion)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="tag-multiple"
+                title="SIN PROMOCIONES"
+                message={search ? 'NO SE ENCONTRARON RESULTADOS.' : 'AÚN NO HAY PROMOS REGISTRADAS.'}
+                actionLabel="CREAR PROMOCIÓN"
+                onAction={() => router.push('/promociones/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar promoción"
-          message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"?`}
+          title="ELIMINAR PROMOCIÓN"
+          message={`¿DESEAS ELIMINAR "${deleteTarget?.nombre.toUpperCase()}"?`}
           confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
@@ -244,27 +249,28 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  list: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
-  cardPressed: { transform: [{ translateY: 2 }, { translateX: 2 }], shadowOffset: { width: 2, height: 2 } },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
-  iconContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: 20, paddingBottom: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 20, marginBottom: 18, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 15 },
+  iconContainer: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   headerText: { flex: 1 },
-  cardName: { fontSize: 18, fontWeight: '900', color: Colors.dark },
-  cardTipo: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)' },
-  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 12 },
+  cardName: { fontSize: 16, fontWeight: '900', color: Colors.dark },
+  cardTipo: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', marginTop: 2 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusText: { fontSize: 8, fontWeight: '900' },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   promoRow: { flexDirection: 'row', alignItems: 'center' },
   promoItem: { flex: 1, alignItems: 'center' },
-  promoDivider: { width: 1, height: 30, backgroundColor: 'rgba(0,0,0,0.05)' },
-  promoLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
-  promoValue: { fontSize: 16, fontWeight: '900', color: Colors.primary },
-  promoDates: { fontSize: 11, fontWeight: '800', color: Colors.dark },
-  cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
-  footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.3)' },
-  fab: { display: 'none' },
-  fabIcon: { display: 'none' }
+  promoDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  promoLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  promoValue: { fontSize: 18, fontWeight: '900', color: Colors.primary },
+  promoDates: { fontSize: 10, fontWeight: '800', color: Colors.dark, marginTop: 2 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

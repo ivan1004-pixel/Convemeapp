@@ -57,7 +57,7 @@ export default function PromocionDetailScreen() {
       await deletePromocion(promocion.id_promocion);
       removePromocion(promocion.id_promocion);
       showToast('Promoción eliminada con éxito', 'success');
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -71,7 +71,7 @@ export default function PromocionDetailScreen() {
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
             <Text style={styles.title}>Detalle</Text>
@@ -94,10 +94,10 @@ export default function PromocionDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
-            <Text style={styles.title}>Promoción</Text>
+            <Text style={styles.title}>DETALLE PROMOCIÓN</Text>
             <TouchableOpacity 
                 onPress={() => router.push(`/promociones/create?id=${promocion.id_promocion}`)}
                 style={styles.editBtnHeader}
@@ -114,7 +114,7 @@ export default function PromocionDetailScreen() {
           <View style={styles.mainCard}>
             <View style={styles.heroRow}>
                 <View style={styles.heroInfo}>
-                    <Text style={styles.heroName}>{promocion.nombre}</Text>
+                    <Text style={styles.heroName}>{promocion.nombre.toUpperCase()}</Text>
                     <Text style={styles.heroTipo}>{promocion.tipo_promocion === 'PORCENTAJE' ? 'PORCENTAJE' : 'MONTO FIJO'}</Text>
                 </View>
                 <Badge
@@ -131,7 +131,7 @@ export default function PromocionDetailScreen() {
             {promocion.descripcion && (
                 <View style={styles.descBox}>
                     <Text style={styles.sectionTitle}>DESCRIPCIÓN</Text>
-                    <Text style={styles.descriptionText}>{promocion.descripcion}</Text>
+                    <Text style={styles.descriptionText}>{promocion.descripcion.toUpperCase()}</Text>
                 </View>
             )}
           </View>
@@ -143,7 +143,7 @@ export default function PromocionDetailScreen() {
                 <MaterialCommunityIcons name="calendar-range" size={20} color={Colors.primary} />
                 <View>
                     <Text style={styles.infoLabel}>FECHA INICIO</Text>
-                    <Text style={styles.infoValue}>{promocion.fecha_inicio ? formatDate(promocion.fecha_inicio) : 'No definida'}</Text>
+                    <Text style={styles.infoValue}>{promocion.fecha_inicio ? formatDate(promocion.fecha_inicio).toUpperCase() : 'NO DEFINIDA'}</Text>
                 </View>
             </View>
             <View style={styles.infoDivider} />
@@ -151,7 +151,7 @@ export default function PromocionDetailScreen() {
                 <MaterialCommunityIcons name="calendar-check" size={20} color={Colors.primary} />
                 <View>
                     <Text style={styles.infoLabel}>FECHA FIN</Text>
-                    <Text style={styles.infoValue}>{promocion.fecha_fin ? formatDate(promocion.fecha_fin) : 'No definida'}</Text>
+                    <Text style={styles.infoValue}>{promocion.fecha_fin ? formatDate(promocion.fecha_fin).toUpperCase() : 'NO DEFINIDA'}</Text>
                 </View>
             </View>
             <View style={styles.infoDivider} />

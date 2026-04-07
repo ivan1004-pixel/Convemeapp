@@ -17,14 +17,13 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { Toast, useToast } from '../../../src/components/Toast';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import { CorteTicket } from '../../../src/components/ui/CorteTicket';
 import { Button } from '../../../src/components/ui/Button';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const COMISION_POR_UNIDAD = 6.5;
 
@@ -32,9 +31,6 @@ export default function CorteDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { toast, show: showToast, hide: hideToast } = useToast();
   const { usuario } = useAuthStore();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
 
   const [corte, setCorte] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -63,7 +59,7 @@ export default function CorteDetailScreen() {
     setDeleting(true);
     try {
       await deleteCorte(Number(id));
-      router.back();
+      router.push('/(app)');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -89,9 +85,9 @@ export default function CorteDetailScreen() {
             saldo_pendiente: Math.abs(corte.diferencia_corte || 0),
             notas: corte.observaciones
         });
-        showToast('Comprobante guardado con éxito', 'success');
+        showToast('COMPROBANTE GUARDADO CON ÉXITO', 'success');
     } catch (err) {
-        showToast('Error al guardar comprobante', 'error');
+        showToast('ERROR AL GUARDAR COMPROBANTE', 'error');
     } finally {
         setIsSavingComprobante(false);
     }
@@ -103,148 +99,152 @@ export default function CorteDetailScreen() {
     return Colors.error;
   }
 
-  if (loading) return <LoadingSpinner message="Cargando detalles..." />;
+  if (loading) return <LoadingSpinner fullScreen message="CARGANDO DETALLES..." />;
   if (!corte)
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <Text style={[styles.notFound, { color: theme.text }]}>Corte no encontrado</Text>
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <Text style={styles.notFound}>CORTE NO ENCONTRADO</Text>
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: theme.text }]}>Detalle de Corte</Text>
-        <TouchableOpacity onPress={() => setDeleteVisible(true)} style={styles.deleteBtnTop}>
-          <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.folioRow}>
-            <Text style={styles.folioLabel}>CORTE FOLIO #{corte.id_corte}</Text>
-            <Text style={styles.dateLabel}>{formatDate(corte.fecha_corte)}</Text>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title}>DETALLE DE CORTE</Text>
+          <TouchableOpacity onPress={() => setDeleteVisible(true)} style={styles.deleteBtnTop}>
+            <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+          </TouchableOpacity>
         </View>
 
-        <View style={[styles.card, Shadows.sm]}>
-          <Text style={styles.sectionTitle}>Vendedor</Text>
-          <View style={styles.vendedorRow}>
-              <MaterialCommunityIcons name="account-tie" size={24} color={Colors.primary} />
-              <Text style={styles.vendedorName}>
-                {corte.vendedor?.nombre_completo || 'N/A'}
-              </Text>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.folioRow}>
+              <Text style={styles.folioLabel}>CORTE FOLIO #{corte.id_corte}</Text>
+              <Text style={styles.dateLabel}>{formatDate(corte.fecha_corte).toUpperCase()}</Text>
           </View>
-        </View>
 
-        <View style={[styles.card, Shadows.sm]}>
-          <Text style={styles.sectionTitle}>Resumen Financiero</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Dinero Esperado:</Text>
-            <Text style={styles.value}>{formatCurrency(corte.dinero_esperado)}</Text>
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.label}>Total Entregado:</Text>
-            <Text style={styles.value}>{formatCurrency(corte.dinero_total_entregado)}</Text>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
-            <Text style={[styles.label, { fontWeight: '900' }]}>Diferencia:</Text>
-            <Text style={[styles.difValue, { color: getDiferenciaColor(corte.diferencia_corte) }]}>
-              {corte.diferencia_corte > 0.01 ? '+' : ''}{formatCurrency(corte.diferencia_corte)}
-            </Text>
-          </View>
-        </View>
-
-        {corte.observaciones ? (
-          <View style={[styles.card, Shadows.sm]}>
-            <Text style={styles.sectionTitle}>Observaciones</Text>
-            <Text style={styles.observaciones}>{corte.observaciones}</Text>
-          </View>
-        ) : null}
-
-        {corte.detalles && corte.detalles.length > 0 && (
-          <View style={[styles.card, Shadows.sm]}>
-            <Text style={styles.sectionTitle}>Detalles de productos</Text>
-            {corte.detalles.map((det: any, index: number) => (
-              <View key={index} style={[styles.detalle, index === 0 && { borderTopWidth: 0 }]}>
-                <Text style={styles.detalleName}>
-                  {det.producto?.nombre?.toUpperCase() || `Producto #${det.producto_id}`}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>VENDEDOR</Text>
+            <View style={styles.vendedorRow}>
+                <MaterialCommunityIcons name="account-tie" size={24} color={Colors.primary} />
+                <Text style={styles.vendedorName}>
+                  {corte.vendedor?.nombre_completo?.toUpperCase() || 'N/A'}
                 </Text>
-                <View style={styles.statsGrid}>
-                    <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>VENDIDO</Text>
-                        <Text style={styles.statValue}>{det.cantidad_vendida}</Text>
-                    </View>
-                    <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>DEVUELTO</Text>
-                        <Text style={styles.statValue}>{det.cantidad_devuelta || 0}</Text>
-                    </View>
-                    <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>MERMA</Text>
-                        <Text style={styles.statValue}>{det.merma_reportada || 0}</Text>
-                    </View>
+            </View>
+          </View>
+
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>RESUMEN FINANCIERO</Text>
+            <View style={styles.row}>
+              <Text style={styles.label}>DINERO ESPERADO:</Text>
+              <Text style={styles.value}>{formatCurrency(corte.dinero_esperado)}</Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={styles.label}>TOTAL ENTREGADO:</Text>
+              <Text style={styles.value}>{formatCurrency(corte.dinero_total_entregado)}</Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.row}>
+              <Text style={[styles.label, { fontWeight: '900' }]}>DIFERENCIA:</Text>
+              <Text style={[styles.difValue, { color: getDiferenciaColor(corte.diferencia_corte) }]}>
+                {corte.diferencia_corte > 0.01 ? '+' : ''}{formatCurrency(corte.diferencia_corte)}
+              </Text>
+            </View>
+          </View>
+
+          {corte.observaciones ? (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>OBSERVACIONES</Text>
+              <Text style={styles.observaciones}>{corte.observaciones.toUpperCase()}</Text>
+            </View>
+          ) : null}
+
+          {corte.detalles && corte.detalles.length > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>DETALLES DE PRODUCTOS</Text>
+              {corte.detalles.map((det: any, index: number) => (
+                <View key={index} style={[styles.detalle, index === 0 && { borderTopWidth: 0 }]}>
+                  <Text style={styles.detalleName}>
+                    {det.producto?.nombre?.toUpperCase() || `PRODUCTO #${det.producto_id}`}
+                  </Text>
+                  <View style={styles.statsGrid}>
+                      <View style={styles.statBox}>
+                          <Text style={styles.statLabel}>VENDIDO</Text>
+                          <Text style={styles.statValue}>{det.cantidad_vendida}</Text>
+                      </View>
+                      <View style={styles.statBox}>
+                          <Text style={styles.statLabel}>DEVUELTO</Text>
+                          <Text style={styles.statValue}>{det.cantidad_devuelta || 0}</Text>
+                      </View>
+                      <View style={styles.statBox}>
+                          <Text style={styles.statLabel}>MERMA</Text>
+                          <Text style={styles.statValue}>{det.merma_reportada || 0}</Text>
+                      </View>
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
+            </View>
+          )}
+
+          <View style={styles.actions}>
+            <Button
+              title="GUARDAR COMPROBANTE"
+              variant="primary"
+              onPress={handleSaveComprobante}
+              loading={isSavingComprobante}
+              style={styles.actionBtn}
+              leftIcon={<MaterialCommunityIcons name="content-save-check" size={20} color="#FFF" />}
+            />
+            <Button
+              title="VER TICKET DIGITAL"
+              variant="outline"
+              onPress={() => setShowTicket(true)}
+              style={styles.actionBtn}
+              leftIcon={<MaterialCommunityIcons name="receipt" size={20} color={Colors.primary} />}
+            />
+            <Button
+              title="EDITAR CORTE"
+              variant="outline"
+              onPress={() => router.push({ pathname: '/(app)/cortes/create', params: { id: String(corte.id_corte) } })}
+              style={styles.actionBtn}
+            />
           </View>
-        )}
+        </ScrollView>
 
-        <View style={styles.actions}>
-          <Button
-            title="GUARDAR COMPROBANTE"
-            variant="primary"
-            onPress={handleSaveComprobante}
-            loading={isSavingComprobante}
-            style={styles.actionBtn}
-            leftIcon={<MaterialCommunityIcons name="content-save-check" size={20} color="#FFF" />}
-          />
-          <Button
-            title="VER TICKET DIGITAL"
-            variant="outline"
-            onPress={() => setShowTicket(true)}
-            style={styles.actionBtn}
-            leftIcon={<MaterialCommunityIcons name="receipt" size={20} color={Colors.primary} />}
-          />
-          <Button
-            title="EDITAR CORTE"
-            variant="outline"
-            onPress={() => router.push({ pathname: '/(app)/cortes/create', params: { id: String(corte.id_corte) } })}
-            style={styles.actionBtn}
-          />
-        </View>
-      </ScrollView>
+        <ConfirmDialog
+          visible={deleteVisible}
+          title="ELIMINAR CORTE"
+          message="¿ESTÁS SEGURO DE QUE DESEAS ELIMINAR ESTE CORTE?"
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteVisible(false)}
+          loading={deleting}
+          destructive
+        />
 
-      <ConfirmDialog
-        visible={deleteVisible}
-        title="Eliminar corte"
-        message="¿Estás seguro de que deseas eliminar este corte? Esta acción no se puede deshacer."
-        onConfirm={handleDelete}
-        onCancel={() => setDeleteVisible(false)}
-        loading={deleting}
-        destructive
-      />
-
-      <Modal visible={showTicket} transparent animationType="fade">
-        <View style={styles.ticketOverlay}>
-          <View style={styles.ticketModalContainer}>
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
-              <CorteTicket corte={corte} />
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.closeTicketButton}
-              onPress={() => setShowTicket(false)}
-            >
-              <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
-            </TouchableOpacity>
+        <Modal visible={showTicket} transparent animationType="fade">
+          <View style={styles.ticketOverlay}>
+            <View style={styles.ticketModalContainer}>
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
+                <CorteTicket corte={corte} />
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeTicketButton}
+                onPress={() => setShowTicket(false)}
+              >
+                <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
+        </Modal>
 
-      <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-    </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
@@ -257,8 +257,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
   },
-  backBtn: { padding: Spacing.xs },
-  title: { ...Typography.h4, fontWeight: '900' },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  title: { fontSize: 18, fontWeight: '900', color: Colors.dark },
   deleteBtnTop: { padding: Spacing.xs },
   scroll: { padding: Spacing.lg, paddingBottom: 100 },
   folioRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.lg, alignItems: 'center' },
@@ -270,17 +270,21 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     marginBottom: Spacing.md,
     borderWidth: 2,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 3,
   },
-  sectionTitle: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 12 },
   vendedorRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   vendedorName: { fontSize: 16, fontWeight: '800', color: Colors.dark },
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: 'rgba(0,0,0,0.6)' },
+  label: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' },
   value: { fontSize: 14, fontWeight: '800', color: Colors.dark },
   divider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 8 },
   difValue: { fontSize: 18, fontWeight: '900' },
-  observaciones: { fontSize: 14, color: Colors.dark, lineHeight: 20 },
+  observaciones: { fontSize: 13, fontWeight: '700', color: Colors.dark, lineHeight: 18 },
   detalle: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)',
@@ -288,14 +292,14 @@ const styles = StyleSheet.create({
   },
   detalleName: { fontSize: 13, fontWeight: '900', color: Colors.dark, marginBottom: 8 },
   statsGrid: { flexDirection: 'row', gap: 10 },
-  statBox: { flex: 1, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 8, alignItems: 'center' },
+  statBox: { flex: 1, backgroundColor: '#F9FAFB', padding: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   statLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)' },
   statValue: { fontSize: 14, fontWeight: '900', color: Colors.primary },
   actions: { marginTop: Spacing.lg, gap: Spacing.sm },
-  actionBtn: { height: 55 },
-  notFound: { padding: Spacing.xl, textAlign: 'center', fontWeight: '700' },
+  actionBtn: { height: 55, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  notFound: { padding: Spacing.xl, textAlign: 'center', fontWeight: '900', color: 'rgba(0,0,0,0.3)', marginTop: 100 },
   ticketOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
   ticketModalContainer: { width: '100%', maxHeight: '90%' },
-  closeTicketButton: { backgroundColor: Colors.dark, padding: 15, borderRadius: BorderRadius.full, marginTop: 20, alignItems: 'center' },
+  closeTicketButton: { backgroundColor: Colors.dark, padding: 15, borderRadius: BorderRadius.full, marginTop: 20, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
   closeTicketText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 });

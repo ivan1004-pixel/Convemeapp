@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { router } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -12,6 +13,7 @@ import type { Empleado, Vendedor } from '../../../src/types';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 export default function PerfilScreen() {
   const { logout } = useAuth();
@@ -20,9 +22,9 @@ export default function PerfilScreen() {
   const [empleado, setEmpleado] = useState<Empleado | null>(null);
   const [vendedor, setVendedor] = useState<Vendedor | null>(null);
 
-  const username = usuario?.username ?? 'Usuario';
+  const username = usuario?.username ?? 'USUARIO';
   const rolId = usuario?.rol_id ?? 0;
-  const rolLabel = rolId === 1 ? 'Administrador' : rolId === 2 ? 'Vendedor' : `Rol ${rolId}`;
+  const rolLabel = rolId === 1 ? 'ADMINISTRADOR' : rolId === 2 ? 'VENDEDOR' : `ROL ${rolId}`;
   const isAdmin = rolId === ROLE_ADMIN;
 
   useEffect(() => {
@@ -33,12 +35,10 @@ export default function PerfilScreen() {
     try {
       setLoading(true);
       if (isAdmin) {
-        // Buscar empleado con el usuario actual
         const empleados = await getEmpleados();
         const emp = empleados.find(e => e.usuario?.id_usuario === usuario?.id_usuario);
         setEmpleado(emp || null);
       } else {
-        // Buscar vendedor (asumiendo que los vendedores están vinculados de alguna forma)
         const vendedores = await getVendedores();
         const vend = vendedores.find(v => v.nombre_completo.toLowerCase().includes(username.toLowerCase()));
         setVendedor(vend || null);
@@ -51,203 +51,202 @@ export default function PerfilScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
-        <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
-          <Text style={styles.screenTitle}>Mi Perfil</Text>
-        </Animated.View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <View>
+                <Text style={styles.screenTitle}>MI PERFIL</Text>
+                <Text style={styles.subtitle}>{rolLabel}</Text>
+            </View>
+        </View>
 
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-          </View>
-        ) : (
-          <>
-            {/* Avatar */}
-            <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.avatarSection}>
-              <View style={styles.avatarCircle}>
-                <Image
-                  source={isAdmin ? require('../../../assets/images/fotoadmin.jpg') : require('../../../assets/images/fotovendedor.jpg')}
-                  style={styles.avatarImage}
-                  contentFit="cover"
-                />
-              </View>
-              <Text style={styles.username}>{empleado?.nombre_completo || vendedor?.nombre_completo || username}</Text>
-              <View style={styles.rolBadge}>
-                <MaterialCommunityIcons 
-                  name={isAdmin ? 'shield-crown' : 'account-tie'} 
-                  size={16} 
-                  color={Colors.dark} 
-                />
-                <Text style={styles.rolBadgeText}>{rolLabel}</Text>
-              </View>
-            </Animated.View>
-
-            {/* Info Card - Información de Cuenta */}
-            <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.card}>
-              <View style={styles.cardHeaderRow}>
-                <MaterialCommunityIcons name="account-circle" size={24} color={Colors.primary} />
-                <Text style={styles.cardTitle}>Información de Cuenta</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>ID Usuario</Text>
-                <Text style={styles.infoValue}>#{usuario?.id_usuario ?? '-'}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Username</Text>
-                <Text style={styles.infoValue}>{username}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Rol</Text>
-                <Text style={styles.infoValue}>{rolLabel}</Text>
-              </View>
-              <View style={styles.divider} />
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Estado</Text>
-                <View style={styles.activeRow}>
-                  <MaterialCommunityIcons name="check-circle" size={16} color={Colors.success} />
-                  <Text style={styles.infoValueGreen}>Activo</Text>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Colors.primary} />
+              <Text style={styles.loadingText}>CARGANDO...</Text>
+            </View>
+          ) : (
+            <>
+              {/* Avatar */}
+              <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.avatarSection}>
+                <View style={styles.avatarCircle}>
+                  <Image
+                    source={isAdmin ? require('../../../assets/images/fotoadmin.jpg') : require('../../../assets/images/fotovendedor.jpg')}
+                    style={styles.avatarImage}
+                    contentFit="cover"
+                  />
                 </View>
-              </View>
-            </Animated.View>
-
-            {/* Info Card - Datos Personales */}
-            {(empleado || vendedor) && (
-              <Animated.View entering={FadeInDown.duration(400).delay(300)} style={styles.card}>
-                <View style={styles.cardHeaderRow}>
-                  <MaterialCommunityIcons name="card-account-details" size={24} color={Colors.primary} />
-                  <Text style={styles.cardTitle}>Datos Personales</Text>
+                <Text style={styles.username}>{(empleado?.nombre_completo || vendedor?.nombre_completo || username).toUpperCase()}</Text>
+                <View style={styles.rolBadge}>
+                  <MaterialCommunityIcons 
+                    name={isAdmin ? 'shield-crown' : 'account-tie'} 
+                    size={16} 
+                    color={Colors.dark} 
+                  />
+                  <Text style={styles.rolBadgeText}>{rolLabel}</Text>
                 </View>
-                
-                {empleado && (
-                  <>
-                    {empleado.email && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Email</Text>
-                          <Text style={styles.infoValue}>{empleado.email}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {empleado.telefono && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Teléfono</Text>
-                          <Text style={styles.infoValue}>{empleado.telefono}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {empleado.puesto && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Puesto</Text>
-                          <Text style={styles.infoValue}>{empleado.puesto}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {(empleado.calle_y_numero || empleado.colonia || empleado.municipio) && (
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Dirección</Text>
-                        <Text style={styles.infoValue}>
-                          {[empleado.calle_y_numero, empleado.colonia, empleado.municipio?.nombre].filter(Boolean).join(', ')}
-                        </Text>
-                      </View>
-                    )}
-                  </>
-                )}
-
-                {vendedor && (
-                  <>
-                    {vendedor.email && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Email</Text>
-                          <Text style={styles.infoValue}>{vendedor.email}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {vendedor.telefono && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Teléfono</Text>
-                          <Text style={styles.infoValue}>{vendedor.telefono}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {vendedor.instagram_handle && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Instagram</Text>
-                          <Text style={styles.infoValue}>@{vendedor.instagram_handle}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {vendedor.escuela && (
-                      <>
-                        <View style={styles.infoRow}>
-                          <Text style={styles.infoLabel}>Escuela</Text>
-                          <Text style={styles.infoValue}>{vendedor.escuela.nombre}</Text>
-                        </View>
-                        <View style={styles.divider} />
-                      </>
-                    )}
-                    {vendedor.municipio && (
-                      <View style={styles.infoRow}>
-                        <Text style={styles.infoLabel}>Municipio</Text>
-                        <Text style={styles.infoValue}>{vendedor.municipio.nombre}</Text>
-                      </View>
-                    )}
-                  </>
-                )}
               </Animated.View>
-            )}
 
-            {/* Logout */}
-            <Animated.View entering={FadeInDown.duration(400).delay(400)}>
-              <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-                <MaterialCommunityIcons name="logout" size={20} color="#fff" />
-                <Text style={styles.logoutText}>Cerrar Sesión</Text>
-              </TouchableOpacity>
-            </Animated.View>
-          </>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+              {/* Info Card - Información de Cuenta */}
+              <Animated.View entering={FadeInDown.duration(400).delay(200)} style={styles.card}>
+                <View style={styles.cardHeaderRow}>
+                  <MaterialCommunityIcons name="account-circle" size={24} color={Colors.primary} />
+                  <Text style={styles.cardTitle}>INFORMACIÓN DE CUENTA</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>ID USUARIO</Text>
+                  <Text style={styles.infoValue}>#{usuario?.id_usuario ?? '-'}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>USERNAME</Text>
+                  <Text style={styles.infoValue}>{username.toUpperCase()}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>ROL</Text>
+                  <Text style={styles.infoValue}>{rolLabel}</Text>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>ESTADO</Text>
+                  <View style={styles.activeRow}>
+                    <MaterialCommunityIcons name="check-circle" size={16} color={Colors.success} />
+                    <Text style={styles.infoValueGreen}>ACTIVO</Text>
+                  </View>
+                </View>
+              </Animated.View>
+
+              {/* Info Card - Datos Personales */}
+              {(empleado || vendedor) && (
+                <Animated.View entering={FadeInDown.duration(400).delay(300)} style={styles.card}>
+                  <View style={styles.cardHeaderRow}>
+                    <MaterialCommunityIcons name="card-account-details" size={24} color={Colors.primary} />
+                    <Text style={styles.cardTitle}>DATOS PERSONALES</Text>
+                  </View>
+                  
+                  {empleado && (
+                    <>
+                      {empleado.email && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>EMAIL</Text>
+                            <Text style={styles.infoValue}>{empleado.email.toUpperCase()}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {empleado.telefono && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>TELÉFONO</Text>
+                            <Text style={styles.infoValue}>{empleado.telefono}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {empleado.puesto && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>PUESTO</Text>
+                            <Text style={styles.infoValue}>{empleado.puesto.toUpperCase()}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {(empleado.calle_y_numero || empleado.colonia || empleado.municipio) && (
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>DIRECCIÓN</Text>
+                          <Text style={styles.infoValue}>
+                            {[empleado.calle_y_numero, empleado.colonia, empleado.municipio?.nombre].filter(Boolean).join(', ').toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+
+                  {vendedor && (
+                    <>
+                      {vendedor.email && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>EMAIL</Text>
+                            <Text style={styles.infoValue}>{vendedor.email.toUpperCase()}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {vendedor.telefono && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>TELÉFONO</Text>
+                            <Text style={styles.infoValue}>{vendedor.telefono}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {vendedor.instagram_handle && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>INSTAGRAM</Text>
+                            <Text style={styles.infoValue}>@{vendedor.instagram_handle.toUpperCase()}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {vendedor.escuela && (
+                        <>
+                          <View style={styles.infoRow}>
+                            <Text style={styles.infoLabel}>ESCUELA</Text>
+                            <Text style={styles.infoValue}>{vendedor.escuela.nombre.toUpperCase()}</Text>
+                          </View>
+                          <View style={styles.divider} />
+                        </>
+                      )}
+                      {vendedor.municipio && (
+                        <View style={styles.infoRow}>
+                          <Text style={styles.infoLabel}>MUNICIPIO</Text>
+                          <Text style={styles.infoValue}>{vendedor.municipio.nombre.toUpperCase()}</Text>
+                        </View>
+                      )}
+                    </>
+                  )}
+                </Animated.View>
+              )}
+
+              {/* Logout */}
+              <Animated.View entering={FadeInDown.duration(400).delay(400)}>
+                <TouchableOpacity style={styles.logoutButton} onPress={logout}>
+                  <MaterialCommunityIcons name="logout" size={24} color="#FFF" />
+                  <Text style={styles.logoutText}>CERRAR SESIÓN</Text>
+                </TouchableOpacity>
+              </Animated.View>
+            </>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: Colors.beige 
   },
+  header: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15, gap: 15 },
+  backBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  screenTitle: { fontSize: 24, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   scroll: { 
     padding: Spacing.lg, 
     paddingBottom: 100
   },
-  header: { 
-    marginBottom: Spacing.xl,
-    alignItems: 'center'
-  },
-  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 50 },
-  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  screenTitle: { 
-    ...Typography.h3, 
-    fontWeight: '900', 
-    color: Colors.dark,
-    letterSpacing: 1
-  },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 100 },
+  loadingText: { marginTop: 10, fontSize: 12, fontWeight: '900', color: Colors.dark },
   avatarSection: { 
     alignItems: 'center', 
     marginBottom: Spacing.xl 
@@ -255,74 +254,66 @@ const styles = StyleSheet.create({
   avatarCircle: {
     width: 140,
     height: 140,
-    borderRadius: 70,
+    borderRadius: 20,
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.md,
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: Colors.dark,
-    // Shadow neobrutalista
     shadowColor: Colors.dark,
-    shadowOffset: { width: 4, height: 4 },
+    shadowOffset: { width: 6, height: 6 },
     shadowOpacity: 1,
-    shadowRadius: 0,
     elevation: 0,
-    overflow: 'hidden' // Ensure image respects border radius
+    overflow: 'hidden'
   },
   avatarImage: {
     width: '100%',
     height: '100%',
   },
-  avatarText: { 
-    ...Typography.h2, 
-    color: '#fff', 
-    fontWeight: '900'
-  },
   username: { 
-    ...Typography.h3, 
+    fontSize: 22,
     fontWeight: '900', 
     color: Colors.dark, 
     marginBottom: Spacing.xs,
-    letterSpacing: 0.5
+    letterSpacing: -0.5,
+    textAlign: 'center'
   },
   rolBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
-    backgroundColor: Colors.pink,
+    backgroundColor: Colors.warning,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
-    borderRadius: BorderRadius.full,
+    paddingVertical: 6,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: Colors.dark,
   },
   rolBadgeText: { 
-    ...Typography.caption, 
+    fontSize: 10, 
     color: Colors.dark, 
     fontWeight: '900',
     letterSpacing: 1
   },
   card: {
+    backgroundColor: '#FFFFFF',
     borderRadius: BorderRadius.xl,
-    borderWidth: 3,
-    borderColor: Colors.dark,
-    backgroundColor: '#F9F4EE',
     padding: Spacing.lg,
     marginBottom: Spacing.xl,
-    // Shadow neobrutalista
+    borderWidth: 2,
+    borderColor: Colors.dark,
     shadowColor: Colors.dark,
-    shadowOffset: { width: 6, height: 6 },
+    shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 0,
+    elevation: 4,
   },
+  cardHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginBottom: Spacing.md },
   cardTitle: { 
-    ...Typography.h4, 
+    fontSize: 14,
     fontWeight: '900', 
     color: Colors.dark, 
-    marginBottom: Spacing.lg,
-    letterSpacing: 1
+    letterSpacing: 0.5
   },
   infoRow: { 
     flexDirection: 'row', 
@@ -331,20 +322,19 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md 
   },
   infoLabel: { 
-    ...Typography.body, 
-    color: Colors.dark,
-    opacity: 0.6,
-    fontWeight: '700'
+    fontSize: 11,
+    color: 'rgba(0,0,0,0.4)',
+    fontWeight: '800'
   },
   infoValue: { 
-    ...Typography.body, 
+    fontSize: 13,
     fontWeight: '900', 
     color: Colors.dark,
     textAlign: 'right',
     flexShrink: 1,
   },
   infoValueGreen: { 
-    ...Typography.body, 
+    fontSize: 13,
     fontWeight: '900', 
     color: Colors.success 
   },
@@ -354,9 +344,8 @@ const styles = StyleSheet.create({
     gap: 6 
   },
   divider: { 
-    height: 2, 
-    backgroundColor: Colors.dark,
-    opacity: 0.1
+    height: 1, 
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   logoutButton: {
     backgroundColor: Colors.error,
@@ -368,16 +357,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
     borderWidth: 3,
     borderColor: Colors.dark,
-    // Shadow neobrutalista
     shadowColor: Colors.dark,
-    shadowOffset: { width: 6, height: 6 },
+    shadowOffset: { width: 4, height: 4 },
     shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 0,
+    elevation: 5,
   },
   logoutText: { 
-    ...Typography.button, 
-    color: '#fff',
+    fontSize: 16,
+    color: '#FFF',
     fontWeight: '900',
     letterSpacing: 1
   },

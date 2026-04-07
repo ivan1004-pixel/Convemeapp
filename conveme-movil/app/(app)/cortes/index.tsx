@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -37,6 +38,21 @@ function CorteCard({
   const diff = item.diferencia_corte || 0;
   const isOk = Math.abs(diff) < 0.01;
 
+  const handleShare = async () => {
+    try {
+      const message = `--NoManchesMx--\n` +
+                      `RESUMEN DE CORTE #${item.id_corte}\n` +
+                      `VENDEDOR: ${item.vendedor?.nombre_completo?.toUpperCase()}\n` +
+                      `FECHA: ${formatDate(item.fecha_corte)}\n` +
+                      `ESPERADO: ${formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}\n` +
+                      `ENTREGADO: ${formatCurrency(item.dinero_total_entregado || 0)}\n` +
+                      `DIFERENCIA: ${formatCurrency(diff)}\n` +
+                      `ESTADO: ${isOk ? 'CUADRADO' : 'CON DIFERENCIA'}\n\n` +
+                      `nos vemos nomancherito`;
+      await Share.share({ message });
+    } catch (error) { console.error(error); }
+  };
+
   return (
     <Pressable
       onPress={onPress}
@@ -48,13 +64,13 @@ function CorteCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="cash-register" size={32} color={Colors.success} />
+          <MaterialCommunityIcons name="cash-register" size={28} color={Colors.success} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.vendedor?.nombre_completo || 'Sin vendedor'}</Text>
+          <Text style={styles.cardName}>{item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}</Text>
           <Text style={styles.cardMeta}>CORTE #{item.id_corte} • ASIG #{item.asignacion?.id_asignacion}</Text>
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22' }]}>
+        <View style={[styles.statusBadge, { backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22', borderColor: isOk ? Colors.success : Colors.error }]}>
           <Text style={[styles.statusText, { color: isOk ? Colors.success : Colors.error }]}>
             {isOk ? 'CUADRADO' : 'CON DIF.'}
           </Text>
@@ -76,22 +92,28 @@ function CorteCard({
 
         {!isOk && (
             <View style={styles.diffAlert}>
-                <MaterialCommunityIcons name="alert-circle-outline" size={16} color={Colors.error} />
+                <MaterialCommunityIcons name="alert-circle" size={16} color={Colors.error} />
                 <Text style={styles.diffText}>
-                    Diferencia: <Text style={{fontWeight: '900'}}>{formatCurrency(diff)}</Text>
+                    DIFERENCIA: <Text style={{fontWeight: '900'}}>{formatCurrency(diff)}</Text>
                 </Text>
             </View>
         )}
 
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="calendar-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{formatDate(item.fecha_corte)}</Text>
+          <MaterialCommunityIcons name="calendar-clock" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{formatDate(item.fecha_corte).toUpperCase()}</Text>
         </View>
       </View>
       
       <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>VER DETALLES DEL CORTE</Text>
-         <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.success} />
+         <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+            <MaterialCommunityIcons name="share-variant" size={18} color={Colors.primary} />
+            <Text style={styles.shareText}>COMPARTIR</Text>
+         </TouchableOpacity>
+         <View style={styles.footerActionRow}>
+            <Text style={styles.footerAction}>VER DETALLES</Text>
+            <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.success} />
+         </View>
       </View>
     </Pressable>
   );
@@ -147,7 +169,7 @@ export default function CortesScreen() {
     try {
       await deleteCorte(deleteId);
       removeCorte(deleteId);
-      showToast('Corte eliminado correctamente', 'success');
+      showToast('CORTE ELIMINADO', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -161,12 +183,12 @@ export default function CortesScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)/mas')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Cortes</Text>
-                    <Text style={styles.subtitle}>{cortes.length} registros</Text>
+                    <Text style={styles.title}>CORTES</Text>
+                    <Text style={styles.subtitle}>{cortes.length} REGISTROS</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
@@ -179,7 +201,7 @@ export default function CortesScreen() {
             </View>
         </View>
 
-        <View style={styles.searchContainer}>
+        <View style={styles.searchSection}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
@@ -188,7 +210,7 @@ export default function CortesScreen() {
         </View>
 
         {loading && cortes.length === 0 ? (
-          <LoadingSpinner message="Cargando cortes..." />
+          <LoadingSpinner fullScreen message="CARGANDO..." />
         ) : (
           <FlatList
             data={cortes}
@@ -216,7 +238,7 @@ export default function CortesScreen() {
               <EmptyState
                 icon="cash-register"
                 title="SIN CORTES"
-                message={search ? 'No hay resultados.' : 'Aún no hay cortes registrados.'}
+                message={search ? 'No hay resultados que coincidan.' : 'Aún no hay cortes registrados.'}
                 actionLabel="REALIZAR CORTE"
                 onAction={() => router.push('/cortes/create')}
               />
@@ -227,9 +249,9 @@ export default function CortesScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar corte"
-          message={`¿Deseas eliminar el corte #${deleteId}? Esta acción no se puede deshacer.`}
-          confirmText="Eliminar"
+          title="ELIMINAR CORTE"
+          message={`¿DESEAS ELIMINAR EL CORTE #${deleteId}?`}
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -246,36 +268,37 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerActions: { flexDirection: 'row', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  headerActions: { flexDirection: 'row', gap: 10 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  searchContainer: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.sm },
-  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 40 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 100 },
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 4 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
   cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  avatarContainer: { width: 50, height: 50, borderRadius: 25, backgroundColor: Colors.success + '15', alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
+  avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.success + '10', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   headerInfo: { flex: 1 },
-  cardName: { fontSize: 17, fontWeight: '800', color: '#1A1A1A' },
-  cardMeta: { fontSize: 10, fontWeight: '700', color: 'rgba(26,26,26,0.4)', letterSpacing: 0.5 },
-  statusBadge: { paddingHorizontal: Spacing.sm, paddingVertical: 4, borderRadius: BorderRadius.sm },
-  statusText: { fontSize: 9, fontWeight: '900' },
-  cardContent: { gap: Spacing.sm, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-  moneyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: BorderRadius.md, padding: Spacing.sm, marginBottom: Spacing.xs },
+  cardName: { fontSize: 15, fontWeight: '900', color: Colors.dark },
+  cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusText: { fontSize: 8, fontWeight: '900' },
+  cardContent: { gap: 8, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12, paddingBottom: 12 },
+  moneyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   moneyItem: { flex: 1, alignItems: 'center' },
-  moneyDivider: { width: 1, height: 20, backgroundColor: 'rgba(0,0,0,0.05)' },
-  moneyLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
-  moneyValue: { fontSize: 14, fontWeight: '800', color: '#1A1A1A' },
-  diffAlert: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  diffText: { fontSize: 12, fontWeight: '700', color: Colors.error },
+  moneyDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  moneyLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  moneyValue: { fontSize: 15, fontWeight: '900', color: Colors.dark },
+  diffAlert: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.error + '10', padding: 8, borderRadius: 8 },
+  diffText: { fontSize: 10, fontWeight: '800', color: Colors.error },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  infoText: { fontSize: 13, fontWeight: '600', color: 'rgba(26,26,26,0.6)' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: Spacing.sm, gap: 4 },
-  footerAction: { fontSize: 12, fontWeight: '800', color: Colors.success },
-  fab: { display: 'none' },
-  fabIcon: { display: 'none' },
+  infoText: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.primary + '10', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  shareText: { fontSize: 9, fontWeight: '900', color: Colors.primary },
+  footerActionRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.success, letterSpacing: 0.5 },
 });

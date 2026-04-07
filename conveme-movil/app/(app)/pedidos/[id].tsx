@@ -5,23 +5,23 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { getPedidos, deletePedido, updateEstadoPedido } from '../../../src/services/pedido.service';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { getPedidos, deletePedido } from '../../../src/services/pedido.service';
 import { usePedidoStore } from '../../../src/store/pedidoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Badge } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
-import { Card } from '../../../src/components/ui/Card';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Pedido } from '../../../src/types';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -30,43 +30,21 @@ const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> 
   Cancelado: 'error',
 };
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
+function InfoRow({ label, value, icon }: { label: string; value?: string | null; icon?: string }) {
+  if (!value) return null;
   return (
-    <View style={rowStyles.row}>
-      <Text style={[rowStyles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[rowStyles.value, { color: theme.text }]}>{value}</Text>
+    <View style={styles.infoRow}>
+      <View style={styles.labelContainer}>
+        {icon && <MaterialCommunityIcons name={icon as any} size={16} color="rgba(0,0,0,0.4)" style={{ marginRight: 6 }} />}
+        <Text style={styles.infoLabel}>{label}</Text>
+      </View>
+      <Text style={styles.infoValue}>{value.toUpperCase()}</Text>
     </View>
   );
 }
 
-const rowStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light2.border,
-  },
-  label: { ...Typography.bodySmall },
-  value: {
-    ...Typography.bodySmall,
-    fontWeight: '500',
-    flexShrink: 1,
-    textAlign: 'right',
-    marginLeft: Spacing.sm,
-  },
-});
-
 export default function PedidoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -82,7 +60,7 @@ export default function PedidoDetailScreen() {
         const data = await getPedidos();
         setPedidos(data);
       } catch (err) {
-        Alert.alert('Error', parseGraphQLError(err));
+        Alert.alert('ERROR', parseGraphQLError(err));
       } finally {
         setLoading(false);
       }
@@ -98,205 +76,166 @@ export default function PedidoDetailScreen() {
     try {
       await deletePedido(pedidoId);
       removePedido(pedidoId);
-      router.back();
+      router.push('/(app)');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('ERROR', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowDelete(false);
     }
   }, [pedidoId, removePedido]);
 
-  if (loading) {
+  if (loading || !pedido) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <LoadingSpinner fullScreen message="Cargando pedido..." />
-      </SafeAreaView>
-    );
-  }
-
-  if (!pedido) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={styles.backIcon}>←</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>Pedido</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-        <View style={styles.notFound}>
-          <Text style={{ ...Typography.body, color: theme.muted }}>Pedido no encontrado.</Text>
-        </View>
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>DETALLE</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={styles.backIcon}>←</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: theme.text }]}>Pedido #{pedido.id_pedido}</Text>
-        <Pressable
-          onPress={() => setShowDelete(true)}
-          style={styles.deleteBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Eliminar pedido"
-        >
-          <Text style={styles.deleteIcon}>🗑️</Text>
-        </Pressable>
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>DETALLE DE PEDIDO</Text>
+          <TouchableOpacity onPress={() => setShowDelete(true)} style={styles.deleteHeaderBtn}>
+            <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Summary Card */}
-        <Card style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <Text style={[styles.amountLabel, { color: theme.muted }]}>Monto Total</Text>
-            <Badge
-              text={pedido.estado ?? 'Pendiente'}
-              color={ESTADO_BADGE[pedido.estado ?? 'Pendiente'] ?? 'secondary'}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Summary Card */}
+          <View style={styles.heroCard}>
+            <View style={styles.summaryTop}>
+                <Text style={styles.heroId}>PEDIDO #{pedido.id_pedido}</Text>
+                <Badge
+                    text={pedido.estado?.toUpperCase() ?? 'PENDIENTE'}
+                    color={ESTADO_BADGE[pedido.estado ?? 'Pendiente'] ?? 'warning'}
+                />
+            </View>
+            <Text style={styles.heroAmount}>{formatCurrency(pedido.monto_total)}</Text>
+            {pedido.anticipo != null && pedido.anticipo > 0 && (
+                <View style={styles.anticipoRow}>
+                    <MaterialCommunityIcons name="cash-check" size={16} color={Colors.success} />
+                    <Text style={styles.heroAnticipo}>ANTICIPO: {formatCurrency(pedido.anticipo)}</Text>
+                </View>
+            )}
+          </View>
+
+          {/* Details Card */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>INFORMACIÓN GENERAL</Text>
+            <InfoRow label="FECHA PEDIDO" value={formatDate(pedido.fecha_pedido)} icon="calendar-outline" />
+            <InfoRow label="FECHA ENTREGA" value={formatDate(pedido.fecha_entrega_estimada)} icon="truck-delivery-outline" />
+            <InfoRow label="ESTADO" value={pedido.estado} icon="progress-check" />
+            <InfoRow label="CLIENTE" value={pedido.cliente?.nombre_completo} icon="account-outline" />
+            <InfoRow label="VENDEDOR" value={pedido.vendedor?.nombre_completo} icon="account-tie-outline" />
+          </View>
+
+          {/* Products List */}
+          {pedido.detalles && pedido.detalles.length > 0 && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>PRODUCTOS ({pedido.detalles.length})</Text>
+              {pedido.detalles.map((det, i) => (
+                <View key={i} style={styles.detRow}>
+                  <View style={styles.detInfo}>
+                    <Text style={styles.detName}>{det.producto?.nombre?.toUpperCase() || 'PRODUCTO'}</Text>
+                    <Text style={styles.detSku}>SKU: {det.producto?.sku || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.detRight}>
+                    <Text style={styles.detQty}>×{det.cantidad}</Text>
+                    <Text style={styles.detPrice}>{formatCurrency(det.precio_unitario)}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          )}
+
+          <View style={styles.actions}>
+            <Button
+              title="EDITAR PEDIDO"
+              onPress={() => router.push(`/pedidos/create?id=${pedido.id_pedido}`)}
+              style={styles.actionBtn}
+              size="lg"
             />
           </View>
-          <Text style={[styles.amount, { color: Colors.primary }]}>
-            {formatCurrency(pedido.monto_total)}
-          </Text>
-          {pedido.anticipo != null && pedido.anticipo > 0 && (
-            <Text style={[styles.anticipo, { color: Colors.success }]}>
-              Anticipo: {formatCurrency(pedido.anticipo)}
-            </Text>
-          )}
-        </Card>
+        </ScrollView>
 
-        {/* Details Card */}
-        <Card title="Información" style={styles.sectionCard}>
-          <DetailRow label="Fecha pedido" value={formatDate(pedido.fecha_pedido)} />
-          <DetailRow
-            label="Fecha entrega"
-            value={formatDate(pedido.fecha_entrega_estimada)}
-          />
-          <DetailRow label="Estado" value={pedido.estado ?? 'Pendiente'} />
-          <DetailRow
-            label="Cliente"
-            value={pedido.cliente?.nombre_completo ?? 'No asignado'}
-          />
-          <DetailRow
-            label="Vendedor"
-            value={pedido.vendedor?.nombre_completo ?? 'No asignado'}
-          />
-        </Card>
-
-        {/* Detalles */}
-        {pedido.detalles && pedido.detalles.length > 0 && (
-          <Card title={`Productos (${pedido.detalles.length})`} style={styles.sectionCard}>
-            {pedido.detalles.map((det, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.detalleRow,
-                  i < pedido.detalles!.length - 1 && {
-                    borderBottomWidth: StyleSheet.hairlineWidth,
-                    borderBottomColor: theme.border,
-                  },
-                ]}
-              >
-                <View style={styles.detalleInfo}>
-                  <Text style={[styles.detalleName, { color: theme.text }]}>
-                    {det.producto?.nombre ?? 'Producto'}
-                  </Text>
-                  <Text style={[styles.detalleSku, { color: theme.muted }]}>
-                    SKU: {det.producto?.sku ?? '-'}
-                  </Text>
-                </View>
-                <View style={styles.detalleRight}>
-                  <Text style={[styles.detalleCantidad, { color: theme.text }]}>
-                    ×{det.cantidad}
-                  </Text>
-                  <Text style={[styles.detallePrecio, { color: Colors.primary }]}>
-                    {formatCurrency(det.precio_unitario)}
-                  </Text>
-                </View>
-              </View>
-            ))}
-          </Card>
-        )}
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <Button
-            title="Editar pedido"
-            variant="outline"
-            onPress={() => router.push(`/pedidos/create?id=${pedido.id_pedido}`)}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Eliminar"
-            variant="danger"
-            onPress={() => setShowDelete(true)}
-            style={styles.actionBtn}
-          />
-        </View>
-      </ScrollView>
-
-      <ConfirmDialog
-        visible={showDelete}
-        title="Eliminar pedido"
-        message={`¿Deseas eliminar el pedido #${pedido.id_pedido}? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-        destructive
-      />
-    </SafeAreaView>
+        <ConfirmDialog
+          visible={showDelete}
+          title="ELIMINAR PEDIDO"
+          message={`¿DESEAS ELIMINAR EL PEDIDO #${pedido.id_pedido}?`}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDelete(false)}
+          loading={deleting}
+          destructive
+        />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '900', color: Colors.dark, flex: 1, marginLeft: 15 },
+  headerPlaceholder: { width: 40 },
+  deleteHeaderBtn: { padding: Spacing.xs },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 100 },
+  heroCard: {
+    backgroundColor: '#FFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    elevation: 6
   },
-  backBtn: { padding: Spacing.xs, marginRight: Spacing.sm },
-  backIcon: { fontSize: 22, color: Colors.primary },
-  title: { ...Typography.h4, flex: 1 },
-  headerPlaceholder: { width: 32 },
-  deleteBtn: { padding: Spacing.xs },
-  deleteIcon: { fontSize: 20 },
-  scrollContent: {
-    paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+  summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  heroId: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  heroAmount: { fontSize: 28, fontWeight: '900', color: Colors.dark },
+  anticipoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: Colors.success + '10', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  heroAnticipo: { fontSize: 12, fontWeight: '900', color: Colors.success },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 3,
   },
-  summaryCard: { marginBottom: Spacing.md },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.xs,
-  },
-  amountLabel: { ...Typography.bodySmall },
-  amount: { ...Typography.h2, marginTop: Spacing.xs },
-  anticipo: { ...Typography.bodySmall, marginTop: Spacing.xs, fontWeight: '600' },
-  sectionCard: { marginBottom: Spacing.md },
-  detalleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: Spacing.sm,
-  },
-  detalleInfo: { flex: 1, marginRight: Spacing.sm },
-  detalleName: { ...Typography.bodySmall, fontWeight: '600' },
-  detalleSku: { ...Typography.caption },
-  detalleRight: { alignItems: 'flex-end' },
-  detalleCantidad: { ...Typography.bodySmall },
-  detallePrecio: { ...Typography.bodySmall, fontWeight: '600' },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  actionBtn: { flex: 1 },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1.5 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  labelContainer: { flexDirection: 'row', alignItems: 'center' },
+  infoLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
+  infoValue: { fontSize: 13, fontWeight: '800', color: Colors.dark, textAlign: 'right', flexShrink: 1, marginLeft: 10 },
+  detRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  detInfo: { flex: 1 },
+  detName: { fontSize: 14, fontWeight: '800', color: Colors.dark },
+  detSku: { fontSize: 10, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
+  detRight: { alignItems: 'flex-end' },
+  detQty: { fontSize: 12, fontWeight: '900', color: Colors.primary },
+  detPrice: { fontSize: 13, fontWeight: '800', color: Colors.dark },
+  actions: { marginTop: Spacing.sm },
+  actionBtn: { shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
 });

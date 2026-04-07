@@ -32,7 +32,7 @@ export default function CuentaBancariaCreateScreen() {
   const [numero_cuenta, setNumeroCuenta] = useState('');
   const [clabe_interbancaria, setClabe] = useState('');
   const [vendedor_id, setVendedorId] = useState<number | null>(null);
-  const [vendedorNombre, setVendedorNombre] = useState('Seleccionar vendedor');
+  const [vendedorNombre, setVendedorNombre] = useState('SELECCIONAR VENDEDOR');
   const [showPicker, setShowPicker] = useState(false);
   
   const [loading, setLoading] = useState(false);
@@ -51,7 +51,7 @@ export default function CuentaBancariaCreateScreen() {
           setClabe(found.clabe_interbancaria ?? '');
           if (found.vendedor) {
             setVendedorId(found.vendedor.id_vendedor);
-            setVendedorNombre(found.vendedor.nombre_completo);
+            setVendedorNombre(found.vendedor.nombre_completo.toUpperCase());
           }
         }
       } catch (err) {
@@ -64,14 +64,14 @@ export default function CuentaBancariaCreateScreen() {
 
   const handleSubmit = async () => {
     if (!banco || !titular_cuenta || !numero_cuenta || !vendedor_id) {
-      showToast('Banco, Titular, No. Cuenta y Vendedor son obligatorios.', 'error');
+      showToast('BANCO, TITULAR, NO. CUENTA Y VENDEDOR SON OBLIGATORIOS.', 'error');
       return;
     }
     setLoading(true);
     try {
       const input: any = { 
-        banco, 
-        titular_cuenta, 
+        banco: banco.toUpperCase(), 
+        titular_cuenta: titular_cuenta.toUpperCase(), 
         numero_cuenta,
         vendedor_id: vendedor_id,
       };
@@ -80,10 +80,10 @@ export default function CuentaBancariaCreateScreen() {
       if (isEdit) {
         input.id_cuenta = parseInt(id!, 10);
         await updateCuentaBancaria(input);
-        showToast('Cuenta actualizada', 'success');
+        showToast('CUENTA ACTUALIZADA', 'success');
       } else {
         await createCuentaBancaria(input);
-        showToast('Cuenta creada', 'success');
+        showToast('CUENTA CREADA', 'success');
       }
       setTimeout(() => router.back(), 1500);
     } catch (err) {
@@ -93,7 +93,7 @@ export default function CuentaBancariaCreateScreen() {
     }
   };
 
-  if (initializing) return <LoadingSpinner fullScreen />;
+  if (initializing) return <LoadingSpinner fullScreen message="CARGANDO..." />;
 
   return (
     <NeobrutalistBackground>
@@ -104,53 +104,55 @@ export default function CuentaBancariaCreateScreen() {
         >
           <View style={styles.header}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>{isEdit ? 'Editar Cuenta' : 'Nueva Cuenta'}</Text>
+            <Text style={styles.headerTitle}>{isEdit ? 'EDITAR CUENTA' : 'NUEVA CUENTA'}</Text>
           </View>
 
-          <ScrollView contentContainerStyle={styles.scroll}>
+          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <View style={styles.formCard}>
-              <Text style={styles.label}>Banco *</Text>
+              <Text style={styles.label}>BANCO *</Text>
               <TextInput
                 style={styles.input}
                 value={banco}
                 onChangeText={setBanco}
-                placeholder="Ej. BBVA, Santander..."
+                placeholder="EJ. BBVA, SANTANDER..."
                 placeholderTextColor="rgba(0,0,0,0.3)"
+                autoCapitalize="characters"
               />
 
-              <Text style={styles.label}>Titular de la Cuenta *</Text>
+              <Text style={styles.label}>TITULAR DE LA CUENTA *</Text>
               <TextInput
                 style={styles.input}
                 value={titular_cuenta}
                 onChangeText={setTitular}
-                placeholder="Nombre completo"
+                placeholder="NOMBRE COMPLETO"
                 placeholderTextColor="rgba(0,0,0,0.3)"
+                autoCapitalize="characters"
               />
 
-              <Text style={styles.label}>Número de Cuenta *</Text>
+              <Text style={styles.label}>NÚMERO DE CUENTA *</Text>
               <TextInput
                 style={styles.input}
                 value={numero_cuenta}
                 onChangeText={setNumeroCuenta}
-                placeholder="10-16 dígitos"
+                placeholder="10-16 DÍGITOS"
                 placeholderTextColor="rgba(0,0,0,0.3)"
                 keyboardType="numeric"
               />
 
-              <Text style={styles.label}>CLABE Interbancaria</Text>
+              <Text style={styles.label}>CLABE INTERBANCARIA</Text>
               <TextInput
                 style={styles.input}
                 value={clabe_interbancaria}
                 onChangeText={setClabe}
-                placeholder="18 dígitos"
+                placeholder="18 DÍGITOS"
                 placeholderTextColor="rgba(0,0,0,0.3)"
                 keyboardType="numeric"
                 maxLength={18}
               />
 
-              <Text style={styles.label}>Vendedor Asignado *</Text>
+              <Text style={styles.label}>VENDEDOR ASIGNADO *</Text>
               <TouchableOpacity 
                 style={styles.pickerTrigger}
                 onPress={() => setShowPicker(true)}
@@ -183,7 +185,7 @@ export default function CuentaBancariaCreateScreen() {
           selectedId={vendedor_id ?? undefined}
           onSelect={(v) => {
             setVendedorId(v.id_vendedor);
-            setVendedorNombre(v.nombre_completo);
+            setVendedorNombre(v.nombre_completo.toUpperCase());
           }}
         />
 

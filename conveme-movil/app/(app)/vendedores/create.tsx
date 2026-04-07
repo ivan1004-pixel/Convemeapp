@@ -15,9 +15,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { 
   createVendedor, 
   updateVendedor, 
-  getUsuariosParaSelect,
   getVendedores 
 } from '../../../src/services/vendedor.service';
+import { getUsuarios } from '../../../src/services/user.service';
 import { convemeApi } from '../../../src/api/convemeApi';
 import { getMunicipios } from '../../../src/services/ubicacion.service';
 import { getEscuelas } from '../../../src/services/escuela.service';
@@ -145,23 +145,61 @@ export default function VendedorCreateScreen() {
     }
   };
 
+  const [vendedoresList, setVendedoresList] = useState<any[]>([]);
+
   const loadInitialData = async () => {
     setLoadingData(true);
     try {
+      // Query manual para traer todos los vendedores con su usuario_id para poder filtrar
+      const queryVend = `
+        query {
+          vendedores {
+            id_vendedor
+            usuario_id
+          }
+        }
+      `;
+      const { data: dataV } = await convemeApi.post('', { query: queryVend });
+
       const [u, m, e] = await Promise.all([
-        getUsuariosParaSelect(),
+        getUsuarios(), // Usamos getUsuarios que trae el rol
         getMunicipios(),
         getEscuelas()
       ]);
       setUsuarios(u);
       setMunicipios(m);
       setEscuelas(e);
+      if (dataV.data?.vendedores) {
+        setVendedoresList(dataV.data.vendedores);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoadingData(false);
     }
   };
+
+  const filteredUsuarios = React.useMemo(() => {
+    // 1. IDs de usuarios ya asignados a vendedores (excepto el actual)
+    const assignedUserIds = vendedoresList
+      .map(v => v.usuario_id)
+      .filter(id => id !== undefined && (isEditing ? id !== form.usuario_id : true));
+
+    // 2. Filtrar por rol (Vendedor = 2) y que no estén asignados
+    let filtered = usuarios.filter(u => 
+      u.rol?.id_rol === 2 && 
+      !assignedUserIds.includes(u.id_usuario)
+    );
+
+    // 3. Filtrar por búsqueda
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(u => 
+        u.username.toLowerCase().includes(q)
+      );
+    }
+    return filtered;
+  }, [usuarios, vendedoresList, searchQuery, isEditing, form.usuario_id]);
 
   const setField = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -222,7 +260,7 @@ export default function VendedorCreateScreen() {
         await createVendedor(input);
         showToast('Vendedor creado', 'success');
       }
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -254,7 +292,7 @@ export default function VendedorCreateScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={() => router.push('/(app)')} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </Pressable>
           <Text style={styles.title}>{isEditing ? 'Editar Vendedor' : 'Nuevo Vendedor'}</Text>
@@ -350,7 +388,7 @@ export default function VendedorCreateScreen() {
             </View>
             <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar por username..." style={styles.modalSearch} />
             <FlatList
-              data={usuarios.filter(u => u.username.toLowerCase().includes(searchQuery.toLowerCase()))}
+              data={filteredUsuarios}
               renderItem={({item}) => (
                 <Pressable style={styles.modalItem} onPress={() => { setField('usuario_id', item.id_usuario); setShowUserModal(false); }}>
                   <Text style={styles.itemTitle}>{item.username}</Text>

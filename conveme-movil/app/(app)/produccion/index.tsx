@@ -15,7 +15,7 @@ import { getOrdenesProduccion } from '../../../src/services/produccion.service';
 import { useProduccionStore } from '../../../src/store/produccionStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Badge } from '../../../src/components/ui/Badge';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -34,8 +34,8 @@ const ESTADO_COLORS: Record<string, 'warning' | 'primary' | 'success' | 'error'>
 const ESTADO_ICONS: Record<string, string> = {
   Pendiente: 'clock-outline',
   'En Proceso': 'hammer-wrench',
-  Finalizada: 'check-circle-outline',
-  Cancelada: 'cancel',
+  Finalizada: 'check-circle',
+  Cancelada: 'close-circle',
 };
 
 function OrdenCard({ item, onPress }: { item: any; onPress: () => void }) {
@@ -57,15 +57,15 @@ function OrdenCard({ item, onPress }: { item: any; onPress: () => void }) {
                 color={Colors[ESTADO_COLORS[estado] || 'primary']} 
             />
         </View>
-        <View style={styles.headerText}>
+        <View style={styles.headerInfo}>
             <Text style={styles.cardId}>ORDEN #{item.id_orden_produccion}</Text>
-            <Text style={styles.cardProduct}>{item.producto?.nombre || 'PRODUCTO DESCONOCIDO'}</Text>
+            <Text style={styles.cardProduct}>{item.producto?.nombre?.toUpperCase() || 'PRODUCTO DESCONOCIDO'}</Text>
         </View>
-        <Badge
-          text={estado.toUpperCase()}
-          color={ESTADO_COLORS[estado] || 'secondary'}
-          size="sm"
-        />
+        <View style={[styles.statusBadge, { backgroundColor: Colors[ESTADO_COLORS[estado] || 'primary'] + '22', borderColor: Colors[ESTADO_COLORS[estado] || 'primary'] }]}>
+          <Text style={[styles.statusText, { color: Colors[ESTADO_COLORS[estado] || 'primary'] }]}>
+            {estado.toUpperCase()}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.cardBody}>
@@ -77,14 +77,17 @@ function OrdenCard({ item, onPress }: { item: any; onPress: () => void }) {
               <View style={styles.infoDivider} />
               <View style={styles.infoItem}>
                   <Text style={styles.infoLabel}>FECHA</Text>
-                  <Text style={styles.infoValue}>{formatDate(item.fecha_orden, 'DD/MM/YY')}</Text>
+                  <Text style={styles.infoValue}>{formatDate(item.fecha_orden).toUpperCase()}</Text>
               </View>
           </View>
       </View>
 
       <View style={styles.cardFooter}>
-          <MaterialCommunityIcons name="account-outline" size={14} color="rgba(0,0,0,0.4)" />
-          <Text style={styles.footerText}>{item.empleado?.nombre_completo || 'SIN ASIGNAR'}</Text>
+          <View style={styles.footerUser}>
+            <MaterialCommunityIcons name="account" size={14} color={Colors.primary} />
+            <Text style={styles.footerText}>{item.empleado?.nombre_completo?.toUpperCase() || 'SIN ASIGNAR'}</Text>
+          </View>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -140,9 +143,14 @@ export default function ProduccionScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Producción</Text>
-                <Text style={styles.subtitle}>{ordenesProduccion.length} órdenes registradas</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>PRODUCCIÓN</Text>
+                    <Text style={styles.subtitle}>{filtered.length} ÓRDENES</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/produccion/create')} style={styles.addBtn}>
@@ -154,47 +162,47 @@ export default function ProduccionScreen() {
             </View>
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_orden_produccion)}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder="BUSCAR ORDEN O PRODUCTO..."
-              style={{ marginBottom: 25 }}
-            />
-          }
-          renderItem={({ item }) => (
-            <OrdenCard
-              item={item}
-              onPress={() => router.push(`/(app)/produccion/${item.id_orden_produccion}`)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            loading ? (
-                <LoadingSpinner message="Cargando órdenes..." />
-            ) : (
-                <EmptyState
-                    icon="clipboard-list-outline"
-                    title="SIN ÓRDENES"
-                    message={search ? 'No se encontraron resultados.' : 'No hay órdenes de producción.'}
-                    actionLabel="NUEVA ORDEN"
-                    onAction={() => router.push('/produccion/create')}
-                />
-            )
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR ORDEN O PRODUCTO..."
+          />
+        </View>
+
+        {loading && ordenesProduccion.length === 0 ? (
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_orden_produccion)}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <OrdenCard
+                item={item}
+                onPress={() => router.push(`/(app)/produccion/${item.id_orden_produccion}`)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="hammer-wrench"
+                title="SIN ÓRDENES"
+                message={search ? 'NO SE ENCONTRARON RESULTADOS.' : 'NO HAY ÓRDENES DE PRODUCCIÓN.'}
+                actionLabel="NUEVA ORDEN"
+                onAction={() => router.push('/produccion/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
       </SafeAreaView>
@@ -208,25 +216,28 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  list: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 18, marginBottom: 18, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, elevation: 0 },
-  cardPressed: { transform: [{ translateY: 3 }, { translateX: 3 }], shadowOffset: { width: 2, height: 2 } },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: 20, paddingBottom: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 18, marginBottom: 18, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   iconContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
-  headerText: { flex: 1 },
-  cardId: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
-  cardProduct: { fontSize: 16, fontWeight: '900', color: Colors.dark },
-  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: Colors.dark, marginBottom: 12 },
+  headerInfo: { flex: 1 },
+  cardId: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  cardProduct: { fontSize: 15, fontWeight: '900', color: Colors.dark },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusText: { fontSize: 8, fontWeight: '900' },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 12 },
   infoRow: { flexDirection: 'row', alignItems: 'center' },
   infoItem: { flex: 1, alignItems: 'center' },
-  infoDivider: { width: 2, height: 30, backgroundColor: Colors.dark, opacity: 0.1 },
-  infoLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2, letterSpacing: 0.5 },
+  infoDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  infoLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
   infoValue: { fontSize: 16, fontWeight: '900', color: Colors.dark },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, borderTopWidth: 2, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 10 },
-  footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerUser: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  footerText: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.5)', letterSpacing: 0.5 },
 });
-

@@ -14,7 +14,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getComprobantes } from '../../../src/services/comprobante.service';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { Badge } from '../../../src/components/ui/Badge';
@@ -51,14 +51,14 @@ function ComprobanteCard({
             />
         </View>
         <View style={styles.headerText}>
-            <Text style={styles.cardVendedor}>{item.vendedor?.nombre_completo ?? 'SIN VENDEDOR'}</Text>
+            <Text style={styles.cardVendedor}>{item.vendedor?.nombre_completo?.toUpperCase() ?? 'SIN VENDEDOR'}</Text>
             <Text style={styles.cardDate}>{formatDate(item.fecha_corte).toUpperCase()}</Text>
         </View>
-        <Badge
-          text={isPendiente ? 'PENDIENTE' : 'LIQUIDADO'}
-          color={isPendiente ? 'warning' : 'success'}
-          size="sm"
-        />
+        <View style={[styles.statusBadge, { backgroundColor: isPendiente ? Colors.warning + '22' : Colors.success + '22', borderColor: isPendiente ? Colors.warning : Colors.success }]}>
+          <Text style={[styles.statusText, { color: isPendiente ? Colors.warning : Colors.success }]}>
+            {isPendiente ? 'PENDIENTE' : 'LIQUIDADO'}
+          </Text>
+        </View>
       </View>
 
       <View style={styles.cardBody}>
@@ -78,8 +78,8 @@ function ComprobanteCard({
       </View>
 
       <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>Ver detalle de liquidación</Text>
-          <MaterialCommunityIcons name="chevron-right" size={18} color={Colors.dark} />
+          <Text style={styles.footerAction}>VER DETALLE DE LIQUIDACIÓN</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -132,54 +132,59 @@ export default function ComprobantesScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Comprobantes</Text>
-                <Text style={styles.subtitle}>{comprobantes.length} registros de liquidación</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>COMPROBANTES</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
+                </View>
             </View>
             <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-                <MaterialCommunityIcons name="refresh" size={24} color={Colors.primary} />
+                <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
             </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_comprobante)}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Buscar por vendedor..."
-              style={{ marginBottom: 25 }}
-            />
-          }
-          renderItem={({ item }) => (
-            <ComprobanteCard
-              item={item}
-              onPress={() => router.push(`/(app)/comprobantes/${item.id_comprobante}`)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            loading ? (
-                <LoadingSpinner message="Cargando comprobantes..." />
-            ) : (
-                <EmptyState
-                    icon="file-document-outline"
-                    title="Sin comprobantes"
-                    message={search ? 'No se encontraron resultados.' : 'No hay comprobantes registrados aún.'}
-                />
-            )
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR POR VENDEDOR..."
+          />
+        </View>
+
+        {loading && comprobantes.length === 0 ? (
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_comprobante)}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <ComprobanteCard
+                item={item}
+                onPress={() => router.push(`/(app)/comprobantes/${item.id_comprobante}`)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="file-document-multiple"
+                title="SIN COMPROBANTES"
+                message={search ? 'NO SE ENCONTRARON RESULTADOS.' : 'AÚN NO HAY COMPROBANTES REGISTRADOS.'}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
       </SafeAreaView>
@@ -192,23 +197,26 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  list: { paddingHorizontal: 20, paddingBottom: 120 },
-  card: { backgroundColor: '#FFF', borderRadius: 20, padding: 18, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
-  cardPressed: { transform: [{ translateY: 2 }, { translateX: 2 }], shadowOffset: { width: 2, height: 2 } },
+  searchSection: { paddingHorizontal: 20, paddingBottom: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 20, marginBottom: 18, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 15 },
-  iconContainer: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  iconContainer: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   headerText: { flex: 1 },
-  cardVendedor: { fontSize: 16, fontWeight: '900', color: Colors.dark },
-  cardDate: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)' },
-  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 15, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginBottom: 12 },
+  cardVendedor: { fontSize: 15, fontWeight: '900', color: Colors.dark },
+  cardDate: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusText: { fontSize: 8, fontWeight: '900' },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   amountRow: { flexDirection: 'row', alignItems: 'center' },
   amountItem: { flex: 1, alignItems: 'center' },
-  amountDivider: { width: 1, height: 30, backgroundColor: 'rgba(0,0,0,0.05)' },
-  amountLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  amountDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  amountLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
   amountValue: { fontSize: 15, fontWeight: '900', color: Colors.dark },
-  cardFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 4 },
-  footerText: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.3)' },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

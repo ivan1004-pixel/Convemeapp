@@ -58,14 +58,14 @@ export default function ProduccionDetailScreen() {
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
           </View>
           <View style={styles.errorContainer}>
             <MaterialCommunityIcons name="alert-circle-outline" size={64} color={Colors.error} />
             <Text style={styles.errorText}>ORDEN NO ENCONTRADA</Text>
-            <Button title="VOLVER" onPress={() => router.back()} style={{ marginTop: 20 }} />
+            <Button title="VOLVER" onPress={() => router.push('/(app)')} style={{ marginTop: 20 }} />
           </View>
         </SafeAreaView>
       </NeobrutalistBackground>
@@ -77,7 +77,7 @@ export default function ProduccionDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
             <Text style={styles.title}>DETALLE DE ORDEN</Text>

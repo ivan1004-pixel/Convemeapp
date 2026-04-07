@@ -54,7 +54,7 @@ function InsumoCard({
       <View style={styles.cardHeader}>
         <View style={[styles.iconContainer, { backgroundColor: isLowStock ? Colors.error + '15' : Colors.primary + '15' }]}>
             <MaterialCommunityIcons 
-                name={isLowStock ? "alert-outline" : "package-variant-closed"} 
+                name={isLowStock ? "alert" : "package-variant-closed"} 
                 size={24} 
                 color={isLowStock ? Colors.error : Colors.primary} 
             />
@@ -80,6 +80,11 @@ function InsumoCard({
                   <Text style={styles.stockValue}>{item.stock_minimo_alerta || 0}</Text>
               </View>
           </View>
+      </View>
+      
+      <View style={styles.cardFooter}>
+         <Text style={styles.footerAction}>GESTIONAR MATERIAL</Text>
+         <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -138,7 +143,7 @@ export default function InsumosScreen() {
     try {
       await deleteInsumo(selectedInsumo.id_insumo);
       removeInsumo(selectedInsumo.id_insumo);
-      show('Insumo eliminado correctamente', 'success');
+      show('INSUMO ELIMINADO', 'success');
       setSelectedInsumo(null);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
@@ -151,9 +156,14 @@ export default function InsumosScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Insumos</Text>
-                <Text style={styles.subtitle}>{insumos.length} materiales en inventario</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>INSUMOS</Text>
+                    <Text style={styles.subtitle}>{insumos.length} MATERIALES</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/insumos/create')} style={styles.addBtn}>
@@ -165,53 +175,53 @@ export default function InsumosScreen() {
             </View>
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_insumo)}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder="BUSCAR MATERIAL..."
-              style={{ marginBottom: 25 }}
-            />
-          }
-          renderItem={({ item }) => (
-            <InsumoCard
-              item={item}
-              onPress={() => router.push(`/(app)/insumos/${item.id_insumo}`)}
-              onLongPress={() => setSelectedInsumo(item)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            loading ? (
-                <LoadingSpinner message="Cargando materiales..." />
-            ) : (
-                <EmptyState
-                    icon="package-variant"
-                    title="SIN INSUMOS"
-                    message={search ? 'No se encontraron resultados.' : 'No hay materiales registrados.'}
-                    actionLabel="REGISTRAR INSUMO"
-                    onAction={() => router.push('/insumos/create')}
-                />
-            )
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR MATERIAL..."
+          />
+        </View>
+
+        {loading && insumos.length === 0 ? (
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_insumo)}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <InsumoCard
+                item={item}
+                onPress={() => router.push(`/(app)/insumos/${item.id_insumo}`)}
+                onLongPress={() => setSelectedInsumo(item)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="package-variant"
+                title="SIN INSUMOS"
+                message={search ? 'NO SE ENCONTRARON RESULTADOS.' : 'NO HAY MATERIALES REGISTRADOS.'}
+                actionLabel="REGISTRAR INSUMO"
+                onAction={() => router.push('/insumos/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <ConfirmDialog
           visible={selectedInsumo !== null}
-          title="OPCIONES DE INSUMO"
-          message={`¿Qué deseas hacer con "${selectedInsumo?.nombre}"?`}
+          title="ELIMINAR INSUMO"
+          message={`¿DESEAS ELIMINAR "${selectedInsumo?.nombre.toUpperCase()}"?`}
           confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setSelectedInsumo(null)}
@@ -231,25 +241,26 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  list: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 18, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, elevation: 0 },
-  cardPressed: { transform: [{ translateY: 3 }, { translateX: 3 }], shadowOffset: { width: 2, height: 2 } },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: 20, paddingBottom: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 20, marginBottom: 18, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 15 },
   iconContainer: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   headerText: { flex: 1 },
-  cardName: { fontSize: 18, fontWeight: '900', color: Colors.dark, marginBottom: 4 },
-  unitBadge: { alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  cardName: { fontSize: 16, fontWeight: '900', color: Colors.dark },
+  unitBadge: { alignSelf: 'flex-start', backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)', marginTop: 4 },
   cardUnitText: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.5)' },
-  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 18, padding: 15, borderWidth: 2, borderColor: Colors.dark },
+  cardBody: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 15, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
   stockRow: { flexDirection: 'row', alignItems: 'center' },
   stockItem: { flex: 1, alignItems: 'center' },
-  stockDivider: { width: 2, height: 35, backgroundColor: Colors.dark, opacity: 0.1 },
-  stockLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 4, letterSpacing: 0.5 },
-  stockValue: { fontSize: 22, fontWeight: '900', color: Colors.dark },
-  fab: { display: 'none' },
-  fabIcon: { display: 'none' }
+  stockDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  stockLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
+  stockValue: { fontSize: 18, fontWeight: '900', color: Colors.dark },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 15, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

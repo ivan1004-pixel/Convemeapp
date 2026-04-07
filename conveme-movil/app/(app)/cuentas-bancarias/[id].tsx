@@ -40,8 +40,8 @@ export default function CuentaBancariaDetailScreen() {
     try {
       await deleteCuentaBancaria(parseInt(id, 10));
       removeCuentaBancaria(parseInt(id, 10));
-      showToast('Cuenta eliminada', 'success');
-      setTimeout(() => router.back(), 1000);
+      showToast('CUENTA ELIMINADA', 'success');
+      setTimeout(() => router.push('/(app)'), 1000);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -50,16 +50,16 @@ export default function CuentaBancariaDetailScreen() {
     }
   };
 
-  if (loading || !cuenta) return <LoadingSpinner fullScreen />;
+  if (loading || !cuenta) return <LoadingSpinner fullScreen message="CARGANDO..." />;
 
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Detalles</Text>
+            <Text style={styles.headerTitle}>DETALLE CUENTA</Text>
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
@@ -69,14 +69,14 @@ export default function CuentaBancariaDetailScreen() {
                   <MaterialCommunityIcons name="bank" size={32} color={Colors.success} />
                </View>
                <View style={{flex: 1}}>
-                  <Text style={styles.bancoTitle}>{cuenta.banco}</Text>
+                  <Text style={styles.bancoTitle}>{cuenta.banco.toUpperCase()}</Text>
                   <Text style={styles.cuentaId}>ID: {cuenta.id_cuenta}</Text>
                </View>
             </View>
 
             <View style={styles.detailRow}>
               <Text style={styles.label}>TITULAR</Text>
-              <Text style={styles.value}>{cuenta.titular_cuenta}</Text>
+              <Text style={styles.value}>{cuenta.titular_cuenta.toUpperCase()}</Text>
             </View>
             
             <View style={styles.detailRow}>
@@ -86,7 +86,7 @@ export default function CuentaBancariaDetailScreen() {
             
             <View style={styles.detailRow}>
               <Text style={styles.label}>CLABE INTERBANCARIA</Text>
-              <Text style={styles.value}>{cuenta.clabe_interbancaria || 'No especificada'}</Text>
+              <Text style={styles.value}>{cuenta.clabe_interbancaria || 'NO ESPECIFICADA'}</Text>
             </View>
             
             {cuenta.vendedor && (
@@ -94,7 +94,7 @@ export default function CuentaBancariaDetailScreen() {
                 <Text style={styles.label}>VENDEDOR ASIGNADO</Text>
                 <View style={styles.vendedorBadge}>
                     <MaterialCommunityIcons name="account-tie" size={16} color={Colors.primary} />
-                    <Text style={styles.vendedorText}>{cuenta.vendedor.nombre_completo}</Text>
+                    <Text style={styles.vendedorText}>{cuenta.vendedor.nombre_completo.toUpperCase()}</Text>
                 </View>
               </View>
             )}
@@ -121,8 +121,8 @@ export default function CuentaBancariaDetailScreen() {
 
         <ConfirmDialog
           visible={showDelete}
-          title="Eliminar cuenta"
-          message="¿Deseas eliminar esta cuenta bancaria? Esta acción no se puede deshacer."
+          title="ELIMINAR CUENTA"
+          message="¿DESEAS ELIMINAR ESTA CUENTA BANCARIA?"
           onConfirm={handleDelete}
           onCancel={() => setShowDelete(false)}
           loading={deleting}
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bancoTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '900',
     color: Colors.dark,
   },

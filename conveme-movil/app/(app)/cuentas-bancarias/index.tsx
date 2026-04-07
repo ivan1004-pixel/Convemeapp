@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Clipboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -27,10 +28,12 @@ function CuentaBancariaCard({
   item,
   onPress,
   onLongPress,
+  onCopy,
 }: {
   item: any;
   onPress: () => void;
   onLongPress: () => void;
+  onCopy: (text: string) => void;
 }) {
   const maskAccount = (num: string) => {
     if (!num) return '****';
@@ -51,27 +54,32 @@ function CuentaBancariaCard({
           <MaterialCommunityIcons name="bank" size={28} color={Colors.success} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.banco}</Text>
+          <Text style={styles.cardName}>{item.banco.toUpperCase()}</Text>
           <Text style={styles.cardMeta}>{item.titular_cuenta.toUpperCase()}</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(26,26,26,0.3)" />
+        <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="card-text-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>No. Cuenta: {maskAccount(item.numero_cuenta)}</Text>
+          <MaterialCommunityIcons name="card-text-outline" size={18} color={Colors.dark} />
+          <Text style={styles.infoText}>NO. CUENTA: {maskAccount(item.numero_cuenta)}</Text>
         </View>
         {item.clabe_interbancaria && (
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="form-textbox" size={16} color="rgba(26,26,26,0.5)" />
-            <Text style={styles.infoText}>CLABE: {item.clabe_interbancaria}</Text>
+          <View style={[styles.infoRow, styles.clabeRow]}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <MaterialCommunityIcons name="form-textbox" size={18} color={Colors.dark} />
+                <Text style={styles.infoText}>CLABE: {item.clabe_interbancaria}</Text>
+            </View>
+            <TouchableOpacity onPress={() => onCopy(item.clabe_interbancaria)} style={styles.copyBtn}>
+                <MaterialCommunityIcons name="content-copy" size={16} color={Colors.primary} />
+            </TouchableOpacity>
           </View>
         )}
         {item.vendedor && (
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="account-tie" size={16} color="rgba(26,26,26,0.5)" />
-            <Text style={styles.infoText}>Vendedor: {item.vendedor.nombre_completo}</Text>
+            <MaterialCommunityIcons name="account-tie" size={18} color={Colors.dark} />
+            <Text style={styles.infoText}>VENDEDOR: {item.vendedor.nombre_completo.toUpperCase()}</Text>
           </View>
         )}
       </View>
@@ -92,25 +100,25 @@ export default function CuentasBancariasScreen() {
     setLoading(true);
     try {
       const data = await getCuentasBancarias();
-      setCuentas(data);
+      setCuentas(data || []);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
       const data = await getCuentasBancarias();
-      setCuentas(data);
+      setCuentas(data || []);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchData();
@@ -133,14 +141,19 @@ export default function CuentasBancariasScreen() {
     try {
       await deleteCuentaBancaria(deleteId);
       setCuentas((prev) => prev.filter((c) => c.id_cuenta !== deleteId));
-      showToast('Cuenta eliminada correctamente', 'success');
+      showToast('CUENTA ELIMINADA CORRECTAMENTE', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId]);
+  }, [deleteId, showToast]);
+
+  const handleCopy = (text: string) => {
+    Clipboard.setString(text);
+    showToast('CLABE COPIADA AL PORTAPAPELES', 'success');
+  };
 
   return (
     <NeobrutalistBackground>
@@ -148,11 +161,11 @@ export default function CuentasBancariasScreen() {
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)/mas')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Cuentas</Text>
-                    <Text style={styles.subtitle}>{filtered.length} registros</Text>
+                    <Text style={styles.title}>CUENTAS</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
@@ -169,12 +182,12 @@ export default function CuentasBancariasScreen() {
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por banco, titular..."
+            placeholder="BUSCAR POR BANCO, TITULAR..."
           />
         </View>
 
         {loading && cuentas.length === 0 ? (
-          <LoadingSpinner fullScreen message="Cargando cuentas..." />
+          <LoadingSpinner fullScreen message="CARGANDO CUENTAS..." />
         ) : (
           <FlatList
             data={filtered}
@@ -186,8 +199,9 @@ export default function CuentasBancariasScreen() {
             renderItem={({ item }) => (
               <CuentaBancariaCard
                 item={item}
-                onPress={() => router.push(`/cuentas-bancarias/${item.id_cuenta}`)}
+                onPress={() => router.push(`/cuentas-bancarias/create?id=${item.id_cuenta}`)}
                 onLongPress={() => setDeleteId(item.id_cuenta)}
+                onCopy={handleCopy}
               />
             )}
             refreshControl={
@@ -201,9 +215,9 @@ export default function CuentasBancariasScreen() {
             ListEmptyComponent={
               <EmptyState
                 icon="bank"
-                title="Sin cuentas"
-                message={search ? 'No hay resultados.' : 'Aún no hay cuentas bancarias.'}
-                actionLabel="Agregar cuenta"
+                title="SIN CUENTAS"
+                message={search ? 'NO HAY RESULTADOS.' : 'AÚN NO HAY CUENTAS BANCARIAS.'}
+                actionLabel="AGREGAR CUENTA"
                 onAction={() => router.push('/cuentas-bancarias/create')}
               />
             }
@@ -213,9 +227,9 @@ export default function CuentasBancariasScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar cuenta"
-          message="¿Deseas eliminar esta cuenta bancaria?"
-          confirmText="Eliminar"
+          title="ELIMINAR CUENTA"
+          message="¿DESEAS ELIMINAR ESTA CUENTA BANCARIA?"
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -234,13 +248,13 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 24, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.md,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
@@ -263,8 +277,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   cardPressed: {
-    transform: [{ translateX: 2 }, { translateY: 2 }],
-    shadowOffset: { width: 2, height: 2 },
+    opacity: 0.9,
+    transform: [{ scale: 0.98 }],
   },
   cardHeader: {
     flexDirection: 'row',
@@ -272,42 +286,59 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     backgroundColor: Colors.success + '15',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.success,
+    borderWidth: 2,
+    borderColor: Colors.dark,
   },
   headerInfo: {
     flex: 1,
   },
   cardName: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontWeight: '900',
+    color: Colors.dark,
   },
   cardMeta: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '900',
     color: Colors.success,
     letterSpacing: 0.5,
   },
   cardContent: {
-    gap: Spacing.xs,
+    gap: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: Spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
   },
+  clabeRow: {
+    backgroundColor: '#F9FAFB',
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+  },
   infoText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.6)',
+    fontWeight: '800',
+    color: Colors.dark,
+  },
+  copyBtn: {
+    padding: 6,
+    backgroundColor: '#FFF',
+    borderWidth: 1.5,
+    borderColor: Colors.dark,
+    borderRadius: 6,
   },
 });
 

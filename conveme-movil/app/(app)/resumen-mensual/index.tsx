@@ -93,7 +93,7 @@ export default function DetalleMesScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
           </TouchableOpacity>
           <Text style={styles.title}>Auditoría Mensual</Text>

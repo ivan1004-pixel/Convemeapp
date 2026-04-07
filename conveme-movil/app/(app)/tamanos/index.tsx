@@ -17,7 +17,7 @@ import {
 } from '../../../src/services/tamano.service';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { SearchBar } from '../../../src/components/ui/SearchBar';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -53,14 +53,15 @@ function TamanoCard({
                 color={Colors.primary} 
             />
         </View>
-        <View style={styles.headerText}>
-            <Text style={styles.cardName}>{item.descripcion}</Text>
-            <Text style={styles.cardId}>ID: {item.id_tamano}</Text>
+        <View style={styles.headerInfo}>
+            <Text style={styles.cardName}>{item.descripcion.toUpperCase()}</Text>
+            <Text style={styles.cardMeta}>ID: {item.id_tamano}</Text>
         </View>
       </View>
 
       <View style={styles.cardFooter}>
-          <Text style={styles.footerText}>Toca para editar · Mantén para eliminar</Text>
+          <Text style={styles.footerAction}>GESTIONAR TAMAÑO</Text>
+          <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
       </View>
     </Pressable>
   );
@@ -115,7 +116,7 @@ export default function TamanosScreen() {
     try {
       await deleteTamano(selectedTamano.id_tamano);
       setTamanos((prev) => prev.filter((t) => t.id_tamano !== selectedTamano.id_tamano));
-      show('Tamaño eliminado correctamente', 'success');
+      show('TAMAÑO ELIMINADO', 'success');
       setSelectedTamano(null);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
@@ -129,12 +130,12 @@ export default function TamanosScreen() {
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)/mas')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Tamaños</Text>
-                    <Text style={styles.subtitle}>{tamanos.length} registros</Text>
+                    <Text style={styles.title}>TAMAÑOS</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
@@ -147,56 +148,56 @@ export default function TamanosScreen() {
             </View>
         </View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_tamano)}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={
-            <SearchBar
-              value={search}
-              onChangeText={setSearch}
-              placeholder="BUSCAR TAMAÑO..."
-              style={{ marginBottom: 25 }}
-            />
-          }
-          renderItem={({ item }) => (
-            <TamanoCard
-              item={item}
-              onPress={() => router.push({
-                pathname: '/tamanos/create',
-                params: { id: item.id_tamano, descripcion: item.descripcion }
-              })}
-              onLongPress={() => setSelectedTamano(item)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            loading ? (
-                <LoadingSpinner message="Cargando tamaños..." />
-            ) : (
-                <EmptyState
-                    icon="ruler"
-                    title="SIN TAMAÑOS"
-                    message={search ? 'No se encontraron resultados.' : 'No hay tamaños registrados.'}
-                    actionLabel="REGISTRAR TAMAÑO"
-                    onAction={() => router.push('/tamanos/create')}
-                />
-            )
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        <View style={styles.searchSection}>
+          <SearchBar
+            value={search}
+            onChangeText={setSearch}
+            placeholder="BUSCAR TAMAÑO..."
+          />
+        </View>
+
+        {loading && tamanos.length === 0 ? (
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_tamano)}
+            contentContainerStyle={styles.list}
+            renderItem={({ item }) => (
+              <TamanoCard
+                item={item}
+                onPress={() => router.push({
+                  pathname: '/tamanos/create',
+                  params: { id: item.id_tamano, descripcion: item.descripcion }
+                })}
+                onLongPress={() => setSelectedTamano(item)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="ruler"
+                title="SIN TAMAÑOS"
+                message={search ? 'NO SE ENCONTRARON RESULTADOS.' : 'AÚN NO HAY TAMAÑOS REGISTRADOS.'}
+                actionLabel="REGISTRAR TAMAÑO"
+                onAction={() => router.push('/tamanos/create')}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <ConfirmDialog
           visible={selectedTamano !== null}
           title="ELIMINAR TAMAÑO"
-          message={`¿Deseas eliminar "${selectedTamano?.descripcion}"?`}
+          message={`¿DESEAS ELIMINAR EL TAMAÑO "${selectedTamano?.descripcion.toUpperCase()}"?`}
           confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setSelectedTamano(null)}
@@ -211,26 +212,24 @@ export default function TamanosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  headerActions: { flexDirection: 'row', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
-
+  headerActions: { flexDirection: 'row', gap: 10 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
-  list: { paddingHorizontal: 20, paddingBottom: 40 },
-  card: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, marginBottom: 18, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, elevation: 0 },
-  cardPressed: { transform: [{ translateY: 3 }, { translateX: 3 }], shadowOffset: { width: 2, height: 2 } },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 12 },
-  iconContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.primary + '15', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
-  headerText: { flex: 1 },
-  cardName: { fontSize: 18, fontWeight: '900', color: Colors.dark, marginBottom: 2 },
-  cardId: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)' },
-  cardFooter: { borderTopWidth: 2, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 10, marginTop: 5 },
-  footerText: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.3)', textAlign: 'right' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  searchSection: { paddingHorizontal: 20, paddingBottom: 20 },
+  list: { paddingHorizontal: 20, paddingBottom: 100 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 15, marginBottom: 15, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  iconContainer: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary + '10', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  headerInfo: { flex: 1 },
+  cardName: { fontSize: 15, fontWeight: '900', color: Colors.dark },
+  cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

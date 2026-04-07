@@ -72,7 +72,7 @@ export default function InsumoDetailScreen() {
       await deleteInsumo(insumo.id_insumo);
       removeInsumo(insumo.id_insumo);
       show('Insumo eliminado correctamente', 'success');
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
     } finally {
@@ -92,10 +92,10 @@ export default function InsumoDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                 <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
             </TouchableOpacity>
-            <Text style={styles.title}>Material</Text>
+            <Text style={styles.title}>DETALLE MATERIAL</Text>
             <TouchableOpacity onPress={() => router.push(`/insumos/create?id=${insumo.id_insumo}`)} style={styles.editBtn}>
                 <MaterialCommunityIcons name="pencil" size={20} color={Colors.primary} />
             </TouchableOpacity>
@@ -111,7 +111,7 @@ export default function InsumoDetailScreen() {
                         color={isLowStock ? Colors.error : Colors.info} 
                     />
                 </View>
-                <Text style={styles.insumoName}>{insumo.nombre}</Text>
+                <Text style={styles.insumoName}>{insumo.nombre.toUpperCase()}</Text>
                 <Badge 
                     text={isLowStock ? "REABASTECIMIENTO REQUERIDO" : "STOCK SALUDABLE"} 
                     color={isLowStock ? "error" : "success"} 
@@ -119,25 +119,25 @@ export default function InsumoDetailScreen() {
                 />
             </View>
 
-            <Text style={styles.sectionTitle}>Estado de Inventario</Text>
+            <Text style={styles.sectionTitle}>ESTADO DE INVENTARIO</Text>
             
             <View style={styles.detailsContainer}>
                 <DetailRow 
-                    label="Stock Actual" 
-                    value={`${insumo.stock_actual} ${insumo.unidad_medida}`} 
+                    label="STOCK ACTUAL" 
+                    value={`${insumo.stock_actual} ${insumo.unidad_medida?.toUpperCase()}`} 
                     icon="database-outline" 
                     color={isLowStock ? Colors.error : Colors.success}
                 />
                 <View style={styles.divider} />
                 <DetailRow 
-                    label="Punto de Alerta" 
-                    value={`${insumo.stock_minimo_alerta || 0} ${insumo.unidad_medida}`} 
+                    label="PUNTO DE ALERTA" 
+                    value={`${insumo.stock_minimo_alerta || 0} ${insumo.unidad_medida?.toUpperCase()}`} 
                     icon="bell-ring-outline" 
                     color={Colors.warning}
                 />
                 <View style={styles.divider} />
                 <DetailRow 
-                    label="Unidad de Medida" 
+                    label="UNIDAD DE MEDIDA" 
                     value={insumo.unidad_medida?.toUpperCase() || 'N/A'} 
                     icon="ruler" 
                     color={Colors.info}

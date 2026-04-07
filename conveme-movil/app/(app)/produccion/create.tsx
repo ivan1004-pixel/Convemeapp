@@ -5,7 +5,8 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -16,7 +17,7 @@ import { getEmpleados } from '../../../src/services/empleado.service';
 import { useProduccionStore } from '../../../src/store/produccionStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
-import { Spacing } from '../../../src/theme/spacing';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { Button, Input, LoadingSpinner, Modal, SearchBar } from '../../../src/components/ui';
@@ -84,25 +85,23 @@ export default function ProduccionCreateScreen() {
         empleado_id: selectedEmployee.id_empleado,
         cantidad_a_producir: parseInt(cantidad, 10),
         estado,
-        detalles: [], // 👈 Obligatorio para el DTO de creación
+        detalles: [],
       };
       if (isEdit) {
         input.id_orden_produccion = parseInt(id!, 10);
-        const updated = await updateOrdenProduccion(input);
-        // Recargar para tener los objetos completos (producto/empleado)
+        await updateOrdenProduccion(input);
         const all = await getOrdenesProduccion();
         const fullUpdated = all.find((o: any) => String(o.id_orden_produccion) === String(id));
         if (fullUpdated) updateOrden(fullUpdated);
-        show('Orden actualizada correctamente', 'success');
+        show('ORDEN ACTUALIZADA CON ÉXITO', 'success');
       } else {
         const created = await createOrdenProduccion(input);
-        // Recargar para tener el objeto completo
         const all = await getOrdenesProduccion();
         const fullCreated = all.find((o: any) => String(o.id_orden_produccion) === String(created.id_orden_produccion));
         if (fullCreated) addOrden(fullCreated);
-        show('Orden creada correctamente', 'success');
+        show('ORDEN CREADA CON ÉXITO', 'success');
       }
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.push('/(app)'), 1500);
     } catch (err) {
       show(parseGraphQLError(err), 'error');
     } finally {
@@ -119,116 +118,111 @@ export default function ProduccionCreateScreen() {
     e.nombre_completo.toLowerCase().includes(searchEmployee.toLowerCase())
   );
 
-  if (initializing) return <LoadingSpinner fullScreen />;
+  if (initializing) return <LoadingSpinner fullScreen message="CARGANDO DATOS..." />;
 
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-            </TouchableOpacity>
-            <Text style={styles.title}>
-                {isEdit ? 'Editar Orden' : 'Nueva Orden'}
-            </Text>
-            <View style={{ width: 40 }} />
-        </View>
-
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.formCard}>
-                <Text style={styles.sectionTitle}>CONFIGURACIÓN DE ORDEN</Text>
-                
-                <Text style={styles.label}>PRODUCTO A PRODUCIR *</Text>
-                <TouchableOpacity 
-                    style={styles.selectorTrigger}
-                    onPress={() => setShowProductModal(true)}
-                >
-                    <Text style={[styles.selectorValue, !selectedProduct && { color: 'rgba(0,0,0,0.3)' }]}>
-                        {selectedProduct ? selectedProduct.nombre : 'SELECCIONAR PRODUCTO...'}
-                    </Text>
-                    <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <View style={styles.header}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
+                <Text style={styles.title}>{isEdit ? 'EDITAR ORDEN' : 'NUEVA ORDEN'}</Text>
+                <View style={{ width: 40 }} />
+            </View>
 
-                <Text style={styles.label}>EMPLEADO RESPONSABLE *</Text>
-                <TouchableOpacity 
-                    style={styles.selectorTrigger}
-                    onPress={() => setShowEmployeeModal(true)}
-                >
-                    <Text style={[styles.selectorValue, !selectedEmployee && { color: 'rgba(0,0,0,0.3)' }]}>
-                        {selectedEmployee ? selectedEmployee.nombre_completo : 'SELECCIONAR EMPLEADO...'}
-                    </Text>
-                    <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
-                </TouchableOpacity>
-
-                <Input
-                    label="CANTIDAD A PRODUCIR *"
-                    value={cantidad}
-                    onChangeText={setCantidad}
-                    placeholder="EJ. 100"
-                    keyboardType="numeric"
-                />
-
-                <Text style={styles.label}>ESTADO ACTUAL</Text>
-                <View style={styles.statesRow}>
-                    {ESTADOS.map((e) => (
-                        <TouchableOpacity
-                            key={e}
-                            style={[
-                                styles.stateBtn,
-                                estado === e && styles.stateBtnActive
-                            ]}
-                            onPress={() => setEstado(e)}
-                        >
-                            <Text style={[styles.stateText, estado === e && styles.stateTextActive]}>
-                                {e.toUpperCase()}
+            <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <View style={styles.card}>
+                    <Text style={styles.sectionTitle}>CONFIGURACIÓN DE ORDEN</Text>
+                    
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>PRODUCTO A PRODUCIR *</Text>
+                        <TouchableOpacity style={styles.selector} onPress={() => setShowProductModal(true)}>
+                            <MaterialCommunityIcons name="package-variant" size={20} color={Colors.primary} />
+                            <Text style={[styles.selectorText, !selectedProduct && styles.placeholderText]}>
+                                {selectedProduct ? selectedProduct.nombre.toUpperCase() : 'SELECCIONAR PRODUCTO...'}
                             </Text>
+                            <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />
                         </TouchableOpacity>
-                    ))}
+                    </View>
+
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>EMPLEADO RESPONSABLE *</Text>
+                        <TouchableOpacity style={styles.selector} onPress={() => setShowEmployeeModal(true)}>
+                            <MaterialCommunityIcons name="account-hard-hat" size={20} color={Colors.primary} />
+                            <Text style={[styles.selectorText, !selectedEmployee && styles.placeholderText]}>
+                                {selectedEmployee ? selectedEmployee.nombre_completo.toUpperCase() : 'SELECCIONAR EMPLEADO...'}
+                            </Text>
+                            <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Input
+                        label="CANTIDAD A PRODUCIR *"
+                        value={cantidad}
+                        onChangeText={setCantidad}
+                        placeholder="EJ: 100"
+                        keyboardType="numeric"
+                        leftIcon={<MaterialCommunityIcons name="counter" size={20} color={Colors.primary} />}
+                    />
+
+                    <View style={styles.fieldGroup}>
+                        <Text style={styles.fieldLabel}>ESTADO DE LA ORDEN</Text>
+                        <View style={styles.statesRow}>
+                            {ESTADOS.map((e) => (
+                                <TouchableOpacity
+                                    key={e}
+                                    style={[styles.stateBtn, estado === e && styles.stateBtnActive]}
+                                    onPress={() => setEstado(e)}
+                                >
+                                    <Text style={[styles.stateText, estado === e && styles.stateTextActive]}>{e.toUpperCase()}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
                 </View>
 
                 <Button
                     title={isEdit ? 'GUARDAR CAMBIOS' : 'CREAR ORDEN'}
                     loading={loading}
                     onPress={handleSubmit}
+                    size="lg"
                     style={styles.submitBtn}
                 />
-            </View>
-        </ScrollView>
+            </ScrollView>
+        </KeyboardAvoidingView>
 
         {/* Modal Productos */}
-        <Modal visible={showProductModal} onClose={() => setShowProductModal(false)} title="SELECCIONAR PRODUCTO">
-            <SearchBar value={searchProduct} onChangeText={setSearchProduct} placeholder="BUSCAR..." style={{ marginBottom: 15 }} />
-            {filteredProducts.map(p => (
-                <TouchableOpacity 
-                    key={p.id_producto} 
-                    style={styles.modalItem}
-                    onPress={() => {
-                        setSelectedProduct(p);
-                        setShowProductModal(false);
-                    }}
-                >
-                    <Text style={styles.modalItemTitle}>{p.nombre}</Text>
-                    <Text style={styles.modalItemSub}>{p.sku}</Text>
-                </TouchableOpacity>
-            ))}
+        <Modal visible={showProductModal} onClose={() => setShowProductModal(false)} title="PRODUCTOS">
+            <SearchBar value={searchProduct} onChangeText={setSearchProduct} placeholder="BUSCAR PRODUCTO..." style={{ marginBottom: 15 }} />
+            <ScrollView style={{maxHeight: 400}}>
+                {filteredProducts.map(p => (
+                    <TouchableOpacity key={p.id_producto} style={styles.modalItem} onPress={() => { setSelectedProduct(p); setShowProductModal(false); }}>
+                        <View style={{flex: 1}}>
+                            <Text style={styles.modalItemTitle}>{p.nombre.toUpperCase()}</Text>
+                            <Text style={styles.modalItemSub}>SKU: {p.sku}</Text>
+                        </View>
+                        {selectedProduct?.id_producto === p.id_producto && <MaterialCommunityIcons name="check-bold" size={20} color={Colors.success} />}
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
         </Modal>
 
         {/* Modal Empleados */}
-        <Modal visible={showEmployeeModal} onClose={() => setShowEmployeeModal(false)} title="SELECCIONAR EMPLEADO">
-            <SearchBar value={searchEmployee} onChangeText={setSearchEmployee} placeholder="BUSCAR..." style={{ marginBottom: 15 }} />
-            {filteredEmployees.map(e => (
-                <TouchableOpacity 
-                    key={e.id_empleado} 
-                    style={styles.modalItem}
-                    onPress={() => {
-                        setSelectedEmployee(e);
-                        setShowEmployeeModal(false);
-                    }}
-                >
-                    <Text style={styles.modalItemTitle}>{e.nombre_completo}</Text>
-                    <Text style={styles.modalItemSub}>{e.puesto}</Text>
-                </TouchableOpacity>
-            ))}
+        <Modal visible={showEmployeeModal} onClose={() => setShowEmployeeModal(false)} title="EMPLEADOS">
+            <SearchBar value={searchEmployee} onChangeText={setSearchEmployee} placeholder="BUSCAR EMPLEADO..." style={{ marginBottom: 15 }} />
+            <ScrollView style={{maxHeight: 400}}>
+                {filteredEmployees.map(e => (
+                    <TouchableOpacity key={e.id_empleado} style={styles.modalItem} onPress={() => { setSelectedEmployee(e); setShowEmployeeModal(false); }}>
+                        <View style={{flex: 1}}>
+                            <Text style={styles.modalItemTitle}>{e.nombre_completo.toUpperCase()}</Text>
+                            <Text style={styles.modalItemSub}>{e.puesto?.toUpperCase()}</Text>
+                        </View>
+                        {selectedEmployee?.id_empleado === e.id_empleado && <MaterialCommunityIcons name="check-bold" size={20} color={Colors.success} />}
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
         </Modal>
 
         <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hide} />
@@ -240,38 +234,23 @@ export default function ProduccionCreateScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
-  scrollContent: { padding: 20 },
-  formCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
-  sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1 },
-  label: { fontSize: 11, fontWeight: '900', color: Colors.dark, marginBottom: 8, marginTop: 10 },
-  selectorTrigger: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    backgroundColor: '#F9FAFB', 
-    borderWidth: 2, 
-    borderColor: Colors.dark, 
-    borderRadius: 12, 
-    padding: 12, 
-    marginBottom: 15 
-  },
-  selectorValue: { fontSize: 14, fontWeight: '800', color: Colors.dark },
-  statesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
-  stateBtn: { 
-    paddingHorizontal: 12, 
-    paddingVertical: 6, 
-    borderRadius: 8, 
-    borderWidth: 2, 
-    borderColor: Colors.dark, 
-    backgroundColor: '#FFF' 
-  },
-  stateBtnActive: { backgroundColor: Colors.primary },
-  stateText: { fontSize: 10, fontWeight: '900', color: Colors.dark },
+  scrollContent: { paddingHorizontal: 20, paddingTop: 10, paddingBottom: 150 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: 20, marginBottom: 25, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 3 },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 20 },
+  fieldGroup: { marginBottom: 15 },
+  fieldLabel: { fontSize: 11, fontWeight: '800', color: 'rgba(0,0,0,0.4)', marginBottom: 6, textTransform: 'uppercase' },
+  selector: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, borderRadius: BorderRadius.lg, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: '#F9FAFB', gap: 10 },
+  selectorText: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.dark },
+  placeholderText: { color: 'rgba(0,0,0,0.3)' },
+  statesRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4 },
+  stateBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 2, borderColor: 'rgba(0,0,0,0.05)', backgroundColor: '#FFF' },
+  stateBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.dark },
+  stateText: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.3)' },
   stateTextActive: { color: '#FFF' },
-  submitBtn: { marginTop: 10, height: 55 },
-  modalItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  submitBtn: { marginTop: 10, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  modalItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)', justifyContent: 'space-between' },
   modalItemTitle: { fontSize: 14, fontWeight: '900', color: Colors.dark },
-  modalItemSub: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.4)' },
+  modalItemSub: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.4)', marginTop: 2 },
 });

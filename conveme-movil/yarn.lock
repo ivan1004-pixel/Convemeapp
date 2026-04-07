@@ -5288,6 +5288,11 @@ expo-blur@~15.0.8:
   resolved "https://registry.npmjs.org/expo-blur/-/expo-blur-15.0.8.tgz"
   integrity sha512-rWyE1NBRZEu9WD+X+5l7gyPRszw7n12cW3IRNAb5i6KFzaBp8cxqT5oeaphJapqURvcqhkOZn2k5EtBSbsuU7w==
 
+expo-calendar@^55.0.13:
+  version "55.0.13"
+  resolved "https://registry.npmjs.org/expo-calendar/-/expo-calendar-55.0.13.tgz"
+  integrity sha512-YkpyxtxRFrubEpyU1CUdgE+uAnPOHEm7yUk+VOGzGH6cK1UIAX6vtEO88oWnVLBPdXOUGZm2vjgCLwqmsHiDHg==
+
 expo-constants@^18.0.13, expo-constants@~18.0.12, expo-constants@~18.0.13:
   version "18.0.13"
   resolved "https://registry.npmjs.org/expo-constants/-/expo-constants-18.0.13.tgz"

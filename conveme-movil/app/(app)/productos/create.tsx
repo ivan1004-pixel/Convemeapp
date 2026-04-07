@@ -124,7 +124,7 @@ export default function ProductoCreateScreen() {
         const created = await createProducto(input);
         addProducto(created);
       }
-      router.back();
+      router.push('/(app)');
     } catch (err) {
       Alert.alert('Error', parseGraphQLError(err));
     } finally {
@@ -143,7 +143,7 @@ export default function ProductoCreateScreen() {
       <SafeAreaView style={styles.container}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </TouchableOpacity>
             <Text style={styles.title}>{isEditing ? 'EDITAR PRODUCTO' : 'NUEVO PRODUCTO'}</Text>
@@ -266,7 +266,7 @@ export default function ProductoCreateScreen() {
 
             <TouchableOpacity 
                 style={styles.cancelBtn} 
-                onPress={() => router.back()}
+                onPress={() => router.push('/(app)')}
                 disabled={submitting}
             >
                 <Text style={styles.cancelBtnText}>CANCELAR Y VOLVER</Text>

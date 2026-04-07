@@ -143,7 +143,7 @@ export default function EmpleadoDetailScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <Text style={styles.title} numberOfLines={1}>EMPLEADO</Text>

@@ -38,7 +38,6 @@ export default function AsignacionCreateScreen() {
   const isEditing = !!id;
   const existing = asignaciones.find((a) => a.id_asignacion === Number(id));
   
-  // REGLA: Si el estado es Finalizado, no se puede editar ni borrar
   const isReadOnly = existing?.estado === 'Finalizado';
 
   const [form, setForm] = useState({
@@ -96,7 +95,7 @@ export default function AsignacionCreateScreen() {
   const addProduct = (prod: Producto) => {
     if (isReadOnly) return;
     if (form.detalles.some(d => d.producto_id === prod.id_producto)) {
-        showToast('El producto ya está en la lista', 'warning');
+        showToast('PRODUCTO YA EN LISTA', 'warning');
         return;
     }
     setForm(prev => ({
@@ -135,7 +134,7 @@ export default function AsignacionCreateScreen() {
   const handleSubmit = async () => {
     if (isReadOnly) return;
     if (!validate()) {
-      showToast(errors.vendedor_id || errors.detalles || 'Completa los campos', 'warning');
+      showToast(errors.vendedor_id || errors.detalles || 'COMPLETA LOS CAMPOS', 'warning');
       return;
     }
     setSubmitting(true);
@@ -152,10 +151,10 @@ export default function AsignacionCreateScreen() {
 
       if (isEditing && existing) {
         await updateAsignacion({ id_asignacion: existing.id_asignacion, ...input });
-        showToast('Asignación actualizada', 'success');
+        showToast('ASIGNACIÓN ACTUALIZADA', 'success');
       } else {
         await createAsignacion(input);
-        showToast('Asignación creada como PENDIENTE', 'success');
+        showToast('ASIGNACIÓN CREADA', 'success');
       }
       setTimeout(() => router.back(), 1500);
     } catch (err) {
@@ -171,7 +170,7 @@ export default function AsignacionCreateScreen() {
     try {
         await deleteAsignacion(existing.id_asignacion);
         removeAsignacion(existing.id_asignacion);
-        showToast('Eliminada correctamente', 'success');
+        showToast('ELIMINADA CORRECTAMENTE', 'success');
         setTimeout(() => router.back(), 1500);
     } catch (err) {
         showToast(parseGraphQLError(err), 'error');
@@ -193,7 +192,7 @@ export default function AsignacionCreateScreen() {
             <Pressable onPress={() => router.back()} style={styles.backBtn}>
               <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
             </Pressable>
-            <Text style={styles.title}>{isEditing ? (isReadOnly ? 'Detalles de Asignación' : 'Editar Asignación') : 'Nueva Asignación'}</Text>
+            <Text style={styles.title}>{isEditing ? (isReadOnly ? 'DETALLES' : 'EDITAR ASIGNACIÓN') : 'NUEVA ASIGNACIÓN'}</Text>
             <View style={styles.headerPlaceholder} />
           </View>
 
@@ -207,39 +206,39 @@ export default function AsignacionCreateScreen() {
             )}
 
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Vendedor</Text>
+              <Text style={styles.sectionTitle}>VENDEDOR SELECCIONADO</Text>
               <TouchableOpacity
                 style={[styles.selector, errors.vendedor_id && styles.selectorError, isReadOnly && styles.disabledSelector]}
                 onPress={() => { if(!isReadOnly) { setSearchQuery(''); setShowVendedorModal(true); } }}
                 disabled={isReadOnly}
               >
-                <MaterialCommunityIcons name="account-tie-outline" size={20} color={isReadOnly ? 'rgba(0,0,0,0.2)' : Colors.primary} />
+                <MaterialCommunityIcons name="account-tie" size={20} color={isReadOnly ? 'rgba(0,0,0,0.2)' : Colors.primary} />
                 <Text style={[styles.selectorText, !selectedVendedor && styles.placeholderText]}>
                   {selectedVendedor ? selectedVendedor.nombre_completo.toUpperCase() : 'SELECCIONAR VENDEDOR'}
                 </Text>
                 {!isReadOnly && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />}
               </TouchableOpacity>
               {isEditing && (
-                  <View style={{marginTop: 10}}>
+                  <View style={styles.infoBox}>
                       <Text style={styles.infoLabel}>FECHA: {formatDate(existing?.fecha_asignacion)}</Text>
-                      <Text style={styles.infoLabel}>ESTADO: {existing?.estado?.toUpperCase()}</Text>
+                      <Text style={styles.infoLabel}>ESTADO: {existing?.status?.toUpperCase() || existing?.estado?.toUpperCase()}</Text>
                   </View>
               )}
             </View>
 
             <View style={styles.card}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Productos</Text>
+                <Text style={styles.sectionTitle}>PRODUCTOS A ASIGNAR</Text>
                 {!isReadOnly && (
-                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowProductoModal(true); }} style={styles.addBtn}>
+                    <TouchableOpacity onPress={() => { setSearchQuery(''); setShowProductoModal(true); }} style={styles.addInlineBtn}>
                         <MaterialCommunityIcons name="plus-circle" size={20} color={Colors.primary} />
-                        <Text style={styles.addBtnText}>AÑADIR</Text>
+                        <Text style={styles.addInlineText}>AÑADIR</Text>
                     </TouchableOpacity>
                 )}
               </View>
 
               {form.detalles.length === 0 ? (
-                  <Text style={styles.emptyText}>No hay productos añadidos</Text>
+                  <Text style={styles.emptyText}>NO HAY PRODUCTOS AÑADIDOS</Text>
               ) : (
                   form.detalles.map((det, index) => (
                       <View key={index} style={styles.productItem}>
@@ -298,7 +297,7 @@ export default function AsignacionCreateScreen() {
                 <Text style={styles.modalTitle}>VENDEDORES</Text>
                 <TouchableOpacity onPress={() => setShowVendedorModal(false)}><MaterialCommunityIcons name="close-thick" size={28} color={Colors.dark} /></TouchableOpacity>
               </View>
-              <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="BUSCAR..." />
+              <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="BUSCAR VENDEDOR..." />
               <FlatList
                 data={filteredVendedores}
                 keyExtractor={(item) => `v-${item.id_vendedor}`}
@@ -321,7 +320,7 @@ export default function AsignacionCreateScreen() {
                 <Text style={styles.modalTitle}>PRODUCTOS</Text>
                 <TouchableOpacity onPress={() => setShowProductoModal(false)}><MaterialCommunityIcons name="close-thick" size={28} color={Colors.dark} /></TouchableOpacity>
               </View>
-              <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="BUSCAR..." />
+              <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="BUSCAR PRODUCTO..." />
               <FlatList
                 data={filteredProductos}
                 keyExtractor={(item) => `p-${item.id_producto}`}
@@ -341,8 +340,8 @@ export default function AsignacionCreateScreen() {
 
         <ConfirmDialog
             visible={showDeleteConfirm}
-            title="Eliminar Asignación"
-            message="¿Deseas eliminar esta asignación? Esta acción no se puede deshacer."
+            title="ELIMINAR ASIGNACIÓN"
+            message="¿DESEAS ELIMINAR ESTA ASIGNACIÓN? ESTA ACCIÓN NO SE PUEDE DESHACER."
             confirmText="ELIMINAR"
             onConfirm={handleDelete}
             onCancel={() => setShowDeleteConfirm(false)}
@@ -358,41 +357,42 @@ export default function AsignacionCreateScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  backBtn: { padding: Spacing.xs },
-  title: { ...Typography.h3, fontWeight: '900', color: '#1A1A1A' },
-  headerPlaceholder: { width: 34 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
+  headerPlaceholder: { width: 40 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 150 },
-  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 3 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  sectionTitle: { ...Typography.bodySmall, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1 },
-  selector: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, backgroundColor: '#FFFFFF', gap: Spacing.sm },
-  disabledSelector: { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
+  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1.5 },
+  selector: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, backgroundColor: '#F9FAFB', gap: Spacing.sm },
+  disabledSelector: { backgroundColor: '#F3F4F6', opacity: 0.7 },
   selectorError: { borderColor: Colors.error },
-  selectorText: { flex: 1, fontSize: 14, fontWeight: '700', color: '#1A1A1A' },
+  selectorText: { flex: 1, fontSize: 14, fontWeight: '700', color: Colors.dark },
   placeholderText: { color: 'rgba(0,0,0,0.3)' },
-  infoLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', marginTop: 2 },
-  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addBtnText: { fontSize: 12, fontWeight: '900', color: Colors.primary },
-  emptyText: { textAlign: 'center', color: 'rgba(0,0,0,0.3)', paddingVertical: 20, fontWeight: '700' },
+  infoBox: { marginTop: 12, padding: 10, backgroundColor: '#F3F4F6', borderRadius: 8 },
+  infoLabel: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
+  addInlineBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addInlineText: { fontSize: 11, fontWeight: '900', color: Colors.primary },
+  emptyText: { textAlign: 'center', color: 'rgba(0,0,0,0.3)', paddingVertical: 20, fontWeight: '900', fontSize: 12 },
   productItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)', gap: 10 },
-  productName: { fontSize: 14, fontWeight: '800', color: '#1A1A1A' },
+  productName: { fontSize: 13, fontWeight: '800', color: Colors.dark },
   qtyContainer: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  qtyLabel: { fontSize: 11, fontWeight: '900', color: 'rgba(0,0,0,0.4)' },
-  qtyInput: { width: 80, marginBottom: 0 },
-  qtyInputField: { textAlign: 'center', height: 50, fontSize: 18, fontWeight: '900', color: Colors.primary },
-  readonlyQty: { fontSize: 18, fontWeight: '900', color: Colors.dark, paddingHorizontal: 15 },
+  qtyLabel: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)' },
+  qtyInput: { width: 70, marginBottom: 0 },
+  qtyInputField: { textAlign: 'center', height: 45, fontSize: 16, fontWeight: '900', color: Colors.primary, borderWidth: 2, borderColor: Colors.dark, borderRadius: 8 },
+  readonlyQty: { fontSize: 16, fontWeight: '900', color: Colors.dark, paddingHorizontal: 10 },
   removeBtn: { padding: 5 },
-  submitBtn: { marginTop: Spacing.sm, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 5 },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,0,0,0.1)' },
-  deleteBtnText: { color: Colors.error, fontWeight: '900', fontSize: 14 },
+  submitBtn: { marginTop: Spacing.sm, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: Spacing.lg, paddingVertical: Spacing.md, gap: Spacing.sm },
+  deleteBtnText: { color: Colors.error, fontWeight: '900', fontSize: 12, textDecorationLine: 'underline' },
   errorText: { color: Colors.error, fontSize: 10, fontWeight: '800', marginTop: 10, textAlign: 'center' },
-  readonlyBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary + '10', padding: 12, borderRadius: 12, marginBottom: 15, gap: 8, borderWidth: 1, borderColor: Colors.primary + '30' },
+  readonlyBadge: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary + '10', padding: 12, borderRadius: 12, marginBottom: 15, gap: 8, borderWidth: 2, borderColor: Colors.primary },
   readonlyText: { fontSize: 9, fontWeight: '900', color: Colors.primary, flex: 1 },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   modalListContent: { backgroundColor: Colors.beige, width: '100%', borderTopLeftRadius: BorderRadius.xxl, borderTopRightRadius: BorderRadius.xxl, padding: Spacing.lg, height: '80%', position: 'absolute', bottom: 0, borderTopWidth: 4, borderColor: Colors.dark },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  modalTitle: { fontSize: 20, fontWeight: '900' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md, borderBottomWidth: 2, borderBottomColor: Colors.dark, paddingBottom: 10 },
+  modalTitle: { fontSize: 18, fontWeight: '900' },
   modalListItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
-  modalListItemText: { fontSize: 16, fontWeight: '800' },
-  modalListItemSub: { fontSize: 12, fontWeight: '600', color: 'rgba(26,26,26,0.4)' },
+  modalListItemText: { fontSize: 15, fontWeight: '800' },
+  modalListItemSub: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.4)' },
 });
