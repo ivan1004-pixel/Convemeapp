@@ -5,33 +5,40 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  Pressable,
+  TouchableOpacity,
+  Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getEmpleados, deleteEmpleado } from '../../../src/services/empleado.service';
 import { useEmpleadoStore } from '../../../src/store/empleadoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
-import { Shadows } from '../../../src/theme/shadows';
-import { Avatar } from '../../../src/components/ui/Avatar';
 import { Button } from '../../../src/components/ui/Button';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { parseGraphQLError, formatPhone } from '../../../src/utils';
 import type { Empleado } from '../../../src/types';
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
+const EMPLEADO_IMAGES = [
+  require('../../../assets/images/fotoe1.jpg'),
+  require('../../../assets/images/fotoe2.jpg'),
+  require('../../../assets/images/fotoe3.jpg'),
+];
+
+function InfoRow({ label, value, icon }: { label: string; value?: string | null; icon?: string }) {
   if (!value) return null;
   return (
     <View style={infoStyles.row}>
-      <Text style={[infoStyles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[infoStyles.value, { color: theme.text }]}>{value}</Text>
+      <View style={infoStyles.labelContainer}>
+        {icon && <MaterialCommunityIcons name={icon as any} size={16} color="rgba(0,0,0,0.4)" style={{ marginRight: 6 }} />}
+        <Text style={infoStyles.label}>{label}</Text>
+      </View>
+      <Text style={infoStyles.value}>{value.toUpperCase()}</Text>
     </View>
   );
 }
@@ -40,30 +47,30 @@ const infoStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  label: {
-    ...Typography.bodySmall,
-    flex: 1,
-  },
+  labelContainer: { flexDirection: 'row', alignItems: 'center' },
+  label: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
   value: {
-    ...Typography.body,
-    flex: 2,
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.dark,
+    flexShrink: 1,
     textAlign: 'right',
+    marginLeft: Spacing.sm,
   },
 });
 
 export default function EmpleadoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const { empleados, setEmpleados, removeEmpleado } = useEmpleadoStore();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
 
   const empleado: Empleado | undefined = empleados.find(
     (e) => e.id_empleado === Number(id)
@@ -76,7 +83,7 @@ export default function EmpleadoDetailScreen() {
       const data = await getEmpleados();
       setEmpleados(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -93,8 +100,8 @@ export default function EmpleadoDetailScreen() {
       await deleteEmpleado(empleado.id_empleado);
       removeEmpleado(empleado.id_empleado);
       router.back();
-    } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+    } catch (err: any) {
+        setShowErrorModal(true);
     } finally {
       setDeleting(false);
       setShowConfirm(false);
@@ -103,119 +110,146 @@ export default function EmpleadoDetailScreen() {
 
   if (loading || !empleado) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Detalle</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-        <LoadingSpinner fullScreen message="Cargando..." />
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>DETALLE</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <LoadingSpinner fullScreen message="CARGANDO..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
+
+  const imageIndex = empleado.id_empleado % EMPLEADO_IMAGES.length;
+  const avatarImage = EMPLEADO_IMAGES[imageIndex];
 
   const address = [
     empleado.calle_y_numero,
     empleado.colonia,
     empleado.codigo_postal,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ].filter(Boolean).join(', ');
 
   const location = [
     empleado.municipio?.nombre,
     empleado.municipio?.estado?.nombre,
-  ]
-    .filter(Boolean)
-    .join(', ');
+  ].filter(Boolean).join(', ');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Empleado</Text>
-        <View style={styles.headerPlaceholder} />
-      </View>
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title} numberOfLines={1}>EMPLEADO</Text>
+          <TouchableOpacity onPress={() => setShowConfirm(true)} style={styles.deleteHeaderBtn}>
+            <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero card */}
-        <View style={[styles.heroCard, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
-          <Avatar name={empleado.nombre_completo} size={72} />
-          <Text style={[styles.heroName, { color: theme.text }]}>{empleado.nombre_completo}</Text>
-          {empleado.puesto && (
-            <Text style={[styles.heroPuesto, { color: Colors.primary }]}>{empleado.puesto}</Text>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero card */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroContent}>
+                <View style={styles.heroIconContainer}>
+                    <Image source={avatarImage} style={styles.heroAvatar} />
+                </View>
+                <View style={styles.heroInfo}>
+                    <Text style={styles.heroName}>{empleado.nombre_completo.toUpperCase()}</Text>
+                    <Text style={styles.heroPuesto}>{empleado.puesto?.toUpperCase() ?? 'EMPLEADO'}</Text>
+                </View>
+            </View>
+          </View>
+
+          {/* Contact section */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>CONTACTO</Text>
+            <InfoRow label="EMAIL" value={empleado.email} icon="email-outline" />
+            <InfoRow label="TELÉFONO" value={empleado.telefono ? formatPhone(empleado.telefono) : null} icon="phone-outline" />
+          </View>
+
+          {/* Address section */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>DIRECCIÓN Y UBICACIÓN</Text>
+            <InfoRow label="DIRECCIÓN" value={address || 'NO REGISTRADA'} icon="map-marker-outline" />
+            <InfoRow label="MUNICIPIO" value={location || 'NO ESPECIFICADO'} icon="city-variant-outline" />
+          </View>
+
+          {/* Usuario section */}
+          {empleado.usuario && (
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>DATOS DE USUARIO</Text>
+              <InfoRow label="USERNAME" value={empleado.usuario.username} icon="account-circle-outline" />
+              <InfoRow label="ROL" value={empleado.usuario.rol?.nombre} icon="shield-account-outline" />
+            </View>
           )}
-        </View>
 
-        {/* Contact section */}
-        <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>Contacto</Text>
-          <InfoRow label="Email" value={empleado.email} />
-          <InfoRow label="Teléfono" value={empleado.telefono ? formatPhone(empleado.telefono) : null} />
-        </View>
-
-        {/* Address section */}
-        {address && (
-          <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Dirección</Text>
-            <InfoRow label="Calle y número" value={empleado.calle_y_numero} />
-            <InfoRow label="Colonia" value={empleado.colonia} />
-            <InfoRow label="C.P." value={empleado.codigo_postal} />
-            <InfoRow label="Municipio" value={location || null} />
+          <View style={styles.actions}>
+            <Button
+              title="EDITAR EMPLEADO"
+              onPress={() => router.push(`/empleados/create?id=${empleado.id_empleado}`)}
+              style={styles.actionBtn}
+              size="lg"
+            />
           </View>
-        )}
 
-        {/* Usuario section */}
-        {empleado.usuario && (
-          <View style={[styles.section, { backgroundColor: theme.card, borderColor: theme.border }, Shadows.sm]}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>Usuario</Text>
-            <InfoRow label="Username" value={empleado.usuario.username} />
-            <InfoRow label="Rol" value={empleado.usuario.rol?.nombre} />
-          </View>
-        )}
-
-        <View style={styles.actions}>
-          <Button
-            title="Editar"
-            variant="outline"
-            onPress={() => router.push(`/empleados/create?id=${empleado.id_empleado}`)}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Eliminar"
-            variant="danger"
+          <TouchableOpacity 
+            style={styles.deleteFooterBtn}
             onPress={() => setShowConfirm(true)}
-            style={styles.actionBtn}
-          />
-        </View>
-      </ScrollView>
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+            <Text style={styles.deleteFooterText}>ELIMINAR ESTE REGISTRO</Text>
+          </TouchableOpacity>
+        </ScrollView>
 
-      <ConfirmDialog
-        visible={showConfirm}
-        title="Eliminar empleado"
-        message={`¿Deseas eliminar a "${empleado.nombre_completo}"? Esta acción no se puede deshacer.`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={handleDelete}
-        onCancel={() => setShowConfirm(false)}
-        loading={deleting}
-        destructive
-      />
-    </SafeAreaView>
+        <ConfirmDialog
+          visible={showConfirm}
+          title="ELIMINAR EMPLEADO"
+          message={`¿DESEAS ELIMINAR A "${empleado.nombre_completo.toUpperCase()}"?`}
+          confirmText="ELIMINAR"
+          cancelText="CANCELAR"
+          onConfirm={handleDelete}
+          onCancel={() => setShowConfirm(false)}
+          loading={deleting}
+          destructive
+        />
+
+        {/* MODAL ERROR BELLO */}
+        <Modal visible={showErrorModal} transparent animationType="fade">
+            <View style={styles.errorOverlay}>
+                <View style={styles.errorCard}>
+                    <Image source={require('../../../assets/images/memeerror.png')} style={styles.errorImg} resizeMode="contain" />
+                    <Text style={styles.errorTitle}>¡UPS! NO PODEMOS HACER ESO</Text>
+                    <Text style={styles.errorDesc}>
+                        Este empleado tiene registros activos (como órdenes de producción o ventas) y no puede ser eliminado.
+                        {"\n\n"}
+                        Para mantener la integridad de los datos, el registro se mantendrá seguro.
+                    </Text>
+                    <Button 
+                        title="ENTENDIDO" 
+                        onPress={() => setShowErrorModal(false)} 
+                        variant="primary"
+                        style={{ width: '100%' }}
+                    />
+                </View>
+            </View>
+        </Modal>
+
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,56 +258,86 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  backIcon: {
-    fontSize: 22,
-    fontWeight: '500',
-  },
-  headerTitle: {
-    ...Typography.h3,
-  },
-  headerPlaceholder: {
-    width: 34,
-  },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { ...Typography.h4, fontWeight: '900', color: Colors.dark },
+  headerPlaceholder: { width: 40 },
+  deleteHeaderBtn: { padding: Spacing.xs },
   scrollContent: {
-    padding: Spacing.lg,
-    paddingBottom: Spacing.xxl * 3,
-    gap: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: 120,
   },
   heroCard: {
+    backgroundColor: '#FFF',
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
-    padding: Spacing.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    elevation: 6
+  },
+  heroContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  heroIconContainer: {
+    width: 75,
+    height: 75,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
-    gap: Spacing.sm,
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    overflow: 'hidden',
   },
-  heroName: {
-    ...Typography.h2,
-    textAlign: 'center',
-  },
-  heroPuesto: {
-    ...Typography.body,
-    fontWeight: '600',
-  },
-  section: {
-    borderRadius: BorderRadius.lg,
-    borderWidth: 1,
-    padding: Spacing.md,
+  heroAvatar: { width: '100%', height: '100%' },
+  heroInfo: { flex: 1 },
+  heroName: { fontSize: 18, fontWeight: '900', color: Colors.dark, marginBottom: 2 },
+  heroPuesto: { fontSize: 10, fontWeight: '800', color: Colors.primary, letterSpacing: 1, marginBottom: 6 },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 3,
   },
   sectionTitle: {
-    ...Typography.label,
-    marginBottom: Spacing.xs,
+    fontSize: 10,
+    fontWeight: '900',
+    color: Colors.primary,
+    marginBottom: Spacing.md,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1.5,
   },
-  actions: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-    marginTop: Spacing.sm,
-  },
+  actions: { marginTop: Spacing.sm },
   actionBtn: {
-    flex: 1,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 5,
   },
+  deleteFooterBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginTop: Spacing.xl, 
+    gap: 8 
+  },
+  deleteFooterText: { 
+    fontSize: 11, 
+    fontWeight: '900', 
+    color: Colors.error, 
+    textDecorationLine: 'underline' 
+  },
+  errorOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  errorCard: { backgroundColor: '#FFF', width: '100%', borderRadius: 25, padding: 30, alignItems: 'center', borderWidth: 4, borderColor: Colors.dark, shadowColor: '#000', shadowOffset: { width: 10, height: 10 }, shadowOpacity: 1 },
+  errorImg: { width: 200, height: 200, marginBottom: 20 },
+  errorTitle: { fontSize: 18, fontWeight: '900', color: Colors.error, marginBottom: 15, textAlign: 'center' },
+  errorDesc: { fontSize: 14, fontWeight: '700', color: 'rgba(0,0,0,0.6)', textAlign: 'center', lineHeight: 20, marginBottom: 25 },
 });

@@ -610,7 +610,7 @@ const styles = StyleSheet.create({
   backBtn: { padding: Spacing.xs },
   title: { ...Typography.h3, fontWeight: '900', color: '#1A1A1A' },
   headerPlaceholder: { width: 34 },
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 120 },
+  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 160 },
   card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   sectionTitle: { ...Typography.bodySmall, fontWeight: '900', color: Colors.primary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: Spacing.md },
   selector: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#E5E7EB', borderRadius: BorderRadius.lg, paddingHorizontal: Spacing.md, paddingVertical: Spacing.md, backgroundColor: '#FFFFFF', gap: Spacing.sm },

@@ -53,6 +53,7 @@ export interface Cliente {
   telefono?: string;
   direccion_envio?: string;
   fecha_registro?: string;
+  activo?: boolean;
   usuario?: Usuario;
 }
 

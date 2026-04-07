@@ -52,32 +52,35 @@ function ProductoCard({
       onLongPress={onLongPress}
       style={({ pressed }) => [
         styles.productCard,
-        { backgroundColor: theme.card, borderColor: theme.border, width: CARD_WIDTH },
-        Shadows.sm,
+        { backgroundColor: '#FFF', borderColor: Colors.dark, width: CARD_WIDTH },
         pressed && styles.cardPressed,
       ]}
       accessibilityRole="button"
     >
-      <View style={styles.productEmoji}>
-        <Text style={styles.productEmojiText}>🛍️</Text>
+      <View style={styles.productIconContainer}>
+        <MaterialCommunityIcons name="package-variant-closed" size={28} color={Colors.primary} />
       </View>
       {item.categoria && (
-        <Badge text={item.categoria.nombre} color="primary" size="sm" style={styles.categoryBadge} />
+        <View style={styles.categoryBadgeContainer}>
+            <Text style={styles.categoryBadgeText}>{item.categoria.nombre.toUpperCase()}</Text>
+        </View>
       )}
-      <Text style={[styles.productName, { color: theme.text }]} numberOfLines={2}>
-        {item.nombre}
+      <Text style={styles.productName} numberOfLines={2}>
+        {item.nombre.toUpperCase()}
       </Text>
-      <Text style={[styles.productSku, { color: theme.muted }]} numberOfLines={1}>
+      <Text style={styles.productSku} numberOfLines={1}>
         {item.sku}
       </Text>
-      <Text style={[styles.productPrice, { color: Colors.primary }]}>
-        {formatCurrency(item.precio_unitario)}
-      </Text>
-      {item.precio_mayoreo > 0 && (
-        <Text style={[styles.productMayoreo, { color: theme.muted }]}>
-          M: {formatCurrency(item.precio_mayoreo)}
+      <View style={styles.priceContainer}>
+        <Text style={styles.productPrice}>
+            {formatCurrency(item.precio_unitario)}
         </Text>
-      )}
+        {item.precio_mayoreo > 0 && (
+            <Text style={styles.productMayoreo}>
+            M: {formatCurrency(item.precio_mayoreo)}
+            </Text>
+        )}
+      </View>
     </Pressable>
   );
 }
@@ -154,9 +157,14 @@ export default function ProductosScreen() {
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container} edges={['top']}>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Productos</Text>
-              <Text style={styles.subtitle}>Cargando artículos...</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>PRODUCTOS</Text>
+                    <Text style={styles.subtitle}>CARGANDO...</Text>
+                </View>
             </View>
           </View>
           <LoadingSpinner fullScreen message="Cargando productos..." />
@@ -171,11 +179,11 @@ export default function ProductosScreen() {
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Productos</Text>
-                    <Text style={styles.subtitle}>{filtered.length} artículos</Text>
+                    <Text style={styles.title}>PRODUCTOS</Text>
+                    <Text style={styles.subtitle}>{filtered.length} ARTÍCULOS</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
@@ -192,7 +200,7 @@ export default function ProductosScreen() {
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por nombre, SKU..."
+            placeholder="BUSCAR POR NOMBRE, SKU..."
           />
         </View>
 
@@ -222,14 +230,14 @@ export default function ProductosScreen() {
           }
           ListEmptyComponent={
             <EmptyState
-              icon="shopping"
+              icon="package-variant"
               title="Sin productos"
               message={
                 search
                   ? 'No hay productos que coincidan con tu búsqueda.'
                   : 'Aún no hay productos registrados.'
               }
-              actionLabel={!search ? 'Agregar producto' : undefined}
+              actionLabel={!search ? 'AGREGAR PRODUCTO' : undefined}
               onAction={!search ? () => router.push('/productos/create') : undefined}
             />
           }
@@ -242,7 +250,7 @@ export default function ProductosScreen() {
           message={`¿Deseas eliminar "${deleteTarget?.nombre ?? ''}"? Esta acción no se puede deshacer.`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
-          confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
+          confirmText={deleting ? 'ELIMINANDO...' : 'ELIMINAR'}
           destructive
         />
       </SafeAreaView>
@@ -256,17 +264,17 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl + Spacing.xl,
+    paddingBottom: 140, // Espacio extra para que no estorbe la barra de abajo
   },
   listEmpty: {
     flexGrow: 1,
@@ -278,38 +286,65 @@ const styles = StyleSheet.create({
   },
   productCard: {
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
+    borderWidth: 2,
     padding: Spacing.md,
     overflow: 'hidden',
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.1,
+    elevation: 2,
   },
-  cardPressed: { opacity: 0.85 },
-  productEmoji: {
+  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  productIconContainer: {
     width: 48,
     height: 48,
     borderRadius: BorderRadius.lg,
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
-  productEmojiText: { fontSize: 24 },
-  categoryBadge: { marginBottom: Spacing.xs },
-  productName: {
-    ...Typography.bodySmall,
-    fontWeight: '600',
+  categoryBadgeContainer: { 
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.primary + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
     marginBottom: Spacing.xs,
-    lineHeight: 18,
+  },
+  categoryBadgeText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: Colors.primary,
+  },
+  productName: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: Colors.dark,
+    marginBottom: 2,
+    lineHeight: 16,
   },
   productSku: {
-    ...Typography.caption,
-    marginBottom: Spacing.xs,
+    fontSize: 10,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.4)',
+    marginBottom: Spacing.sm,
+  },
+  priceContainer: {
+      marginTop: 'auto',
   },
   productPrice: {
-    ...Typography.bodySmall,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '900',
+    color: Colors.primary,
   },
   productMayoreo: {
-    ...Typography.caption,
-    marginTop: 2,
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.success,
+    marginTop: 1,
   },
 });
+

@@ -6,9 +6,11 @@ import {
   StyleSheet,
   Alert,
   Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProductos, deleteProducto } from '../../../src/services/producto.service';
 import { useProductoStore } from '../../../src/store/productoStore';
 import { Colors } from '../../../src/theme/colors';
@@ -16,21 +18,20 @@ import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { Badge } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
-import { Card } from '../../../src/components/ui/Card';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
+import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { formatCurrency, parseGraphQLError } from '../../../src/utils';
 import type { Producto } from '../../../src/types';
 
-function DetailRow({ label, value }: { label: string; value: string }) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
+function DetailRow({ label, value, icon }: { label: string; value: string; icon?: string }) {
   return (
     <View style={rowStyles.row}>
-      <Text style={[rowStyles.label, { color: theme.muted }]}>{label}</Text>
-      <Text style={[rowStyles.value, { color: theme.text }]}>{value}</Text>
+      <View style={rowStyles.labelContainer}>
+        {icon && <MaterialCommunityIcons name={icon as any} size={16} color="rgba(0,0,0,0.4)" style={{ marginRight: 6 }} />}
+        <Text style={rowStyles.label}>{label}</Text>
+      </View>
+      <Text style={rowStyles.value}>{value}</Text>
     </View>
   );
 }
@@ -40,14 +41,16 @@ const rowStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.light2.border,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  label: { ...Typography.bodySmall },
+  labelContainer: { flexDirection: 'row', alignItems: 'center' },
+  label: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
   value: {
-    ...Typography.bodySmall,
-    fontWeight: '500',
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.dark,
     flexShrink: 1,
     textAlign: 'right',
     marginLeft: Spacing.sm,
@@ -56,10 +59,6 @@ const rowStyles = StyleSheet.create({
 
 export default function ProductoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const { productos, setProductos, removeProducto } = useProductoStore();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -102,202 +101,275 @@ export default function ProductoDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <LoadingSpinner fullScreen message="Cargando producto..." />
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <LoadingSpinner fullScreen message="CARGANDO DETALLES..." />
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   if (!producto) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-            <Text style={styles.backIcon}>←</Text>
-          </Pressable>
-          <Text style={[styles.title, { color: theme.text }]}>Producto</Text>
-          <View style={styles.headerPlaceholder} />
-        </View>
-        <View style={styles.notFound}>
-          <Text style={{ ...Typography.body, color: theme.muted }}>Producto no encontrado.</Text>
-        </View>
-      </SafeAreaView>
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.title}>PRODUCTO</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <View style={styles.notFound}>
+            <MaterialCommunityIcons name="package-variant-remove" size={64} color="rgba(0,0,0,0.1)" />
+            <Text style={{ ...Typography.body, color: 'rgba(0,0,0,0.4)', fontWeight: '700', marginTop: 10 }}>PRODUCTO NO ENCONTRADO</Text>
+          </View>
+        </SafeAreaView>
+      </NeobrutalistBackground>
     );
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn} accessibilityRole="button">
-          <Text style={styles.backIcon}>←</Text>
-        </Pressable>
-        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
-          {producto.nombre}
-        </Text>
-        <Pressable
-          onPress={() => setShowDelete(true)}
-          style={styles.deleteBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Eliminar producto"
-        >
-          <Text style={styles.deleteIcon}>🗑️</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Hero Card */}
-        <Card style={styles.heroCard}>
-          <View style={styles.heroContent}>
-            <View style={styles.heroEmoji}>
-              <Text style={styles.heroEmojiText}>🛍️</Text>
-            </View>
-            <View style={styles.heroInfo}>
-              <Text style={[styles.heroName, { color: theme.text }]}>{producto.nombre}</Text>
-              <Text style={[styles.heroSku, { color: theme.muted }]}>SKU: {producto.sku}</Text>
-              {producto.categoria && (
-                <Badge
-                  text={producto.categoria.nombre}
-                  color="primary"
-                  size="sm"
-                  style={styles.heroBadge}
-                />
-              )}
-              {producto.tamano && (
-                <Badge
-                  text={producto.tamano.descripcion}
-                  color="secondary"
-                  size="sm"
-                  style={styles.heroBadge}
-                />
-              )}
-            </View>
-          </View>
-        </Card>
-
-        {/* Pricing Card */}
-        <Card title="Precios" style={styles.sectionCard}>
-          <View style={styles.priceGrid}>
-            <View style={[styles.priceItem, { borderColor: theme.border }]}>
-              <Text style={[styles.priceLabel, { color: theme.muted }]}>Menudeo</Text>
-              <Text style={[styles.priceValue, { color: Colors.primary }]}>
-                {formatCurrency(producto.precio_unitario)}
-              </Text>
-            </View>
-            {producto.precio_mayoreo > 0 && (
-              <View style={[styles.priceItem, { borderColor: theme.border }]}>
-                <Text style={[styles.priceLabel, { color: theme.muted }]}>Mayoreo</Text>
-                <Text style={[styles.priceValue, { color: Colors.success }]}>
-                  {formatCurrency(producto.precio_mayoreo)}
-                </Text>
-              </View>
-            )}
-            {producto.costo_produccion != null && producto.costo_produccion > 0 && (
-              <View style={[styles.priceItem, { borderColor: theme.border }]}>
-                <Text style={[styles.priceLabel, { color: theme.muted }]}>Costo</Text>
-                <Text style={[styles.priceValue, { color: Colors.warning }]}>
-                  {formatCurrency(producto.costo_produccion)}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Card>
-
-        {/* Details Card */}
-        <Card title="Detalles" style={styles.sectionCard}>
-          <DetailRow label="SKU" value={producto.sku} />
-          <DetailRow label="Categoría" value={producto.categoria?.nombre ?? 'Sin categoría'} />
-          <DetailRow label="Tamaño" value={producto.tamano?.descripcion ?? 'No especificado'} />
-          {producto.cantidad_minima_mayoreo != null && (
-            <DetailRow
-              label="Mín. mayoreo"
-              value={`${producto.cantidad_minima_mayoreo} unidades`}
-            />
-          )}
-        </Card>
-
-        {/* Actions */}
-        <View style={styles.actions}>
-          <Button
-            title="Editar"
-            variant="outline"
-            onPress={() => router.push(`/productos/create?id=${producto.id_producto}`)}
-            style={styles.actionBtn}
-          />
-          <Button
-            title="Eliminar"
-            variant="danger"
+    <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.title} numberOfLines={1}>
+            DETALLE
+          </Text>
+          <TouchableOpacity
             onPress={() => setShowDelete(true)}
-            style={styles.actionBtn}
-          />
+            style={styles.deleteHeaderBtn}
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
+          </TouchableOpacity>
         </View>
-      </ScrollView>
 
-      <ConfirmDialog
-        visible={showDelete}
-        title="Eliminar producto"
-        message={`¿Deseas eliminar "${producto.nombre}"? Esta acción no se puede deshacer.`}
-        onConfirm={handleDelete}
-        onCancel={() => setShowDelete(false)}
-        confirmText={deleting ? 'Eliminando...' : 'Eliminar'}
-        destructive
-      />
-    </SafeAreaView>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Hero Card */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroContent}>
+              <View style={styles.heroIconContainer}>
+                <MaterialCommunityIcons name="package-variant-closed" size={40} color={Colors.primary} />
+              </View>
+              <View style={styles.heroInfo}>
+                <Text style={styles.heroName}>{producto.nombre.toUpperCase()}</Text>
+                <Text style={styles.heroSku}>SKU: {producto.sku}</Text>
+                <View style={styles.badgeRow}>
+                    {producto.categoria && (
+                        <Badge
+                        text={producto.categoria.nombre.toUpperCase()}
+                        color="primary"
+                        size="sm"
+                        />
+                    )}
+                    {producto.tamano && (
+                        <Badge
+                        text={producto.tamano.descripcion.toUpperCase()}
+                        color="secondary"
+                        size="sm"
+                        />
+                    )}
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Pricing Card */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>ESTRUCTURA DE PRECIOS</Text>
+            <View style={styles.priceGrid}>
+              <View style={styles.priceItem}>
+                <Text style={styles.priceLabel}>MENUDEO</Text>
+                <Text style={[styles.priceValue, { color: Colors.primary }]}>
+                  {formatCurrency(producto.precio_unitario)}
+                </Text>
+              </View>
+              {producto.precio_mayoreo > 0 && (
+                <View style={styles.priceItem}>
+                  <Text style={styles.priceLabel}>MAYOREO</Text>
+                  <Text style={[styles.priceValue, { color: Colors.success }]}>
+                    {formatCurrency(producto.precio_mayoreo)}
+                  </Text>
+                </View>
+              )}
+              {producto.costo_produccion != null && producto.costo_produccion > 0 && (
+                <View style={styles.priceItem}>
+                  <Text style={styles.priceLabel}>COSTO</Text>
+                  <Text style={[styles.priceValue, { color: Colors.warning }]}>
+                    {formatCurrency(producto.costo_produccion)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Details Card */}
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>ESPECIFICACIONES</Text>
+            <DetailRow label="SKU / CÓDIGO" value={producto.sku} icon="barcode-scan" />
+            <DetailRow label="CATEGORÍA" value={producto.categoria?.nombre?.toUpperCase() ?? 'SIN CATEGORÍA'} icon="shape-outline" />
+            <DetailRow label="TAMAÑO / TALLA" value={producto.tamano?.descripcion?.toUpperCase() ?? 'NO ESPECIFICADO'} icon="ruler" />
+            {producto.cantidad_minima_mayoreo != null && (
+              <DetailRow
+                label="MÍN. MAYOREO"
+                value={`${producto.cantidad_minima_mayoreo} UNIDADES`}
+                icon="account-group-outline"
+              />
+            )}
+          </View>
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Button
+              title="EDITAR PRODUCTO"
+              onPress={() => router.push(`/productos/create?id=${producto.id_producto}`)}
+              style={styles.actionBtn}
+              variant="primary"
+              size="lg"
+            />
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.deleteFooterBtn}
+            onPress={() => setShowDelete(true)}
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
+            <Text style={styles.deleteFooterText}>ELIMINAR ESTE ARTÍCULO</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        <ConfirmDialog
+          visible={showDelete}
+          title="Eliminar producto"
+          message={`¿Deseas eliminar "${producto.nombre}"? Esta acción no se puede deshacer.`}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDelete(false)}
+          confirmText={deleting ? 'ELIMINANDO...' : 'ELIMINAR'}
+          destructive
+        />
+      </SafeAreaView>
+    </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: Spacing.lg, 
+    paddingTop: Spacing.md, 
+    paddingBottom: Spacing.sm 
   },
-  backBtn: { padding: Spacing.xs, marginRight: Spacing.sm },
-  backIcon: { fontSize: 22, color: Colors.primary },
-  title: { ...Typography.h4, flex: 1 },
-  headerPlaceholder: { width: 32 },
-  deleteBtn: { padding: Spacing.xs },
-  deleteIcon: { fontSize: 20 },
+  backBtn: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 10, 
+    backgroundColor: '#FFF', 
+    borderWidth: 2, 
+    borderColor: Colors.dark, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  title: { ...Typography.h4, fontWeight: '900', color: Colors.dark },
+  headerPlaceholder: { width: 40 },
+  deleteHeaderBtn: { padding: Spacing.xs },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.md,
+    paddingBottom: 120,
   },
-  heroCard: { marginBottom: Spacing.md },
-  heroContent: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
-  heroEmoji: {
-    width: 64,
-    height: 64,
+  heroCard: { 
+    backgroundColor: '#FFF',
     borderRadius: BorderRadius.xl,
-    backgroundColor: Colors.primaryLight,
+    padding: Spacing.lg,
+    marginBottom: Spacing.lg,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    elevation: 6
+  },
+  heroContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  heroIconContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: BorderRadius.xl,
+    backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
-  heroEmojiText: { fontSize: 32 },
   heroInfo: { flex: 1 },
-  heroName: { ...Typography.h4, marginBottom: Spacing.xs },
-  heroSku: { ...Typography.caption, marginBottom: Spacing.sm },
-  heroBadge: { marginBottom: Spacing.xs },
-  sectionCard: { marginBottom: Spacing.md },
+  heroName: { fontSize: 18, fontWeight: '900', color: Colors.dark, marginBottom: 2 },
+  heroSku: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', marginBottom: Spacing.sm },
+  badgeRow: { flexDirection: 'row', gap: Spacing.xs },
+  card: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: BorderRadius.xl, 
+    padding: Spacing.lg, 
+    marginBottom: Spacing.lg, 
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark, 
+    shadowOffset: { width: 4, height: 4 }, 
+    shadowOpacity: 0.1, 
+    elevation: 3 
+  },
+  sectionTitle: { 
+    fontSize: 10,
+    fontWeight: '900', 
+    color: Colors.primary, 
+    textTransform: 'uppercase', 
+    letterSpacing: 1.5, 
+    marginBottom: Spacing.md 
+  },
   priceGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
+    gap: Spacing.md,
   },
   priceItem: {
     flex: 1,
-    minWidth: 90,
-    borderWidth: 1,
+    minWidth: 80,
+    backgroundColor: '#F9FAFB',
     borderRadius: BorderRadius.lg,
-    padding: Spacing.sm,
+    padding: Spacing.md,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
-  priceLabel: { ...Typography.caption, marginBottom: Spacing.xs },
-  priceValue: { ...Typography.bodySmall, fontWeight: '700' },
-  actions: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm },
-  actionBtn: { flex: 1 },
-  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  priceLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 4 },
+  priceValue: { fontSize: 16, fontWeight: '900' },
+  actions: { marginTop: Spacing.sm },
+  actionBtn: { 
+    shadowColor: Colors.dark, 
+    shadowOffset: { width: 4, height: 4 }, 
+    shadowOpacity: 1, 
+    elevation: 5 
+  },
+  deleteFooterBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginTop: Spacing.xl, 
+    gap: 8 
+  },
+  deleteFooterText: { 
+    fontSize: 11, 
+    fontWeight: '900', 
+    color: Colors.error, 
+    textDecorationLine: 'underline' 
+  },
+  notFound: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 },
 });
+

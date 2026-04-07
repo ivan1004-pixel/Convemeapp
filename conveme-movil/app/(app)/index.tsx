@@ -206,8 +206,20 @@ function AdminDashboard() {
           <AnimatedStatCard index={2} icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
         </View>
         <View style={styles.statsRow}>
-          <AnimatedStatCard index={3} icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} />
-          <AnimatedStatCard index={4} icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} />
+          <TouchableOpacity 
+            style={{flex: 1}} 
+            onPress={() => router.push('/(app)/empleados')}
+            activeOpacity={0.8}
+          >
+            <StatCard icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={{flex: 1}} 
+            onPress={() => router.push('/(app)/vendedores')}
+            activeOpacity={0.8}
+          >
+            <StatCard icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} />
+          </TouchableOpacity>
         </View>
         <View style={styles.statsRow}>
             <AnimatedStatCard index={5} icon="trending-up" label="Crecimiento Estimado" value={`${growth.toFixed(1)}%`} color={Colors.pink} />
@@ -227,8 +239,16 @@ function AdminDashboard() {
         <Text style={styles.sectionTitle}>Administración</Text>
         <View style={styles.actionsGrid}>
             <AnimatedQuickActionCard index={1} icon="warehouse" label="Inventario" onPress={() => router.push('/(app)/productos')} color={Colors.primary} />
-            <AnimatedQuickActionCard index={2} icon="clipboard-account-outline" label="Asignaciones" onPress={() => router.push('/(app)/asignaciones')} color={Colors.info} />
+            <AnimatedQuickActionCard index={2} icon="account-hard-hat" label="Empleados" onPress={() => router.push('/(app)/empleados')} color={Colors.warning} />
             <AnimatedQuickActionCard index={3} icon="receipt" label="Comprobantes" onPress={() => router.push('/(app)/comprobantes')} color={Colors.success} />
+        </View>
+      </Animated.View>
+
+      <Animated.View entering={FadeInUp.duration(500).delay(550)}>
+        <View style={styles.actionsGrid} style={{marginTop: 12}}>
+            <AnimatedQuickActionCard index={1} icon="clipboard-account-outline" label="Asignaciones" onPress={() => router.push('/(app)/asignaciones')} color={Colors.info} />
+            <AnimatedQuickActionCard index={2} icon="account-tie" label="Vendedores" onPress={() => router.push('/(app)/vendedores')} color={Colors.primary} />
+            <View style={{flex: 1}} />
         </View>
       </Animated.View>
 

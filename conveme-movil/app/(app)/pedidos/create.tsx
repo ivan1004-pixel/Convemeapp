@@ -27,6 +27,7 @@ import { Toast, useToast } from '../../../src/components/Toast';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Pedido, Cliente, Vendedor } from '../../../src/types';
+import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
 
 const ESTADOS_PEDIDO = ['Pendiente', 'Confirmado', 'Entregado', 'Cancelado'];
 
@@ -176,6 +177,8 @@ const DatePickerModal = memo(
 
 export default function PedidoCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { usuario } = useAuth();
+  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
 
   const { toast, show: showToast, hide: hideToast } = useToast();
   const { pedidos, addPedido, updatePedido: updatePedidoStore } =
@@ -185,6 +188,14 @@ export default function PedidoCreateScreen() {
   const existing: Pedido | undefined = isEditing
   ? pedidos.find((p) => p.id_pedido === Number(id))
   : undefined;
+
+  // Protección: Si es admin, redirigir a la lista de pedidos
+  useEffect(() => {
+    if (isAdmin) {
+      showToast('Solo los vendedores pueden crear pedidos', 'error');
+      router.replace('/pedidos');
+    }
+  }, [isAdmin]);
 
   const [form, setForm] = useState({
     cliente_id: (existing?.cliente?.id_cliente ??

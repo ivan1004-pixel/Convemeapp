@@ -27,6 +27,7 @@ import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Pedido } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -97,6 +98,8 @@ export default function PedidosScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
+  const { usuario } = useAuth();
+  const isAdmin = usuario?.rol_id === ROLE_ADMIN;
 
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const [loading, setLoading] = useState(false);
@@ -167,9 +170,11 @@ export default function PedidosScreen() {
                 <Text style={styles.subtitle}>{pedidos.length} registros</Text>
             </View>
             <View style={styles.headerActions}>
-                <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
-                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-                </TouchableOpacity>
+                {!isAdmin && (
+                  <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
+                      <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
@@ -218,8 +223,8 @@ export default function PedidosScreen() {
                     ? 'No hay pedidos que coincidan con tu búsqueda.'
                     : 'Aún no hay pedidos registrados.'
                 }
-                actionLabel={!search ? 'CREAR PEDIDO' : undefined}
-                onAction={!search ? () => router.push('/pedidos/create') : undefined}
+                actionLabel={!search && !isAdmin ? 'CREAR PEDIDO' : undefined}
+                onAction={!search && !isAdmin ? () => router.push('/pedidos/create') : undefined}
                 />
             }
             showsVerticalScrollIndicator={false}

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -25,6 +26,12 @@ import { parseGraphQLError, formatPhone } from '../../../src/utils';
 import type { Cliente } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
+const CLIENTE_IMAGES = [
+  require('../../../assets/images/fotoc1.jpg'),
+  require('../../../assets/images/fotoc2.jpg'),
+  require('../../../assets/images/fotoc3.jpg'),
+];
+
 function ClienteCard({
   item,
   onPress,
@@ -34,6 +41,10 @@ function ClienteCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
+  // IMAGEN DETERMINISTA BASADA EN ID
+  const imageIndex = item.id_cliente % CLIENTE_IMAGES.length;
+  const avatarImage = CLIENTE_IMAGES[imageIndex];
+
   return (
     <Pressable
       onPress={onPress}
@@ -46,30 +57,24 @@ function ClienteCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="account-group" size={32} color={Colors.info} />
+          <Image source={avatarImage} style={styles.avatarImg} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.nombre_completo}</Text>
-          <Text style={styles.cardMeta}>CLIENTE DESDE EL REGISTRO</Text>
+          <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
+          <Text style={styles.cardMeta}>CLIENTE REGISTRADO</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(26,26,26,0.3)" />
+        <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="email-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{item.email || 'Sin email'}</Text>
+          <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{item.email?.toUpperCase() || 'SIN EMAIL'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="phone-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{item.telefono ? formatPhone(item.telefono) : 'Sin teléfono'}</Text>
+          <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{item.telefono ? formatPhone(item.telefono) : 'SIN TELÉFONO'}</Text>
         </View>
-        {item.direccion_envio && (
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="map-marker-outline" size={16} color="rgba(26,26,26,0.5)" />
-            <Text style={styles.infoText} numberOfLines={1}>{item.direccion_envio}</Text>
-          </View>
-        )}
       </View>
     </Pressable>
   );
@@ -129,7 +134,7 @@ export default function ClientesScreen() {
     try {
       await deleteCliente(deleteId);
       removeCliente(deleteId);
-      showToast('Cliente eliminado correctamente', 'success');
+      showToast('CLIENTE ELIMINADO', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -146,11 +151,11 @@ export default function ClientesScreen() {
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.title}>Clientes</Text>
-                    <Text style={styles.subtitle}>{filtered.length} registros</Text>
+                    <Text style={styles.title}>CLIENTES</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
                 </View>
             </View>
             <View style={styles.headerActions}>
@@ -167,12 +172,12 @@ export default function ClientesScreen() {
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por nombre, email..."
+            placeholder="BUSCAR POR NOMBRE, EMAIL..."
           />
         </View>
 
         {loading && clientes.length === 0 ? (
-          <LoadingSpinner fullScreen message="Cargando clientes..." />
+          <LoadingSpinner fullScreen message="CARGANDO..." />
         ) : (
           <FlatList
             data={filtered}
@@ -198,11 +203,11 @@ export default function ClientesScreen() {
             }
             ListEmptyComponent={
               <EmptyState
-                icon="account-group"
+                icon="account-search"
                 title="Sin clientes"
-                message={search ? 'No hay resultados.' : 'Aún no hay clientes.'}
-                actionLabel="Agregar cliente"
-                onAction={() => router.push('/clientes/create')}
+                message={search ? 'No hay resultados que coincidan.' : 'Aún no hay clientes registrados.'}
+                actionLabel={!search ? "AGREGAR CLIENTE" : undefined}
+                onAction={!search ? () => router.push('/clientes/create') : undefined}
               />
             }
             showsVerticalScrollIndicator={false}
@@ -211,9 +216,9 @@ export default function ClientesScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar cliente"
-          message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
-          confirmText="Eliminar"
+          title="ELIMINAR CLIENTE"
+          message={`¿DESEAS ELIMINAR A "${deleteTarget?.nombre_completo.toUpperCase() ?? ''}"?`}
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -232,17 +237,17 @@ const styles = StyleSheet.create({
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   listEmpty: {
     flexGrow: 1,
@@ -253,11 +258,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 0.1,
+    elevation: 3,
   },
   cardPressed: {
     opacity: 0.9,
@@ -269,30 +275,35 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.info + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    overflow: 'hidden',
     marginRight: Spacing.md,
   },
+  avatarImg: { width: '100%', height: '100%' },
   headerInfo: {
     flex: 1,
   },
   cardName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '900',
+    color: Colors.dark,
   },
   cardMeta: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.info,
-    letterSpacing: 0.5,
+    fontSize: 9,
+    fontWeight: '800',
+    color: Colors.primary,
+    letterSpacing: 1,
   },
   cardContent: {
-    gap: Spacing.xs,
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 12,
   },
   infoRow: {
     flexDirection: 'row',
@@ -300,8 +311,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   infoText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.6)',
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
   },
 });
+
+
+

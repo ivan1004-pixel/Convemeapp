@@ -99,8 +99,32 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
   backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
   title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
-  scrollContent: { padding: 20 },
-  formCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
-  sectionTitle: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 20, textTransform: 'uppercase', letterSpacing: 1 },
-  submitBtn: { marginTop: 10, height: 55 },
+  scrollContent: { padding: 20, paddingBottom: 160 },
+  formCard: { 
+    backgroundColor: '#FFF', 
+    borderRadius: 24, 
+    padding: 20, 
+    borderWidth: 3, 
+    borderColor: Colors.dark, 
+    shadowColor: Colors.dark, 
+    shadowOffset: { width: 6, height: 6 }, 
+    shadowOpacity: 1,
+    elevation: 5
+  },
+  sectionTitle: { 
+    fontSize: 10, 
+    fontWeight: '900', 
+    color: Colors.primary, 
+    marginBottom: 20, 
+    textTransform: 'uppercase', 
+    letterSpacing: 1.5 
+  },
+  submitBtn: { 
+    marginTop: 20, 
+    height: 55,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 5
+  },
 });

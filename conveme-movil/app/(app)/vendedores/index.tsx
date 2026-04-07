@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -24,6 +25,12 @@ import { parseGraphQLError } from '../../../src/utils';
 import type { Vendedor } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
+const VENDEDOR_IMAGES = [
+  require('../../../assets/images/fotv1.jpg'),
+  require('../../../assets/images/fotv2.jpg'),
+  require('../../../assets/images/fotv3.jpg'),
+];
+
 function VendedorCard({
   item,
   onPress,
@@ -33,6 +40,9 @@ function VendedorCard({
   onPress: () => void;
   onLongPress: () => void;
 }) {
+  const imageIndex = item.id_vendedor % VENDEDOR_IMAGES.length;
+  const avatarImage = VENDEDOR_IMAGES[imageIndex];
+
   return (
     <Pressable
       onPress={onPress}
@@ -45,30 +55,24 @@ function VendedorCard({
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="account-tie" size={32} color={Colors.primary} />
+          <Image source={avatarImage} style={styles.avatarImg} />
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.nombre_completo}</Text>
+          <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
           <Text style={styles.cardMeta}>VENDEDOR - {item.escuela?.nombre?.toUpperCase() || 'SIN ESCUELA'}</Text>
         </View>
-        <MaterialCommunityIcons name="chevron-right" size={20} color="rgba(26,26,26,0.3)" />
+        <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
       </View>
 
       <View style={styles.cardContent}>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="email-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{item.email}</Text>
+          <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{item.email?.toUpperCase() || 'SIN EMAIL'}</Text>
         </View>
         <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="phone-outline" size={16} color="rgba(26,26,26,0.5)" />
-          <Text style={styles.infoText}>{item.telefono || 'Sin teléfono'}</Text>
+          <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
+          <Text style={styles.infoText}>{item.telefono || 'SIN TELÉFONO'}</Text>
         </View>
-        {item.instagram_handle && (
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="instagram" size={16} color="rgba(26,26,26,0.5)" />
-            <Text style={styles.infoText}>@{item.instagram_handle}</Text>
-          </View>
-        )}
       </View>
 
       <View style={styles.statsRow}>
@@ -105,7 +109,7 @@ export default function VendedoresScreen() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -117,7 +121,7 @@ export default function VendedoresScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [showToast]);
 
   useEffect(() => {
     fetchData();
@@ -140,19 +144,14 @@ export default function VendedoresScreen() {
     try {
       await deleteVendedor(deleteId);
       setVendedores((prev) => prev.filter((v) => v.id_vendedor !== deleteId));
-      showToast('Vendedor eliminado correctamente', 'success');
+      showToast('VENDEDOR ELIMINADO', 'success');
     } catch (err: any) {
-      const msg = err?.message || '';
-      if (msg.includes('foreign key constraint fails') || msg.includes('a parent row')) {
-        showToast('No se puede eliminar: el vendedor tiene registros asociados.', 'error');
-      } else {
-        showToast(parseGraphQLError(err), 'error');
-      }
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId]);
+  }, [deleteId, showToast]);
 
   const deleteTarget = vendedores.find((v) => v.id_vendedor === deleteId);
 
@@ -160,9 +159,14 @@ export default function VendedoresScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.header}>
-            <View>
-                <Text style={styles.title}>Vendedores</Text>
-                <Text style={styles.subtitle}>{filtered.length} registros</Text>
+            <View style={styles.headerTitleRow}>
+                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                </TouchableOpacity>
+                <View>
+                    <Text style={styles.title}>VENDEDORES</Text>
+                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
+                </View>
             </View>
             <View style={styles.headerActions}>
                 <TouchableOpacity onPress={() => router.push('/vendedores/create')} style={styles.addBtn}>
@@ -178,12 +182,12 @@ export default function VendedoresScreen() {
           <SearchBar
             value={search}
             onChangeText={setSearch}
-            placeholder="Buscar por nombre, escuela..."
+            placeholder="BUSCAR POR NOMBRE, ESCUELA..."
           />
         </View>
 
         {loading && vendedores.length === 0 ? (
-          <LoadingSpinner fullScreen message="Cargando vendedores..." />
+          <LoadingSpinner fullScreen message="CARGANDO..." />
         ) : (
           <FlatList
             data={filtered}
@@ -212,8 +216,8 @@ export default function VendedoresScreen() {
                 icon="account-tie"
                 title="Sin vendedores"
                 message={search ? 'No hay resultados.' : 'Aún no hay vendedores.'}
-                actionLabel="Agregar vendedor"
-                onAction={() => router.push('/vendedores/create')}
+                actionLabel={!search ? "AGREGAR VENDEDOR" : undefined}
+                onAction={!search ? () => router.push('/vendedores/create') : undefined}
               />
             }
             showsVerticalScrollIndicator={false}
@@ -222,9 +226,9 @@ export default function VendedoresScreen() {
 
         <ConfirmDialog
           visible={deleteId !== null}
-          title="Eliminar vendedor"
-          message={`¿Deseas eliminar a "${deleteTarget?.nombre_completo ?? ''}"?`}
-          confirmText="Eliminar"
+          title="ELIMINAR VENDEDOR"
+          message={`¿DESEAS ELIMINAR A "${deleteTarget?.nombre_completo.toUpperCase() ?? ''}"?`}
+          confirmText="ELIMINAR"
           onConfirm={handleDelete}
           onCancel={() => setDeleteId(null)}
           loading={deleting}
@@ -241,19 +245,19 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
   refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: Spacing.sm,
+    paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 120,
+    paddingBottom: 140,
   },
   listEmpty: {
     flexGrow: 1,
@@ -264,11 +268,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 3,
   },
   cardPressed: {
     opacity: 0.9,
@@ -280,31 +285,36 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   avatarContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: Colors.primary + '15',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    overflow: 'hidden',
     marginRight: Spacing.md,
   },
+  avatarImg: { width: '100%', height: '100%' },
   headerInfo: {
     flex: 1,
   },
   cardName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '900',
+    color: Colors.dark,
   },
   cardMeta: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
     color: Colors.primary,
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   cardContent: {
-    gap: Spacing.xs,
-    marginBottom: Spacing.md,
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 12,
+    marginBottom: 12,
   },
   infoRow: {
     flexDirection: 'row',
@@ -312,36 +322,38 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   infoText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: 'rgba(26,26,26,0.6)',
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(26,26,26,0.03)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderRadius: BorderRadius.lg,
     padding: Spacing.sm,
     gap: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
   },
   statItem: {
     flex: 1,
     alignItems: 'center',
   },
   statLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: 'rgba(26,26,26,0.4)',
+    fontSize: 8,
+    fontWeight: '900',
+    color: 'rgba(0,0,0,0.3)',
     letterSpacing: 1,
   },
   statValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 11,
+    fontWeight: '800',
+    color: Colors.dark,
   },
   statDivider: {
     width: 1,
-    height: 20,
-    backgroundColor: 'rgba(26,26,26,0.1)',
+    height: 15,
+    backgroundColor: 'rgba(0,0,0,0.1)',
   },
 });

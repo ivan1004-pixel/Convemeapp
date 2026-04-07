@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     color: Colors.dark,
   },
-  scroll: { padding: 20, paddingBottom: 100 },
+  scroll: { padding: 20, paddingBottom: 160 },
   formCard: {
     backgroundColor: '#FFF',
     borderRadius: BorderRadius.xl,

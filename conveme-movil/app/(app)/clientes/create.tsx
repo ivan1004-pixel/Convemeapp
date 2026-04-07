@@ -4,7 +4,7 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Pressable,
+  TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -18,16 +18,11 @@ import { Input } from '../../../src/components/ui/Input';
 import { Button } from '../../../src/components/ui/Button';
 import { Toast, useToast } from '../../../src/components/Toast';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
-import { useColorScheme } from '../../../src/hooks/use-color-scheme';
 import { parseGraphQLError } from '../../../src/utils';
 import type { Cliente } from '../../../src/types';
 
 export default function ClienteCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const { toast, show: showToast, hide: hideToast } = useToast();
   const { clientes, addCliente, updateCliente: updateClienteStore } = useClienteStore();
 
@@ -45,7 +40,7 @@ export default function ClienteCreateScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const setField = (field: string, value: string) => {
+  const setField = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
   };
@@ -53,10 +48,10 @@ export default function ClienteCreateScreen() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!form.nombre_completo.trim()) {
-      newErrors.nombre_completo = 'El nombre es requerido';
+      newErrors.nombre_completo = 'REQUERIDO';
     }
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      newErrors.email = 'Ingresa un email válido';
+      newErrors.email = 'EMAIL INVÁLIDO';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -64,7 +59,7 @@ export default function ClienteCreateScreen() {
 
   const handleSubmit = async () => {
     if (!validate()) {
-      showToast('Por favor completa los campos requeridos', 'warning');
+      showToast('COMPLETA LOS CAMPOS REQUERIDOS', 'warning');
       return;
     }
     setSubmitting(true);
@@ -79,11 +74,11 @@ export default function ClienteCreateScreen() {
       if (isEditing && existing) {
         const updated = await updateCliente({ id_cliente: existing.id_cliente, ...input });
         updateClienteStore({ ...existing, ...updated });
-        showToast('Cliente actualizado con éxito', 'success');
+        showToast('CLIENTE ACTUALIZADO', 'success');
       } else {
         const created = await createCliente(input);
         addCliente(created);
-        showToast('Cliente registrado con éxito', 'success');
+        showToast('CLIENTE REGISTRADO', 'success');
       }
       setTimeout(() => router.back(), 1500);
     } catch (err) {
@@ -97,11 +92,11 @@ export default function ClienteCreateScreen() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-          </Pressable>
+          </TouchableOpacity>
           <Text style={styles.title}>
-            {isEditing ? 'Editar Cliente' : 'Nuevo Cliente'}
+            {isEditing ? 'EDITAR CLIENTE' : 'NUEVO CLIENTE'}
           </Text>
           <View style={styles.headerPlaceholder} />
         </View>
@@ -112,23 +107,23 @@ export default function ClienteCreateScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Información del Cliente</Text>
+            <Text style={styles.sectionTitle}>INFORMACIÓN DEL CLIENTE</Text>
             
             <Input
-              label="Nombre completo *"
+              label="NOMBRE COMPLETO *"
               value={form.nombre_completo}
               onChangeText={(v) => setField('nombre_completo', v)}
-              placeholder="Ej. María García"
+              placeholder="EJ. MARÍA GARCÍA"
               error={errors.nombre_completo}
               autoCapitalize="words"
               leftIcon={<MaterialCommunityIcons name="account-outline" size={20} color={Colors.primary} />}
             />
 
             <Input
-              label="Email"
+              label="CORREO ELECTRÓNICO"
               value={form.email}
               onChangeText={(v) => setField('email', v)}
-              placeholder="correo@ejemplo.com"
+              placeholder="CORREO@EJEMPLO.COM"
               error={errors.email}
               keyboardType="email-address"
               autoCapitalize="none"
@@ -136,20 +131,20 @@ export default function ClienteCreateScreen() {
             />
 
             <Input
-              label="Teléfono"
+              label="TELÉFONO DE CONTACTO"
               value={form.telefono}
               onChangeText={(v) => setField('telefono', v)}
-              placeholder="10 dígitos"
+              placeholder="10 DÍGITOS"
               keyboardType="phone-pad"
               maxLength={10}
               leftIcon={<MaterialCommunityIcons name="phone-outline" size={20} color={Colors.primary} />}
             />
 
             <Input
-              label="Dirección de envío"
+              label="DIRECCIÓN DE ENVÍO"
               value={form.direccion_envio}
               onChangeText={(v) => setField('direccion_envio', v)}
-              placeholder="Calle, número, colonia..."
+              placeholder="CALLE, NÚMERO, COLONIA..."
               leftIcon={<MaterialCommunityIcons name="map-marker-outline" size={20} color={Colors.primary} />}
               multiline
             />
@@ -162,6 +157,14 @@ export default function ClienteCreateScreen() {
             size="lg"
             style={styles.submitBtn}
           />
+
+          <TouchableOpacity 
+            style={styles.cancelBtn} 
+            onPress={() => router.back()}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelBtnText}>CANCELAR Y VOLVER</Text>
+          </TouchableOpacity>
         </ScrollView>
 
         <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
@@ -170,10 +173,9 @@ export default function ClienteCreateScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,47 +184,50 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.md,
     paddingBottom: Spacing.sm,
   },
-  backBtn: {
-    padding: Spacing.xs,
-  },
-  title: {
-    ...Typography.h3,
-    fontWeight: '900',
-    color: '#1A1A1A',
-  },
-  headerPlaceholder: {
-    width: 34,
-  },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { ...Typography.h4, fontWeight: '900', color: Colors.dark },
+  headerPlaceholder: { width: 40 },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 120,
   },
   card: {
     backgroundColor: '#FFFFFF',
-    borderRadius: BorderRadius.xxl,
+    borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 4,
   },
   sectionTitle: {
-    ...Typography.bodySmall,
+    fontSize: 10,
     fontWeight: '900',
     color: Colors.primary,
     marginBottom: Spacing.md,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
   },
+  statusBox: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: BorderRadius.lg, borderWidth: 2, gap: 12 },
+  activeBox: { borderColor: Colors.success, backgroundColor: Colors.success + '05' },
+  inactiveBox: { borderColor: Colors.error, backgroundColor: Colors.error + '05' },
+  statusTitle: { fontSize: 14, fontWeight: '900' },
+  statusDesc: { fontSize: 10, fontWeight: '700', color: 'rgba(0,0,0,0.4)', marginTop: 2 },
+  miniSwitch: { width: 40, height: 20, borderRadius: 20, padding: 2, justifyContent: 'center' },
+  switchKnob: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#FFF' },
   submitBtn: {
     marginTop: Spacing.sm,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
     elevation: 5,
   },
+  cancelBtn: { marginTop: Spacing.lg, paddingVertical: Spacing.md, alignItems: 'center' },
+  cancelBtnText: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', textDecorationLine: 'underline' },
 });
+
+
