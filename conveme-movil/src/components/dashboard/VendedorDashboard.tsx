@@ -6,11 +6,12 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
-  useWindowDimensions,
+  Dimensions,
 } from 'react-native';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { useAuth } from '../../hooks/useAuth';
 import { getVentas } from '../../services/venta.service';
@@ -20,48 +21,58 @@ import { formatCurrency } from '../../utils';
 import { Colors } from '../../theme/colors';
 import { PredictionChart } from '../PredictionChart';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_MARGIN = 6;
+const GRID_PADDING = 20;
+const BUTTON_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (CARD_MARGIN * 6)) / 3;
+
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-function QuickActionCard({ icon, label, onPress, color, width }: { icon: IconName; label: string; onPress: () => void; color?: string, width: number }) {
+function QuickActionCard({ icon, label, onPress, color, index }: { icon: IconName; label: string; onPress: () => void; color?: string, index: number }) {
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[styles.actionCardContainer, { width }]}>
-      <View style={styles.actionCardShadow}>
-        <View style={[styles.actionCard, { borderTopColor: color ?? Colors.primary }]}>
-          <View style={[styles.actionIconContainer, { backgroundColor: (color ?? Colors.primary) + '15' }]}>
-            <MaterialCommunityIcons name={icon} size={24} color={color ?? Colors.primary} />
-          </View>
-          <Text style={styles.actionLabel} numberOfLines={1}>{label.toUpperCase()}</Text>
+    <Animated.View entering={FadeInUp.duration(500).delay(100 * index)} style={styles.animatedCardContainer}>
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7} style={[styles.actionCard, { borderTopColor: color ?? Colors.primary }]}>
+        <View style={[styles.actionIconContainer, { backgroundColor: (color ?? Colors.primary) + '15' }]}>
+          <MaterialCommunityIcons name={icon} size={22} color={color ?? Colors.primary} />
         </View>
-      </View>
-    </TouchableOpacity>
+        <Text style={styles.actionLabel} numberOfLines={1}>{label}</Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 
-function StatCard({ icon, label, value, color, width, isFullWidth }: { icon: IconName; label: string; value: string; color: string, width?: number, isFullWidth?: boolean }) {
+function StatCard({ icon, label, value, color, index }: { icon: IconName; label: string; value: string; color: string, index: number }) {
   return (
-    <View style={[styles.statCardShadow, isFullWidth ? { width: '100%' } : { width }]}>
+    <Animated.View entering={FadeInUp.duration(500).delay(100 * index)} style={{ flex: 1 }}>
       <View style={[styles.statCard, { borderLeftColor: color }]}>
-        <View style={styles.statWatermark}><MaterialCommunityIcons name={icon} size={64} color={color + '08'} /></View>
-        <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}><MaterialCommunityIcons name={icon} size={20} color={color} /></View>
+        <View style={styles.statWatermark}><MaterialCommunityIcons name={icon} size={60} color={color + '08'} /></View>
+        <View style={[styles.statIconBox, { backgroundColor: color + '15' }]}><MaterialCommunityIcons name={icon} size={18} color={color} /></View>
         <View style={styles.statInfo}>
           <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
-          <Text style={styles.statLabel}>{label.toUpperCase()}</Text>
+          <Text style={styles.statLabel}>{label}</Text>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
+}
+
+// Helper para regresión
+function getLinearRegression(data: { label: string, value: number }[]) {
+  const n = data.length;
+  if (n < 2) return { predict: (x: number) => (data[0]?.value || 0) };
+  let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+  data.forEach((point, i) => { sumX += i; sumY += point.value; sumXY += i * point.value; sumXX += i * i; });
+  const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+  return { predict: (x: number) => (isNaN(slope) ? data[0].value : slope * x + intercept) };
 }
 
 export function VendedorDashboard() {
   const { usuario, logout } = useAuth();
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState({ ventasMes: 0, comisiones: 0, pedidosPend: 0, pinesMes: 0 });
   const [historicalData, setHistoricalData] = useState<{ label: string, value: number }[]>([]);
-
-  const GRID_PADDING = 20;
-  const GAP = 12;
-  const cardWidth = (SCREEN_WIDTH - (GRID_PADDING * 2) - GAP) / 2;
+  const [prediction, setPrediction] = useState({ value: 0, label: '' });
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -72,10 +83,21 @@ export function VendedorDashboard() {
         getCortes()
       ]);
       
+      // Filtrar por el vendedor logueado usando id_vendedor
       const miID = usuario?.id_vendedor;
-      const misVentas = ventas.filter((v: any) => v.vendedor?.id_vendedor === miID || v.id_vendedor === miID);
-      const misPedidos = pedidos.filter((p: any) => p.vendedor?.id_vendedor === miID || p.id_vendedor === miID);
-      const misCortes = cortes.filter((c: any) => c.vendedor?.id_vendedor === miID || c.id_vendedor === miID);
+
+      const misVentas = ventas.filter((v: any) => 
+        v.vendedor?.id_vendedor === miID || 
+        v.id_vendedor === miID
+      );
+      const misPedidos = pedidos.filter((p: any) => 
+        p.vendedor?.id_vendedor === miID || 
+        p.id_vendedor === miID
+      );
+      const misCortes = cortes.filter((c: any) => 
+        c.vendedor?.id_vendedor === miID || 
+        c.id_vendedor === miID
+      );
 
       const now = new Date();
       const m = now.getMonth();
@@ -91,23 +113,30 @@ export function VendedorDashboard() {
         return d.getMonth() === m && d.getFullYear() === y;
       });
 
+      const totalVentasMes = mesActualVentas.length;
+      
+      // NUEVA LÓGICA: Calcular total de "pines" (unidades) vendidos en el mes
       const totalPinesVentas = mesActualVentas.reduce((acc: number, v: any) => 
         acc + (v.detalles || []).reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0), 0
       );
+
       const totalPinesCortes = mesActualCortes.reduce((acc: number, c: any) => 
         acc + (c.detalles || []).reduce((sum: number, d: any) => sum + (d.cantidad_vendida || 0), 0), 0
       );
 
       const totalPines = totalPinesVentas + totalPinesCortes;
-      const totalComisiones = totalPines * 6.6;
+      
+      // La comisión se calcula como: total de pines * 6.6
+      const totalComisiones = totalPines * 6.5;
 
       setStats({
-        ventasMes: mesActualVentas.length,
+        ventasMes: totalVentasMes,
         comisiones: totalComisiones,
         pedidosPend: misPedidos.filter((p: any) => p.estado === 'Pendiente').length,
         pinesMes: totalPines
       });
 
+      // Gráfica solo con sus ventas
       const revenueByMonth: Record<string, number> = {};
       misVentas.forEach((v: any) => {
         const d = new Date(v.fecha_venta);
@@ -118,6 +147,15 @@ export function VendedorDashboard() {
 
       const historical = Object.keys(revenueByMonth).sort().slice(-5).map(key => ({ label: key.split('-')[1], value: revenueByMonth[key] }));
       setHistoricalData(historical);
+
+      if (historical.length > 1) {
+        const regression = getLinearRegression(historical);
+        const lastMonthLabel = Object.keys(revenueByMonth).sort().slice(-1)[0];
+        const lastMonthDate = new Date(lastMonthLabel + '-02T12:00:00Z');
+        const nextMonthDate = new Date(lastMonthDate.setMonth(lastMonthDate.getMonth() + 1));
+        const nextMonthLabel = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
+        setPrediction({ value: regression.predict(historical.length) > 0 ? regression.predict(historical.length) : 0, label: nextMonthLabel });
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -128,50 +166,41 @@ export function VendedorDashboard() {
   useEffect(() => { loadStats(); }, [loadStats]);
 
   return (
-    <ScrollView 
-      contentContainerStyle={styles.scrollContent} 
-      showsVerticalScrollIndicator={false} 
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}
-    >
+    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}>
       <View style={styles.dashHeader}>
-        <View style={styles.dashHeaderRow}>
-          <View>
-            <Image source={require('../../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
-            <Text style={styles.greeting}>HOLA, {usuario?.username?.toUpperCase() ?? 'VENDEDOR'}</Text>
+        <Animated.View entering={FadeInUp.duration(500)}>
+          <View style={styles.dashHeaderRow}>
+            <View>
+              <Image source={require('../../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
+              <Text style={styles.greeting}>Bienvenido, {usuario?.username ?? 'Vendedor'}</Text>
+            </View>
+            <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutBtn} hitSlop={10}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
-        </View>
-
-        <View style={styles.mainKpiContainer}>
-          <StatCard icon="cash-multiple" label="Mis comisiones" value={formatCurrency(stats.comisiones)} color={Colors.info} isFullWidth />
-        </View>
+        </Animated.View>
 
         <View style={styles.statsRow}>
-          <StatCard icon="pin" label="Pines Mes" value={String(stats.pinesMes)} color={Colors.success} width={cardWidth} />
-          <StatCard icon="point-of-sale" label="Ventas Mes" value={String(stats.ventasMes)} color={Colors.primary} width={cardWidth} />
+          <StatCard index={1} icon="pin" label="Pines Mes" value={String(stats.pinesMes)} color={Colors.success} />
+          <StatCard index={2} icon="cash-multiple" label="Mis Comisiones" value={formatCurrency(stats.comisiones)} color={Colors.info} />
         </View>
-
         <View style={styles.statsRow}>
-          <StatCard icon="clipboard-list-outline" label="Pedidos Pend." value={String(stats.pedidosPend)} color={Colors.warning} width={cardWidth} />
-          <View style={{ width: cardWidth }} />
+          <StatCard index={3} icon="point-of-sale" label="Ventas Mes" value={String(stats.ventasMes)} color={Colors.primary} />
+          <StatCard index={4} icon="clipboard-list-outline" label="Pedidos Pend." value={String(stats.pedidosPend)} color={Colors.warning} />
         </View>
       </View>
 
-      <View style={styles.section}>
+      <View style={{ marginTop: 20 }}>
         <Text style={styles.sectionTitle}>MIS ACCIONES</Text>
-        <View style={styles.actionGrid}>
-          <QuickActionCard icon="plus-circle" label="Nueva Venta" onPress={() => router.push('/ventas/create')} color={Colors.primary} width={cardWidth} />
-          <QuickActionCard icon="account-group" label="Mis Clientes" onPress={() => router.push('/clientes')} color={Colors.success} width={cardWidth} />
-          <QuickActionCard icon="clipboard-list" label="Mis Pedidos" onPress={() => router.push('/pedidos')} color={Colors.warning} width={cardWidth} />
+        <View style={styles.actionsGrid}>
+          <QuickActionCard index={1} icon="plus-circle" label="Nueva Venta" onPress={() => router.push('/ventas/create')} color={Colors.primary} />
+          <QuickActionCard index={2} icon="account-group" label="Mis Clientes" onPress={() => router.push('/clientes')} color={Colors.success} />
+          <QuickActionCard index={3} icon="clipboard-list" label="Mis Pedidos" onPress={() => router.push('/pedidos')} color={Colors.warning} />
         </View>
       </View>
 
-      <View style={[styles.section, { paddingBottom: 100 }]}>
-        <View style={styles.predSectionShadow}>
-          <View style={styles.predSection}>
-            <Text style={styles.predTitle}>MI TENDENCIA PERSONAL</Text>
-            <PredictionChart data={historicalData} predictedValue={0} predictedLabel="" />
-          </View>
+      <View style={{ paddingHorizontal: 20, marginTop: 30, paddingBottom: 100 }}>
+        <View style={styles.predSection}>
+          <Text style={styles.predTitle}>MI TENDENCIA PERSONAL</Text>
+          <PredictionChart data={historicalData} predictedValue={prediction.value} predictedLabel={prediction.label} />
         </View>
       </View>
     </ScrollView>
@@ -179,31 +208,26 @@ export function VendedorDashboard() {
 }
 
 const styles = StyleSheet.create({
-  scrollContent: { paddingBottom: 100, backgroundColor: Colors.secondary },
-  dashHeader: { paddingHorizontal: 20, paddingTop: 20 },
-  dashHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 25 },
-  logoImage: { width: 140, height: 40 },
-  greeting: { fontSize: 12, fontWeight: '900', color: 'rgba(0,0,0,0.4)', letterSpacing: 1, marginTop: 4 },
-  logoutBtn: { backgroundColor: '#FFF', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 10, borderWidth: 2, borderColor: Colors.dark },
-  logoutText: { fontSize: 11, fontWeight: '900', color: Colors.primary },
-  mainKpiContainer: { marginBottom: 16 },
+  scrollContent: { paddingBottom: 100 },
+  dashHeader: { paddingHorizontal: 20, paddingTop: 10 },
+  dashHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  logoImage: { width: 130, height: 35 },
+  greeting: { fontSize: 12, color: 'rgba(0,0,0,0.5)', fontWeight: '700', marginLeft: 2 },
+  logoutBtn: { backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 2, borderColor: Colors.dark },
+  logoutText: { fontSize: 10, fontWeight: '900', color: Colors.primary },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  statCardShadow: { backgroundColor: Colors.dark, borderRadius: 16 },
-  statCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, borderWidth: 2, borderColor: Colors.dark, transform: [{ translateX: -4 }, { translateY: -4 }], overflow: 'hidden' },
+  statCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 0, overflow: 'hidden' },
   statWatermark: { position: 'absolute', right: -15, bottom: -15 },
-  statIconBox: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  statIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   statInfo: { gap: 2 },
-  statValue: { fontSize: 22, fontWeight: '900', color: '#1A1A1A' },
-  statLabel: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', letterSpacing: 0.5 },
-  section: { marginTop: 20, paddingHorizontal: 20 },
-  sectionTitle: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginBottom: 16, letterSpacing: 1.5 },
-  actionGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
-  actionCardContainer: { marginBottom: 4 },
-  actionCardShadow: { backgroundColor: Colors.dark, borderRadius: 14 },
-  actionCard: { backgroundColor: '#FFFFFF', borderRadius: 14, paddingVertical: 18, paddingHorizontal: 10, alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, borderTopWidth: 5, transform: [{ translateX: -4 }, { translateY: -4 }], height: 100, justifyContent: 'center' },
-  actionIconContainer: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  actionLabel: { fontSize: 10, fontWeight: '900', color: '#1A1A1A', textAlign: 'center' },
-  predSectionShadow: { backgroundColor: Colors.dark, borderRadius: 20 },
-  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, transform: [{ translateX: -6 }, { translateY: -6 }] },
-  predTitle: { fontSize: 16, fontWeight: '900', marginBottom: 20, letterSpacing: 1 },
+  statValue: { fontSize: 18, fontWeight: '900', color: '#1A1A1A' },
+  statLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' },
+  sectionTitle: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 10, marginBottom: 12, paddingHorizontal: 20, textTransform: 'uppercase', letterSpacing: 1 },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: GRID_PADDING - CARD_MARGIN, justifyContent: 'flex-start' },
+  animatedCardContainer: { width: BUTTON_WIDTH, margin: CARD_MARGIN },
+  actionCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, borderTopWidth: 4, height: 95, justifyContent: 'center' },
+  actionIconContainer: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  actionLabel: { fontSize: 8.5, fontWeight: '900', color: '#1A1A1A', textAlign: 'center', width: '100%', textTransform: 'uppercase' },
+  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
+  predTitle: { fontSize: 16, fontWeight: '900', marginBottom: 15 },
 });

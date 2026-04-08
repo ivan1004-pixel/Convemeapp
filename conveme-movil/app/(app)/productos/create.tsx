@@ -150,8 +150,6 @@ export default function ProductoCreateScreen() {
             <View style={styles.headerPlaceholder} />
           </View>
 
-          <Text style={styles.legend}>* Son obligatorios los campos marcados con asterisco</Text>
-
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -160,8 +158,7 @@ export default function ProductoCreateScreen() {
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>INFORMACIÓN GENERAL</Text>
                 <Input
-                    label="NOMBRE DEL PRODUCTO"
-                    required
+                    label="NOMBRE DEL PRODUCTO *"
                     value={form.nombre}
                     onChangeText={(v) => setField('nombre', v)}
                     placeholder="EJ. CAMISETA UNIVERSITARIA"
@@ -171,8 +168,7 @@ export default function ProductoCreateScreen() {
                 />
 
                 <Input
-                    label="SKU / CÓDIGO"
-                    required
+                    label="SKU / CÓDIGO *"
                     value={form.sku}
                     onChangeText={(v) => setField('sku', v)}
                     placeholder="EJ. CAM-001"
@@ -184,7 +180,7 @@ export default function ProductoCreateScreen() {
 
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>CLASIFICACIÓN</Text>
-                <Text style={styles.labelSelect}>CATEGORÍA <Text style={{ color: Colors.error }}>*</Text></Text>
+                <Text style={styles.labelSelect}>CATEGORÍA *</Text>
                 <TouchableOpacity
                     style={[styles.selector, errors.categoria && styles.selectorError, { marginBottom: Spacing.md }]}
                     onPress={() => { setSearchQuery(''); setShowCategoriaModal(true); }}
@@ -196,7 +192,7 @@ export default function ProductoCreateScreen() {
                     <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />
                 </TouchableOpacity>
 
-                <Text style={styles.labelSelect}>TAMAÑO / TALLA <Text style={{ color: Colors.error }}>*</Text></Text>
+                <Text style={styles.labelSelect}>TAMAÑO / TALLA *</Text>
                 <TouchableOpacity
                     style={[styles.selector, errors.tamano && styles.selectorError]}
                     onPress={() => { setSearchQuery(''); setShowTamanoModal(true); }}
@@ -212,8 +208,7 @@ export default function ProductoCreateScreen() {
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>PRECIOS Y VENTA</Text>
                 <Input
-                    label="PRECIO UNITARIO (MENUDEO)"
-                    required
+                    label="PRECIO UNITARIO (MENUDEO) *"
                     value={form.precio_unitario}
                     onChangeText={(v) => setField('precio_unitario', v)}
                     placeholder="0.00"
@@ -271,7 +266,7 @@ export default function ProductoCreateScreen() {
 
             <TouchableOpacity 
                 style={styles.cancelBtn} 
-                onPress={() => router.push('/(app)')}
+                onPress={() => router.back()}
                 disabled={submitting}
             >
                 <Text style={styles.cancelBtnText}>CANCELAR Y VOLVER</Text>
@@ -354,13 +349,6 @@ const styles = StyleSheet.create({
   },
   title: { ...Typography.h4, fontWeight: '900', color: Colors.dark },
   headerPlaceholder: { width: 40 },
-  legend: {
-    fontSize: 12,
-    color: 'rgba(0,0,0,0.5)',
-    fontStyle: 'italic',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
   scrollContent: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,

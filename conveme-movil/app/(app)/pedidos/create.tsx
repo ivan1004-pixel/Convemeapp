@@ -294,13 +294,11 @@ export default function PedidoCreateScreen() {
           <View style={styles.headerPlaceholder} />
         </View>
 
-        <Text style={styles.legend}>* Son obligatorios los campos marcados con asterisco</Text>
-
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Asignación</Text>
             <View style={styles.selectorContainer}>
-              <Text style={styles.selectorLabel}>Cliente <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={styles.selectorLabel}>Cliente *</Text>
               <Pressable onPress={() => { setSearchQuery(''); setShowClienteModal(true); }} style={[styles.selectorButton, errors.cliente_id && styles.selectorError]}>
                 <MaterialCommunityIcons name="account-outline" size={20} color={Colors.primary} />
                 <Text style={[styles.selectorValue, !selectedCliente && styles.selectorPlaceholder]}>
@@ -329,7 +327,7 @@ export default function PedidoCreateScreen() {
 
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Información Financiera</Text>
-            <Input label="Monto Total" required value={form.monto_total} onChangeText={(v) => setField('monto_total', v)} placeholder="0.00" keyboardType="decimal-pad" error={errors.monto_total} leftIcon={<MaterialCommunityIcons name="currency-usd" size={20} color={Colors.primary} />} />
+            <Input label="Monto Total *" value={form.monto_total} onChangeText={(v) => setField('monto_total', v)} placeholder="0.00" keyboardType="decimal-pad" error={errors.monto_total} leftIcon={<MaterialCommunityIcons name="currency-usd" size={20} color={Colors.primary} />} />
             <Input label="Anticipo" value={form.anticipo} onChangeText={(v) => setField('anticipo', v)} placeholder="0.00" keyboardType="decimal-pad" error={errors.anticipo} leftIcon={<MaterialCommunityIcons name="cash" size={20} color={Colors.primary} />} />
           </View>
 
@@ -347,7 +345,7 @@ export default function PedidoCreateScreen() {
             </View>
 
             <View style={styles.selectorContainer}>
-              <Text style={styles.selectorLabel}>Estado <Text style={{ color: Colors.error }}>*</Text></Text>
+              <Text style={styles.selectorLabel}>Estado *</Text>
               <View style={styles.estadosRow}>
                 {ESTADOS_PEDIDO.map((estado) => (
                   <Pressable key={estado} onPress={() => setField('estado', estado)} style={[styles.estadoChip, form.estado === estado && styles.estadoChipSelected]}>
@@ -409,13 +407,6 @@ const styles = StyleSheet.create({
   backBtn: { padding: Spacing.xs },
   title: { ...Typography.h3, fontWeight: '900', color: '#1A1A1A' },
   headerPlaceholder: { width: 34 },
-  legend: {
-    fontSize: 12,
-    color: 'rgba(26,26,26,0.5)',
-    fontStyle: 'italic',
-    paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xs,
-  },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.lg },
   card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xxl, padding: Spacing.lg, marginBottom: Spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 },
   sectionTitle: { ...Typography.bodySmall, fontWeight: '900', color: Colors.primary, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1 },

@@ -15,7 +15,6 @@ import { useColorScheme } from '../../hooks/use-color-scheme';
 
 interface InputProps extends TextInputProps {
   label?: string;
-  required?: boolean;
   error?: string;
   helperText?: string;
   leftIcon?: React.ReactNode;
@@ -25,7 +24,6 @@ interface InputProps extends TextInputProps {
 
 export const Input: React.FC<InputProps> = ({
   label,
-  required,
   error,
   helperText,
   leftIcon,
@@ -43,14 +41,12 @@ export const Input: React.FC<InputProps> = ({
     ? Colors.error
     : isFocused
     ? Colors.primary
-    : theme.border;
+    : Colors.dark;
 
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text style={[styles.label, { color: theme.text }]}>
-            {label} {required && <Text style={{ color: Colors.error }}>*</Text>}
-        </Text>
+        <Text style={[styles.label, { color: Colors.dark }]}>{label}</Text>
       )}
       <View
         style={[
@@ -58,8 +54,13 @@ export const Input: React.FC<InputProps> = ({
           {
             borderColor,
             backgroundColor: theme.surface,
+            borderWidth: isFocused ? 3 : 2,
+            shadowColor: Colors.dark,
+            shadowOffset: isFocused ? { width: 2, height: 2 } : { width: 4, height: 4 },
+            shadowOpacity: 1,
+            shadowRadius: 0,
+            elevation: isFocused ? 2 : 4,
           },
-          isFocused && styles.focused,
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}

@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Tabs, router } from 'expo-router';
+import { useEffect } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../src/theme/colors';
 import { useAuthStore } from '../../src/store/authStore';
@@ -26,10 +27,14 @@ export default function AppLayout() {
   const tabBarStyle = {
     backgroundColor: '#FFFFFF',
     borderTopWidth: 3,
-    borderTopColor: Colors.dark,
-    height: 75,
-    paddingBottom: 15,
-    paddingTop: 8,
+    borderColor: Colors.dark,
+    height: 85,
+    paddingBottom: 25,
+    paddingTop: 10,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
   };
 
   return (
@@ -37,14 +42,17 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: 'rgba(26,26,26,0.5)',
+        tabBarInactiveTintColor: Colors.dark,
         tabBarStyle,
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '900',
-          textTransform: 'uppercase',
           letterSpacing: 0.5,
+          marginTop: 4,
         },
+        tabBarIconStyle: {
+          marginBottom: 0,
+        }
       }}
     >
       <Tabs.Screen
@@ -52,8 +60,11 @@ export default function AppLayout() {
         options={{
           title: 'Inicio',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="view-dashboard" color={color} size={28} />
+            <TabIcon name="home" color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)'),
         }}
       />
       <Tabs.Screen
@@ -61,8 +72,11 @@ export default function AppLayout() {
         options={{
           title: 'Ventas',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="cash-register" color={color} size={28} />
+            <TabIcon name="cash-register" color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)/ventas'),
         }}
       />
       <Tabs.Screen
@@ -70,22 +84,40 @@ export default function AppLayout() {
         options={{
           title: 'Pedidos',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name="package-variant" color={color} size={28} />
+            <TabIcon name="package-variant" color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)/pedidos'),
+        }}
+      />
+      <Tabs.Screen
+        name="productos"
+        options={isAdmin ? {
+          title: 'Productos',
+          tabBarIcon: ({ color, size }) => (
+            <TabIcon name="shopping" color={color} size={size} />
+          ),
+        } : HIDDEN}
+        listeners={{
+          tabPress: () => {
+            if (isAdmin) router.push('/(app)/productos');
+          },
         }}
       />
       <Tabs.Screen
         name="mas"
         options={{
-          title: isAdmin ? 'Admin' : 'Menú',
+          title: isAdmin ? 'Admin' : 'Más',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name={isAdmin ? 'shield-crown' : 'menu'} color={color} size={28} />
+            <TabIcon name={isAdmin ? 'shield-crown' : 'menu'} color={color} size={size} />
           ),
+        }}
+        listeners={{
+          tabPress: () => router.push('/(app)/mas'),
         }}
       />
 
-      {/* RUTAS OCULTAS DEL TAB BAR */}
-      <Tabs.Screen name="productos" options={HIDDEN} />
       <Tabs.Screen name="clientes" options={HIDDEN} />
       <Tabs.Screen name="empleados" options={HIDDEN} />
       <Tabs.Screen name="vendedores" options={HIDDEN} />

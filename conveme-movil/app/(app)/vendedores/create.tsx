@@ -466,6 +466,7 @@ const styles = StyleSheet.create({
   stepLine: { width: 40, height: 2, backgroundColor: 'rgba(0,0,0,0.1)' },
   lineActive: { backgroundColor: Colors.primary },
   scrollContent: { padding: Spacing.lg, paddingBottom: 160 },
+  mandatoryLegend: { fontSize: 9, fontWeight: '900', color: Colors.primary, marginBottom: 15, textAlign: 'center', backgroundColor: Colors.primary + '10', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.primary + '30', letterSpacing: 0.5 },
   card: { 
     backgroundColor: '#FFF', 
     borderRadius: BorderRadius.xl, 

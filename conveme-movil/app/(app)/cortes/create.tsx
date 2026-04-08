@@ -351,12 +351,9 @@ export default function CorteCreateScreen() {
             <View style={styles.headerPlaceholder} />
           </View>
 
-          <Text style={styles.legend}>* Son obligatorios los campos marcados con asterisco</Text>
-
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View style={styles.card}>
               <Text style={styles.sectionTitle}>Origen del Corte</Text>
-              <Text style={styles.labelSelect}>VENDEDOR <Text style={{ color: Colors.error }}>*</Text></Text>
               <TouchableOpacity
                 style={[styles.selector, errors.vendedor_id && styles.selectorError, { marginBottom: Spacing.md }]}
                 onPress={() => { setSearchQuery(''); setShowVendedorModal(true); }}
@@ -369,7 +366,6 @@ export default function CorteCreateScreen() {
                 {(!isEditing && isAdmin) && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />}
               </TouchableOpacity>
 
-              <Text style={styles.labelSelect}>ASIGNACIÓN <Text style={{ color: Colors.error }}>*</Text></Text>
               <TouchableOpacity
                 style={[styles.selector, errors.asignacion_id && styles.selectorError]}
                 onPress={() => { setShowAsignacionModal(true); }}

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getVentas, deleteVenta } from '../../../src/services/venta.service';
 import { useVentaStore } from '../../../src/store/ventaStore';
@@ -66,30 +66,30 @@ export default function VendedorVentaDetail() {
     ventaFromStore.id_vendedor === usuario?.id_vendedor
   ) ? ventaFromStore : undefined;
 
-  const fetchIfNeeded = useCallback(async () => {
-    if (!ventaFromStore) {
-      setLoading(true);
-      try {
-        const data = await getVentas();
-        setVentas(data);
-      } catch (err) {
-        Alert.alert('No se pudo cargar la venta', parseGraphQLError(err));
-      } finally {
-        setLoading(false);
-      }
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await getVentas();
+      setVentas(data);
+    } catch (err) {
+      Alert.alert('No se pudo cargar la venta', parseGraphQLError(err));
+    } finally {
+      setLoading(false);
     }
-  }, [ventaFromStore, setVentas]);
+  }, [setVentas]);
 
-  useEffect(() => {
-    fetchIfNeeded();
-  }, [fetchIfNeeded]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
     try {
       await deleteVenta(ventaId);
       removeVenta(ventaId);
-      router.push('/(app)');
+      router.back();
     } catch (err) {
       Alert.alert('No se pudo eliminar la venta', parseGraphQLError(err));
     } finally {
@@ -119,7 +119,7 @@ export default function VendedorVentaDetail() {
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>DETALLE DE VENTA</Text>
