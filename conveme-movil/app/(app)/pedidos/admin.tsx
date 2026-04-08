@@ -122,7 +122,7 @@ export default function PedidosScreen() {
       const data = await getPedidos();
       setPedidos(data || []);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudieron cargar los pedidos', parseGraphQLError(err));
     } finally {
       setLoading(false);
     }
@@ -134,7 +134,7 @@ export default function PedidosScreen() {
       const data = await getPedidos();
       setPedidos(data || []);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudieron actualizar los pedidos', parseGraphQLError(err));
     } finally {
       setRefreshing(false);
     }
@@ -169,7 +169,7 @@ export default function PedidosScreen() {
       await deletePedido(deleteId);
       removePedido(deleteId);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar el pedido', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setDeleteId(null);

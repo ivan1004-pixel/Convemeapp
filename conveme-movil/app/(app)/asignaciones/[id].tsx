@@ -52,7 +52,7 @@ export default function AsignacionDetailScreen() {
       const found = list.find((a) => a.id_asignacion === Number(id));
       setAsignacion(found ?? null);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo cargar la asignación', parseGraphQLError(err));
     } finally {
       setLoading(false);
     }

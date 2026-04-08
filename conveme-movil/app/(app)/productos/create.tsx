@@ -126,7 +126,7 @@ export default function ProductoCreateScreen() {
       }
       router.push('/(app)');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('No se pudo guardar el producto', parseGraphQLError(err));
     } finally {
       setSubmitting(false);
     }

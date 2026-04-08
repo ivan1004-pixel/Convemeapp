@@ -77,7 +77,7 @@ export default function VendedorDetailScreen() {
       const found = list.find((v) => v.id_vendedor === Number(id));
       setVendedor(found ?? null);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo cargar el vendedor', parseGraphQLError(err));
     } finally {
       setLoading(false);
     }
@@ -94,7 +94,7 @@ export default function VendedorDetailScreen() {
       await deleteVendedor(vendedor.id_vendedor);
       router.push('/(app)');
     } catch (err: any) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar el vendedor', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowConfirm(false);

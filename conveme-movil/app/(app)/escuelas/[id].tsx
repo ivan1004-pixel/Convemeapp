@@ -49,7 +49,7 @@ export default function EscuelaDetailScreen() {
       const data = await getEscuelas();
       setEscuelas(data);
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo cargar la escuela', parseGraphQLError(err));
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,7 @@ export default function EscuelaDetailScreen() {
       removeEscuela(escuela.id_escuela);
       router.push('/(app)');
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar la escuela', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowConfirm(false);

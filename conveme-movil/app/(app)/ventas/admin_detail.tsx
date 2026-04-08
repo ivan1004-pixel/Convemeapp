@@ -65,7 +65,7 @@ export default function AdminVentaDetail() {
         const data = await getVentas();
         setVentas(data);
       } catch (err) {
-        Alert.alert('ERROR', parseGraphQLError(err));
+        Alert.alert('No se pudo cargar la venta', parseGraphQLError(err));
       } finally {
         setLoading(false);
       }
@@ -83,7 +83,7 @@ export default function AdminVentaDetail() {
       removeVenta(ventaId);
       router.push('/(app)');
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar la venta', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowDelete(false);

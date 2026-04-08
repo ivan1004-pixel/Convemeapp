@@ -128,7 +128,7 @@ export default function ProductosScreen() {
       const data = await getProductos();
       setProductos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('No se pudieron cargar los productos', parseGraphQLError(err));
     } finally {
       setLoading(false);
     }
@@ -140,7 +140,7 @@ export default function ProductosScreen() {
       const data = await getProductos();
       setProductos(data);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('No se pudieron actualizar los productos', parseGraphQLError(err));
     } finally {
       setRefreshing(false);
     }
@@ -168,7 +168,7 @@ export default function ProductosScreen() {
       await deleteProducto(deleteId);
       removeProducto(deleteId);
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar el producto', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setDeleteId(null);

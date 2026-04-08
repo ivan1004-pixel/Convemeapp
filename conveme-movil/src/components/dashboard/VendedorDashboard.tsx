@@ -70,7 +70,7 @@ function getLinearRegression(data: { label: string, value: number }[]) {
 export function VendedorDashboard() {
   const { usuario, logout } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({ ventasMes: 0, comisiones: 0, pedidosPend: 0 });
+  const [stats, setStats] = useState({ ventasMes: 0, comisiones: 0, pedidosPend: 0, pinesMes: 0 });
   const [historicalData, setHistoricalData] = useState<{ label: string, value: number }[]>([]);
   const [prediction, setPrediction] = useState({ value: 0, label: '' });
 
@@ -115,22 +115,25 @@ export function VendedorDashboard() {
 
       const totalVentasMes = mesActualVentas.length;
       
-      // Calcular comisiones de ventas (10% del monto total)
-      const comisionesVentas = mesActualVentas.reduce((acc: number, v: any) => 
-        acc + (v.monto_total * 0.10), 0
+      // NUEVA LÓGICA: Calcular total de "pines" (unidades) vendidos en el mes
+      const totalPinesVentas = mesActualVentas.reduce((acc: number, v: any) => 
+        acc + (v.detalles || []).reduce((sum: number, d: any) => sum + (d.cantidad || 0), 0), 0
       );
-      
-      // Calcular comisiones de cortes (campo comision_vendedor si existe)
-      const comisionesCortes = mesActualCortes.reduce((acc: number, c: any) => 
-        acc + (c.comision_vendedor || 0), 0
+
+      const totalPinesCortes = mesActualCortes.reduce((acc: number, c: any) => 
+        acc + (c.detalles || []).reduce((sum: number, d: any) => sum + (d.cantidad_vendida || 0), 0), 0
       );
+
+      const totalPines = totalPinesVentas + totalPinesCortes;
       
-      const totalComisiones = comisionesVentas + comisionesCortes;
+      // La comisión se calcula como: total de pines * 6.6
+      const totalComisiones = totalPines * 6.5;
 
       setStats({
         ventasMes: totalVentasMes,
         comisiones: totalComisiones,
-        pedidosPend: misPedidos.filter((p: any) => p.estado === 'Pendiente').length
+        pedidosPend: misPedidos.filter((p: any) => p.estado === 'Pendiente').length,
+        pinesMes: totalPines
       });
 
       // Gráfica solo con sus ventas
@@ -176,12 +179,12 @@ export function VendedorDashboard() {
         </Animated.View>
 
         <View style={styles.statsRow}>
-          <StatCard index={1} icon="point-of-sale" label="Ventas Mes" value={String(stats.ventasMes)} color={Colors.success} />
+          <StatCard index={1} icon="pin" label="Pines Mes" value={String(stats.pinesMes)} color={Colors.success} />
           <StatCard index={2} icon="cash-multiple" label="Mis Comisiones" value={formatCurrency(stats.comisiones)} color={Colors.info} />
         </View>
         <View style={styles.statsRow}>
-          <StatCard index={3} icon="clipboard-list-outline" label="Pedidos Pend." value={String(stats.pedidosPend)} color={Colors.warning} />
-          <View style={{ flex: 1 }} />
+          <StatCard index={3} icon="point-of-sale" label="Ventas Mes" value={String(stats.ventasMes)} color={Colors.primary} />
+          <StatCard index={4} icon="clipboard-list-outline" label="Pedidos Pend." value={String(stats.pedidosPend)} color={Colors.warning} />
         </View>
       </View>
 

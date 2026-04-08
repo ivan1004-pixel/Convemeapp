@@ -74,7 +74,7 @@ export default function ProductoDetailScreen() {
         const data = await getProductos();
         setProductos(data);
       } catch (err) {
-        Alert.alert('Error', parseGraphQLError(err));
+        Alert.alert('No se pudo cargar el producto', parseGraphQLError(err));
       } finally {
         setLoading(false);
       }
@@ -92,7 +92,7 @@ export default function ProductoDetailScreen() {
       removeProducto(productoId);
       router.push('/(app)');
     } catch (err) {
-      Alert.alert('Error', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar el producto', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowDelete(false);

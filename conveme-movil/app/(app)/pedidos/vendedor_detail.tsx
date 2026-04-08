@@ -71,7 +71,7 @@ export default function VendedorPedidoDetail() {
         const data = await getPedidos();
         setPedidos(data);
       } catch (err) {
-        Alert.alert('ERROR', parseGraphQLError(err));
+        Alert.alert('No se pudo cargar el pedido', parseGraphQLError(err));
       } finally {
         setLoading(false);
       }
@@ -89,7 +89,7 @@ export default function VendedorPedidoDetail() {
       removePedido(pedidoId);
       router.push('/(app)');
     } catch (err) {
-      Alert.alert('ERROR', parseGraphQLError(err));
+      Alert.alert('No se pudo eliminar el pedido', parseGraphQLError(err));
     } finally {
       setDeleting(false);
       setShowDelete(false);
