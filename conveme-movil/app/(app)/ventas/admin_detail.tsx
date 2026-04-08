@@ -176,10 +176,10 @@ export default function AdminVentaDetail() {
             />
             {isAdmin && (
               <Button
-                title="EDITAR VENTA"
+                title="EDITAR CAMBIOS"
                 onPress={() => router.push(`/ventas/create?id=${venta.id_venta}`)}
                 style={[styles.actionBtn, { marginTop: 15 }]}
-                variant="outline"
+                variant="secondary"
                 size="lg"
               />
             )}

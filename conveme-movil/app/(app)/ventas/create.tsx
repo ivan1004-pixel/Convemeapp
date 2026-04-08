@@ -656,6 +656,7 @@ const styles = StyleSheet.create({
   title: { ...Typography.h4, flex: 1, fontWeight: '900' },
   headerPlaceholder: { width: 32 },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingBottom: 150 },
+  mandatoryLegend: { fontSize: 9, fontWeight: '900', color: Colors.primary, marginBottom: 15, textAlign: 'center', backgroundColor: Colors.primary + '10', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.primary + '30', letterSpacing: 0.5 },
   section: { marginBottom: Spacing.lg },
   sectionLabel: { fontSize: 12, fontWeight: '900', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
   selectButton: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, borderRadius: BorderRadius.lg, borderWidth: 2, borderColor: Colors.dark },

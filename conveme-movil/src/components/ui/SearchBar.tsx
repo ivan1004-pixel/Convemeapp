@@ -55,12 +55,23 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       />
       {value.length > 0 && (
         <Pressable
-          onPress={() => onChangeText('')}
-          style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}
+          onPress={() => {
+            onChangeText('');
+          }}
+          style={({ pressed }) => [
+            styles.clearButton,
+            pressed && styles.pressed,
+            { backgroundColor: isFocused ? 'rgba(0,0,0,0.05)' : 'transparent' }
+          ]}
           accessibilityLabel="Limpiar búsqueda"
           accessibilityRole="button"
+          hitSlop={10}
         >
-          <Text style={[styles.clearIcon, { color: Colors.dark }]}>✕</Text>
+          <MaterialCommunityIcons 
+            name="close-circle" 
+            size={20} 
+            color={isFocused ? Colors.primary : "rgba(26,26,26,0.3)"} 
+          />
         </Pressable>
       )}
     </View>

@@ -26,17 +26,11 @@ export default function AppLayout() {
 
   const tabBarStyle = {
     backgroundColor: '#FFFFFF',
-    borderTopWidth: 0,
-    height: 70,
-    paddingBottom: 12,
-    paddingTop: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 10,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopWidth: 3,
+    borderColor: Colors.dark,
+    height: 85,
+    paddingBottom: 25,
+    paddingTop: 10,
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -48,13 +42,17 @@ export default function AppLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: 'rgba(26,26,26,0.5)',
+        tabBarInactiveTintColor: Colors.dark,
         tabBarStyle,
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '900',
           letterSpacing: 0.5,
+          marginTop: 4,
         },
+        tabBarIconStyle: {
+          marginBottom: 0,
+        }
       }}
     >
       <Tabs.Screen

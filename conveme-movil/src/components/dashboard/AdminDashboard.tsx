@@ -245,7 +245,8 @@ export function AdminDashboard() {
         <View style={styles.actionsGrid}>
           <QuickActionCard index={1} icon="cash-register" label="Ventas" onPress={() => router.push('/ventas')} color={Colors.success} />
           <QuickActionCard index={2} icon="chart-areaspline" label="Resumen" onPress={() => router.push('/resumen-mensual')} color={Colors.info} />
-          <QuickActionCard index={3} icon="bank" label="Cortes" onPress={() => router.push('/cortes')} color={Colors.warning} />
+          <QuickActionCard index={3} icon="notebook-outline" label="Bitácora del mes" onPress={() => router.push('/resumen-mensual')} color={Colors.pink} />
+          <QuickActionCard index={4} icon="bank" label="Cortes" onPress={() => router.push('/cortes')} color={Colors.warning} />
         </View>
       </Animated.View>
 

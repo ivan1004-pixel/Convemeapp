@@ -41,23 +41,23 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'secondary':
         return {
-          container: { backgroundColor: Colors.primaryLight, borderWidth: 0 },
-          text: { color: Colors.primary },
-          indicator: Colors.primary,
+          container: { backgroundColor: Colors.primaryLight, borderWidth: 3, borderColor: Colors.dark },
+          text: { color: Colors.dark },
+          indicator: Colors.dark,
         };
       case 'outline':
         return {
           container: {
             backgroundColor: 'transparent',
-            borderWidth: 1.5,
-            borderColor: Colors.primary,
+            borderWidth: 3,
+            borderColor: Colors.dark,
           },
-          text: { color: Colors.primary },
-          indicator: Colors.primary,
+          text: { color: Colors.dark },
+          indicator: Colors.dark,
         };
       case 'danger':
         return {
-          container: { backgroundColor: Colors.error, borderWidth: 0 },
+          container: { backgroundColor: Colors.error, borderWidth: 3, borderColor: Colors.dark },
           text: { color: '#ffffff' },
           indicator: '#ffffff',
         };
@@ -70,7 +70,7 @@ export const Button: React.FC<ButtonProps> = ({
       case 'primary':
       default:
         return {
-          container: { backgroundColor: Colors.primary, borderWidth: 0 },
+          container: { backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark },
           text: { color: '#ffffff' },
           indicator: '#ffffff',
         };
@@ -94,6 +94,7 @@ export const Button: React.FC<ButtonProps> = ({
             paddingVertical: Spacing.md,
             paddingHorizontal: Spacing.xl,
             borderRadius: BorderRadius.lg,
+            minHeight: 56, // Accessible touch target
           },
           text: { ...Typography.button, fontSize: 18 },
         };
@@ -104,6 +105,7 @@ export const Button: React.FC<ButtonProps> = ({
             paddingVertical: Spacing.sm + 2,
             paddingHorizontal: Spacing.lg,
             borderRadius: BorderRadius.lg,
+            minHeight: 48, // Minimum touch target
           },
           text: { ...Typography.button },
         };
@@ -114,6 +116,14 @@ export const Button: React.FC<ButtonProps> = ({
   const sizeStyles = getSizeStyles();
   const isDisabled = disabled || loading;
 
+  const shadowStyle: ViewStyle = variant !== 'ghost' ? {
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  } : {};
+
   return (
     <Pressable
       onPress={onPress}
@@ -122,6 +132,7 @@ export const Button: React.FC<ButtonProps> = ({
         styles.base,
         variantStyles.container,
         sizeStyles.container,
+        shadowStyle,
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
         style,

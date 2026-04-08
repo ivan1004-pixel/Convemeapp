@@ -266,7 +266,7 @@ export default function ProductoCreateScreen() {
 
             <TouchableOpacity 
                 style={styles.cancelBtn} 
-                onPress={() => router.push('/(app)')}
+                onPress={() => router.back()}
                 disabled={submitting}
             >
                 <Text style={styles.cancelBtnText}>CANCELAR Y VOLVER</Text>
