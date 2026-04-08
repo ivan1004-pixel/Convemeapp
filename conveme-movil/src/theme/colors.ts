@@ -1,54 +1,56 @@
-// ConveMe Neobrutalist Design System
+// src/theme/colors.ts
 export const Colors = {
-  // Brand colors - Neobrutalist Style
-  primary: '#0301ff',        // brand-blue
-  primaryLight: '#f88fea',   // brand-pink
-  secondary: '#ede0d1',      // brand-beige
-  success: '#00D084',
-  successLight: '#E6F9F3',   // Verde claro para fondos
-  info: '#0301ff',
-  warning: '#FFD600',
-  error: '#FF0000',
-  dark: '#1A1A1A',
+  // Brand colors - Neobrutalist Style (Ajustados para accesibilidad WCAG AA)
+  primary: '#f88fea',        // Rosa neobrutalista (Principal)
+  primaryLight: '#ffb7f5',   // Rosa más claro para acentos
+  secondary: '#FDF8F5',      // Beige muy claro para fondos (mejor contraste)
+  success: '#008557',        // Verde accesible
+  successLight: '#E6F9F3',
+  info: '#0000EE',
+  warning: '#FFB800',        // Amarillo con contraste mejorado
+  error: '#D32F2F',          // Rojo accesible
+  dark: '#1A1A1A',           // Negro para bordes y texto principal
   light: '#FFFFFF',
   textDark: '#1A1A1A',
   textLight: '#FFFFFF',
   
   // Neobrutalist accent
   pink: '#f88fea',
-  blue: '#0301ff',
-  beige: '#ede0d1',
-  beigeDark: '#D7C2AB', // Beige más oscuro para degradados
+  blue: '#0000EE',
+  beige: '#FDF8F5',
+  beigeDark: '#D7C2AB',
   lilac: '#D1C4E9',
 
-  // Gradient stops
-  gradientStart: '#f88fea',
-  gradientEnd: '#0301ff',
+  // UI Colors
+  border: '#1A1A1A',
+  shadow: '#1A1A1A',
+  cardBg: '#FFFFFF',
+  muted: '#595959',
 
   light2: {
     text: '#1A1A1A',
-    background: '#ede0d1', // Revertido a beige
-    tint: '#0301ff',
-    icon: '#0301ff',
-    tabIconDefault: '#6B7280',
-    tabIconSelected: '#0301ff',
-    tabBarBackground: '#ede0d1', // Revertido a beige
+    background: '#FDF8F5',
+    tint: '#f88fea',
+    icon: '#1A1A1A',
+    tabIconDefault: '#595959',
+    tabIconSelected: '#f88fea',
+    tabBarBackground: '#FFFFFF',
     border: '#1A1A1A',
-    card: '#F9F4EE',
-    muted: '#4B5563',
-    surface: '#F9F4EE',
+    card: '#FFFFFF',
+    muted: '#595959',
+    surface: '#FFFFFF',
   },
   dark2: {
     text: '#1A1A1A',
-    background: '#ede0d1', // Revertido a beige
-    tint: '#0301ff',
-    icon: '#0301ff',
-    tabIconDefault: '#6B7280',
-    tabIconSelected: '#0301ff',
-    tabBarBackground: '#ede0d1',
+    background: '#FDF8F5',
+    tint: '#f88fea',
+    icon: '#1A1A1A',
+    tabIconDefault: '#595959',
+    tabIconSelected: '#f88fea',
+    tabBarBackground: '#FFFFFF',
     border: '#1A1A1A',
-    card: '#F9F4EE',
-    muted: '#4B5563',
-    surface: '#F9F4EE',
+    card: '#FFFFFF',
+    muted: '#595959',
+    surface: '#FFFFFF',
   },
 };

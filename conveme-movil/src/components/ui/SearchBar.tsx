@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
@@ -35,13 +36,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: '#F9F4EE', // Beige claro fijo para todas las barras de búsqueda
+          backgroundColor: '#F9F4EE',
           borderColor: isFocused ? Colors.primary : Colors.dark,
+          borderWidth: isFocused ? 2 : 1.5,
         },
-        isFocused && styles.focused,
         style,
       ]}
     >
+      <MaterialCommunityIcons 
+        name="magnify" 
+        size={20} 
+        color={isFocused ? Colors.primary : "rgba(26,26,26,0.4)"} 
+        style={styles.searchIcon} 
+      />
       <TextInput
         style={[styles.input, { color: Colors.dark }]}
         value={value}
@@ -52,15 +59,21 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         clearButtonMode="never"
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        autoCapitalize="none"
       />
       {value.length > 0 && (
         <Pressable
-          onPress={() => onChangeText('')}
-          style={({ pressed }) => [styles.clearButton, pressed && styles.pressed]}
+          onPress={() => {
+            onChangeText('');
+          }}
+          style={({ pressed }) => [
+            styles.clearButton,
+            pressed && { opacity: 0.5, transform: [{ scale: 0.9 }] },
+          ]}
           accessibilityLabel="Limpiar búsqueda"
           accessibilityRole="button"
         >
-          <Text style={[styles.clearIcon, { color: Colors.dark }]}>✕</Text>
+          <MaterialCommunityIcons name="close-circle" size={20} color={isFocused ? Colors.primary : Colors.dark} />
         </Pressable>
       )}
     </View>

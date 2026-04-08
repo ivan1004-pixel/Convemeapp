@@ -130,7 +130,7 @@ export default function VentasScreen() {
       <SafeAreaView style={{flex: 1}} edges={['top']}>
         <View style={styles.header}>
             <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+                <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
                     <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>

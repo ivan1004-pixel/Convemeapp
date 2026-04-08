@@ -46,9 +46,17 @@ export const useAuth = () => {
   };
 
   const logout = async () => {
-    await logoutService();
-    storeLogout();
-    router.replace('/auth/splash');
+    if (isLoading) return;
+    setIsLoading(true);
+    try {
+      await logoutService();
+      storeLogout();
+      router.replace('/auth/splash');
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return { token, usuario, isAuthenticated, isAdmin, isLoading, login, logout };

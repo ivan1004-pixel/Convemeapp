@@ -14,7 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createVenta, updateVenta } from '../../../src/services/venta.service';
+import { createVenta, updateVenta, getVenta } from '../../../src/services/venta.service';
 import { getProductos } from '../../../src/services/producto.service';
 import { getClientes, buscarClientes } from '../../../src/services/cliente.service';
 import { getVendedores } from '../../../src/services/vendedor.service';
@@ -305,25 +305,25 @@ export default function VentaCreateScreen() {
     setSubmitting(true);
     try {
       if (isEditing && existing) {
-        const updated = await updateVenta({
+        // Enviar actualización al backend incluyendo los detalles si el backend lo permite
+        // Aunque el service no los retorne, los enviamos por si acaso el input lo soporta
+        await updateVenta({
           id_venta: existing.id_venta,
           cliente_id: form.cliente_id,
           vendedor_id: form.vendedor_id,
           metodo_pago: form.metodo_pago,
           monto_total,
+          detalles: cart.map(item => ({
+            producto_id: item.producto_id,
+            cantidad: item.cantidad,
+            precio_unitario: item.precio_unitario
+          }))
         });
         
-        const updatedWithDetails = { 
-          ...existing, 
-          ...updated, 
-          detalles: cart.map(item => ({
-            id_det_venta: 0,
-            cantidad: item.cantidad,
-            precio_unitario: item.precio_unitario,
-            producto: { id_producto: item.producto_id, nombre: item.nombre, sku: item.sku, precio_unitario: item.precio_unitario }
-          }))
-        };
-        updateVentaStore(updatedWithDetails as any);
+        // RE-FETCH: Obtener el objeto completo actualizado para asegurar que los detalles están correctos
+        const updatedFull = await getVenta(existing.id_venta);
+        updateVentaStore(updatedFull);
+        
         show('Venta actualizada correctamente', 'success');
       } else {
         const created = await createVenta({
@@ -399,6 +399,10 @@ export default function VentaCreateScreen() {
           </Text>
           <View style={styles.headerPlaceholder} />
         </View>
+
+        <Text style={[styles.legend, { color: theme.muted }]}>
+          * Son obligatorios los campos marcados con asterisco
+        </Text>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -655,6 +659,12 @@ const styles = StyleSheet.create({
   backIcon: { fontSize: 22, color: Colors.primary },
   title: { ...Typography.h4, flex: 1, fontWeight: '900' },
   headerPlaceholder: { width: 32 },
+  legend: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xs,
+  },
   scrollContent: { paddingHorizontal: Spacing.lg, paddingBottom: 150 },
   section: { marginBottom: Spacing.lg },
   sectionLabel: { fontSize: 12, fontWeight: '900', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },

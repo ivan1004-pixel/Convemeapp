@@ -15,6 +15,7 @@ import { useColorScheme } from '../../hooks/use-color-scheme';
 
 interface InputProps extends TextInputProps {
   label?: string;
+  required?: boolean;
   error?: string;
   helperText?: string;
   leftIcon?: React.ReactNode;
@@ -24,6 +25,7 @@ interface InputProps extends TextInputProps {
 
 export const Input: React.FC<InputProps> = ({
   label,
+  required,
   error,
   helperText,
   leftIcon,
@@ -46,7 +48,9 @@ export const Input: React.FC<InputProps> = ({
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
-        <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: theme.text }]}>
+            {label} {required && <Text style={{ color: Colors.error }}>*</Text>}
+        </Text>
       )}
       <View
         style={[
