@@ -52,7 +52,13 @@ export const Card: React.FC<CardProps> = ({
   const cardStyle = [
     styles.card,
     { backgroundColor: theme.card, borderColor: theme.border },
-    Shadows.md,
+    {
+      shadowColor: Colors.dark,
+      shadowOffset: { width: 6, height: 6 },
+      shadowOpacity: 1,
+      shadowRadius: 0,
+      elevation: 6,
+    },
     style,
   ];
 

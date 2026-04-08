@@ -244,9 +244,8 @@ export function AdminDashboard() {
         <Text style={styles.sectionTitle}>Acciones de Negocio</Text>
         <View style={styles.actionsGrid}>
           <QuickActionCard index={1} icon="cash-register" label="Ventas" onPress={() => router.push('/ventas')} color={Colors.success} />
-          <QuickActionCard index={2} icon="chart-areaspline" label="Resumen" onPress={() => router.push('/resumen-mensual')} color={Colors.info} />
-          <QuickActionCard index={3} icon="notebook-outline" label="Bitácora del mes" onPress={() => router.push('/resumen-mensual')} color={Colors.pink} />
-          <QuickActionCard index={4} icon="bank" label="Cortes" onPress={() => router.push('/cortes')} color={Colors.warning} />
+          <QuickActionCard index={2} icon="notebook-outline" label="Bitácora del mes" onPress={() => router.push('/resumen-mensual')} color={Colors.pink} />
+          <QuickActionCard index={3} icon="bank" label="Cortes" onPress={() => router.push('/cortes')} color={Colors.warning} />
         </View>
       </Animated.View>
 
@@ -310,6 +309,6 @@ const styles = StyleSheet.create({
   calendarAddBtn: { padding: 8, marginRight: 4, backgroundColor: Colors.primary + '10', borderRadius: 8 },
   viewAllEvents: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, marginTop: 4 },
   viewAllText: { fontSize: 10, fontWeight: '900', color: Colors.primary },
-  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark },
+  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, elevation: 6 },
   predTitle: { fontSize: 16, fontWeight: '900', marginBottom: 15 },
 });

@@ -67,18 +67,7 @@ export default function AppLayout() {
           tabPress: () => router.push('/(app)'),
         }}
       />
-      <Tabs.Screen
-        name="ventas"
-        options={{
-          title: 'Ventas',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="cash-register" color={color} size={size} />
-          ),
-        }}
-        listeners={{
-          tabPress: () => router.push('/(app)/ventas'),
-        }}
-      />
+      <Tabs.Screen name="ventas" options={HIDDEN} />
       <Tabs.Screen
         name="pedidos"
         options={{
@@ -91,26 +80,13 @@ export default function AppLayout() {
           tabPress: () => router.push('/(app)/pedidos'),
         }}
       />
-      <Tabs.Screen
-        name="productos"
-        options={isAdmin ? {
-          title: 'Productos',
-          tabBarIcon: ({ color, size }) => (
-            <TabIcon name="shopping" color={color} size={size} />
-          ),
-        } : HIDDEN}
-        listeners={{
-          tabPress: () => {
-            if (isAdmin) router.push('/(app)/productos');
-          },
-        }}
-      />
+      <Tabs.Screen name="productos" options={HIDDEN} />
       <Tabs.Screen
         name="mas"
         options={{
-          title: isAdmin ? 'Admin' : 'Más',
+          title: 'Más',
           tabBarIcon: ({ color, size }) => (
-            <TabIcon name={isAdmin ? 'shield-crown' : 'menu'} color={color} size={size} />
+            <TabIcon name="menu" color={color} size={size} />
           ),
         }}
         listeners={{
