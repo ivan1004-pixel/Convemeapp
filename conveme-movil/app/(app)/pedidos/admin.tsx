@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { FadeInUp, Layout, FadeInRight } from 'react-native-reanimated';
 import { getPedidos, deletePedido } from '../../../src/services/pedido.service';
 import { usePedidoStore } from '../../../src/store/pedidoStore';
 import { Colors } from '../../../src/theme/colors';
@@ -38,71 +39,78 @@ const ESTADO_BADGE: Record<string, string> = {
 
 function PedidoCard({
   item,
+  index,
   onPress,
   onLongPress,
 }: {
   item: Pedido;
+  index: number;
   onPress: () => void;
   onLongPress: () => void;
 }) {
   const statusColor = ESTADO_BADGE[item.estado?.toUpperCase() ?? 'PENDIENTE'] ?? Colors.dark;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(500).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.cardHeader}>
-        <Text style={styles.cardId}>PEDIDO #{item.id_pedido}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
-            <Text style={styles.statusText}>{item.estado?.toUpperCase() ?? 'PENDIENTE'}</Text>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={({ pressed }) => [
+          styles.card,
+          pressed && styles.cardPressed,
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.cardId}>PEDIDO #{item.id_pedido}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusColor }]}>
+              <Text style={styles.statusText}>{item.estado?.toUpperCase() ?? 'PENDIENTE'}</Text>
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.cardAmount}>
-        {formatCurrency(item.monto_total)}
-      </Text>
+        <Text style={styles.cardAmount}>
+          {formatCurrency(item.monto_total)}
+        </Text>
 
-      <View style={styles.cardBody}>
-        <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="account" size={16} color={Colors.dark} />
-            <Text style={styles.cardMeta}>
-              CLIENTE: {item.cliente?.nombre_completo?.toUpperCase() ?? 'SIN CLIENTE'}
-            </Text>
-        </View>
-        <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="calendar" size={16} color={Colors.dark} />
-            <Text style={styles.cardMeta}>
-              FECHA: {formatDate(item.fecha_pedido).toUpperCase()}
-            </Text>
-        </View>
-        {item.fecha_entrega_estimada && (
+        <View style={styles.cardBody}>
           <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="truck-delivery" size={16} color={Colors.dark} />
-            <Text style={styles.cardMeta}>
-              ENTREGA: {formatDate(item.fecha_entrega_estimada).toUpperCase()}
-            </Text>
+              <MaterialCommunityIcons name="account" size={16} color={Colors.dark} />
+              <Text style={styles.cardMeta}>
+                CLIENTE: {item.cliente?.nombre_completo?.toUpperCase() ?? 'SIN CLIENTE'}
+              </Text>
           </View>
-        )}
-        {item.anticipo != null && item.anticipo > 0 && (
-          <View style={[styles.infoRow, styles.anticipoRow]}>
-            <MaterialCommunityIcons name="cash-check" size={16} color={Colors.success} />
-            <Text style={[styles.cardMeta, { color: Colors.success, fontWeight: '900' }]}>
-              ANTICIPO: {formatCurrency(item.anticipo)}
-            </Text>
+          <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="calendar" size={16} color={Colors.dark} />
+              <Text style={styles.cardMeta}>
+                FECHA: {formatDate(item.fecha_pedido).toUpperCase()}
+              </Text>
           </View>
-        )}
-      </View>
+          {item.fecha_entrega_estimada && (
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="truck-delivery" size={16} color={Colors.dark} />
+              <Text style={styles.cardMeta}>
+                ENTREGA: {formatDate(item.fecha_entrega_estimada).toUpperCase()}
+              </Text>
+            </View>
+          )}
+          {item.anticipo != null && item.anticipo > 0 && (
+            <View style={[styles.infoRow, styles.anticipoRow]}>
+              <MaterialCommunityIcons name="cash-check" size={16} color={Colors.success} />
+              <Text style={[styles.cardMeta, { color: Colors.success, fontWeight: '900' }]}>
+                ANTICIPO: {formatCurrency(item.anticipo)}
+              </Text>
+            </View>
+          )}
+        </View>
 
-      <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>VER DETALLES</Text>
-         <MaterialCommunityIcons name="arrow-right" size={18} color={Colors.dark} />
-      </View>
-    </Pressable>
+        <View style={styles.cardFooter}>
+           <Text style={styles.footerAction}>VER DETALLES</Text>
+           <MaterialCommunityIcons name="arrow-right" size={18} color={Colors.dark} />
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -179,10 +187,10 @@ export default function PedidosScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>PEDIDOS</Text>
@@ -197,15 +205,15 @@ export default function PedidosScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.searchContainer}>
+        <Animated.View entering={FadeInUp.delay(200)} style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
             placeholder="BUSCAR POR CLIENTE, ESTADO..."
           />
-        </View>
+        </Animated.View>
 
         {loading && pedidos.length === 0 ? (
             <LoadingSpinner message="CARGANDO PEDIDOS..." />
@@ -217,9 +225,10 @@ export default function PedidosScreen() {
                 styles.listContent,
                 filtered.length === 0 && styles.listEmpty,
             ]}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
                 <PedidoCard
                 item={item}
+                index={index}
                 onPress={() => router.push(`/pedidos/${item.id_pedido}`)}
                 onLongPress={() => setDeleteId(item.id_pedido)}
                 />
@@ -268,12 +277,12 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
   title: { fontSize: 24, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
   subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 0 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.md,
@@ -291,16 +300,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: Colors.dark,
     shadowColor: Colors.dark,
-    shadowOffset: { width: 4, height: 4 },
+    shadowOffset: { width: 5, height: 5 },
     shadowOpacity: 1,
-    elevation: 4,
+    elevation: 0,
   },
   cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{translateY: 2}, {translateX: 2}], 
+    shadowOffset: {width: 2, height: 2}
   },
   cardHeader: {
     flexDirection: 'row',
@@ -318,7 +327,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: Colors.dark,
   },
   statusText: {
@@ -334,8 +343,8 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopWidth: 2,
+    borderTopColor: Colors.dark,
     paddingTop: Spacing.md,
     marginBottom: Spacing.md,
   },
@@ -346,9 +355,11 @@ const styles = StyleSheet.create({
   },
   anticipoRow: {
     marginTop: 4,
-    backgroundColor: Colors.success + '10',
+    backgroundColor: Colors.success + '20',
     padding: 6,
-    borderRadius: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.success,
   },
   cardMeta: {
     fontSize: 12,
@@ -359,8 +370,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopWidth: 2,
+    borderTopColor: Colors.dark,
     paddingTop: Spacing.md,
   },
   footerAction: {

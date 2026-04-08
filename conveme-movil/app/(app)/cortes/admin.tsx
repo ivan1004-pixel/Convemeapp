@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { FadeInUp, Layout, FadeInRight } from 'react-native-reanimated';
 import { getCortes, deleteCorte } from '../../../src/services/corte.service';
 import { useCorteStore } from '../../../src/store/corteStore';
 import { Colors } from '../../../src/theme/colors';
@@ -28,10 +29,12 @@ import { useAuth } from '../../../src/hooks/useAuth';
 
 function CorteCard({
   item,
+  index,
   onPress,
   onLongPress,
 }: {
   item: Corte;
+  index: number;
   onPress: () => void;
   onLongPress: () => void;
 }) {
@@ -54,68 +57,73 @@ function CorteCard({
   };
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(500).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="cash-register" size={28} color={Colors.success} />
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}</Text>
-          <Text style={styles.cardMeta}>CORTE #{item.id_corte} • ASIG #{item.asignacion?.id_asignacion}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22', borderColor: isOk ? Colors.success : Colors.error }]}>
-          <Text style={[styles.statusText, { color: isOk ? Colors.success : Colors.error }]}>
-            {isOk ? 'CUADRADO' : 'CON DIF.'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.moneyRow}>
-            <View style={styles.moneyItem}>
-                <Text style={styles.moneyLabel}>ESPERADO</Text>
-                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}</Text>
-            </View>
-            <View style={styles.moneyDivider} />
-            <View style={styles.moneyItem}>
-                <Text style={styles.moneyLabel}>ENTREGADO</Text>
-                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_total_entregado || 0)}</Text>
-            </View>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={({ pressed }) => [
+          styles.card,
+          pressed && styles.cardPressed,
+        ]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarContainer}>
+            <MaterialCommunityIcons name="cash-register" size={28} color={Colors.success} />
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.cardName}>{item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}</Text>
+            <Text style={styles.cardMeta}>CORTE #{item.id_corte} • ASIG #{item.asignacion?.id_asignacion}</Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22', borderColor: isOk ? Colors.success : Colors.error }]}>
+            <Text style={[styles.statusText, { color: isOk ? Colors.success : Colors.error }]}>
+              {isOk ? 'CUADRADO' : 'CON DIF.'}
+            </Text>
+          </View>
         </View>
 
-        {!isOk && (
-            <View style={styles.diffAlert}>
-                <MaterialCommunityIcons name="alert-circle" size={16} color={Colors.error} />
-                <Text style={styles.diffText}>
-                    DIFERENCIA: <Text style={{fontWeight: '900'}}>{formatCurrency(diff)}</Text>
-                </Text>
-            </View>
-        )}
+        <View style={styles.cardContent}>
+          <View style={styles.moneyRow}>
+              <View style={styles.moneyItem}>
+                  <Text style={styles.moneyLabel}>ESPERADO</Text>
+                  <Text style={styles.moneyValue}>{formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}</Text>
+              </View>
+              <View style={styles.moneyDivider} />
+              <View style={styles.moneyItem}>
+                  <Text style={styles.moneyLabel}>ENTREGADO</Text>
+                  <Text style={styles.moneyValue}>{formatCurrency(item.dinero_total_entregado || 0)}</Text>
+              </View>
+          </View>
 
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="calendar-clock" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{formatDate(item.fecha_corte).toUpperCase()}</Text>
+          {!isOk && (
+              <View style={styles.diffAlert}>
+                  <MaterialCommunityIcons name="alert-circle" size={16} color={Colors.error} />
+                  <Text style={styles.diffText}>
+                      DIFERENCIA: <Text style={{fontWeight: '900'}}>{formatCurrency(diff)}</Text>
+                  </Text>
+              </View>
+          )}
+
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="calendar-clock" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>{formatDate(item.fecha_corte).toUpperCase()}</Text>
+          </View>
         </View>
-      </View>
-      
-      <View style={styles.cardFooter}>
-         <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
-            <MaterialCommunityIcons name="share-variant" size={18} color={Colors.primary} />
-            <Text style={styles.shareText}>COMPARTIR</Text>
-         </TouchableOpacity>
-         <View style={styles.footerActionRow}>
-            <Text style={styles.footerAction}>VER DETALLES</Text>
-            <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.success} />
-         </View>
-      </View>
-    </Pressable>
+        
+        <View style={styles.cardFooter}>
+           <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+              <MaterialCommunityIcons name="share-variant" size={18} color={Colors.primary} />
+              <Text style={styles.shareText}>COMPARTIR</Text>
+           </TouchableOpacity>
+           <View style={styles.footerActionRow}>
+              <Text style={styles.footerAction}>VER DETALLES</Text>
+              <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.success} />
+           </View>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -189,10 +197,10 @@ export default function CortesScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>CORTES</Text>
@@ -207,15 +215,15 @@ export default function CortesScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.searchSection}>
+        <Animated.View entering={FadeInUp.delay(200)} style={styles.searchSection}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
             placeholder={isAdmin ? "BUSCAR POR VENDEDOR..." : "BUSCAR POR ID DE CORTE..."}
           />
-        </View>
+        </Animated.View>
 
         {loading && cortes.length === 0 ? (
           <LoadingSpinner fullScreen message="CARGANDO..." />
@@ -227,9 +235,10 @@ export default function CortesScreen() {
               styles.listContent,
               filteredCortes.length === 0 && styles.listEmpty,
             ]}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <CorteCard
                 item={item}
+                index={index}
                 onPress={() => router.push(`/cortes/${item.id_corte}`)}
                 onLongPress={() => isAdmin && setDeleteId(item.id_corte)}
               />
@@ -276,36 +285,36 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', gap: 10 },
   title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
   subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 0 },
   searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
   listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 100 },
   listEmpty: { flexGrow: 1, justifyContent: 'center' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
-  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
+  cardPressed: { transform: [{translateY: 2}, {translateX: 2}], shadowOffset: {width: 2, height: 2} },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.success + '10', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
+  avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.success + '10', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   headerInfo: { flex: 1 },
   cardName: { fontSize: 15, fontWeight: '900', color: Colors.dark },
   cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 2 },
   statusText: { fontSize: 8, fontWeight: '900' },
-  cardContent: { gap: 8, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12, paddingBottom: 12 },
-  moneyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  cardContent: { gap: 8, borderTopWidth: 2, borderTopColor: Colors.dark, paddingTop: 12, paddingBottom: 12 },
+  moneyRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', borderRadius: 12, padding: 12, borderWidth: 2, borderColor: Colors.dark },
   moneyItem: { flex: 1, alignItems: 'center' },
-  moneyDivider: { width: 1, height: 24, backgroundColor: 'rgba(0,0,0,0.1)' },
+  moneyDivider: { width: 2, height: 24, backgroundColor: Colors.dark },
   moneyLabel: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
   moneyValue: { fontSize: 15, fontWeight: '900', color: Colors.dark },
-  diffAlert: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.error + '10', padding: 8, borderRadius: 8 },
+  diffAlert: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.error + '10', padding: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.error },
   diffText: { fontSize: 10, fontWeight: '800', color: Colors.error },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
   infoText: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
-  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.primary + '10', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 2, borderTopColor: Colors.dark, paddingTop: 12 },
+  shareBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.primary + '10', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: Colors.primary },
   shareText: { fontSize: 9, fontWeight: '900', color: Colors.primary },
   footerActionRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   footerAction: { fontSize: 10, fontWeight: '900', color: Colors.success, letterSpacing: 0.5 },

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import Animated, { FadeInUp, FadeInRight, Layout } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getVentas, deleteVenta } from '../../../src/services/venta.service';
 import { getCortes } from '../../../src/services/corte.service';
@@ -33,27 +34,32 @@ import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/util
 import { BarChart } from '../../../src/components/ui/BarChart';
 import type { Venta, Corte } from '../../../src/types';
 
-function VentaCard({ item, onPress, onLongPress }: { item: Venta; onPress: () => void; onLongPress: () => void }) {
+function VentaCard({ item, index, onPress, onLongPress }: { item: Venta; index: number; onPress: () => void; onLongPress: () => void }) {
   return (
-    <Pressable 
-        onPress={onPress} 
-        onLongPress={onLongPress} 
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(500).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.idBadge}><Text style={styles.cardId}>#{item.id_venta}</Text></View>
-        <Badge text={item.estado || 'Completada'} color="success" size="sm" />
-      </View>
-      <Text style={styles.cardAmount}>{formatCurrency(item.monto_total)}</Text>
-      <View style={styles.infoBox}>
-        <Text style={styles.label}>VENDEDOR</Text>
-        <Text style={styles.value}>{item.vendedor?.nombre_completo || 'N/A'}</Text>
-      </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.footerDate}>{formatDate(item.fecha_venta)}</Text>
-        <Text style={styles.footerMeta}>{item.metodo_pago?.toUpperCase()}</Text>
-      </View>
-    </Pressable>
+      <Pressable 
+          onPress={onPress} 
+          onLongPress={onLongPress} 
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.idBadge}><Text style={styles.cardId}>#{item.id_venta}</Text></View>
+          <Badge text={item.estado || 'Completada'} color="success" size="sm" />
+        </View>
+        <Text style={styles.cardAmount}>{formatCurrency(item.monto_total)}</Text>
+        <View style={styles.infoBox}>
+          <Text style={styles.label}>VENDEDOR</Text>
+          <Text style={styles.value}>{item.vendedor?.nombre_completo || 'N/A'}</Text>
+        </View>
+        <View style={styles.cardFooter}>
+          <Text style={styles.footerDate}>{formatDate(item.fecha_venta)}</Text>
+          <Text style={styles.footerMeta}>{item.metodo_pago?.toUpperCase()}</Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -128,7 +134,7 @@ export default function VentasScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={{flex: 1}} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
                     <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
@@ -151,27 +157,39 @@ export default function VentasScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
         <FlatList
           data={filteredVentas}
           keyExtractor={item => String(item.id_venta)}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
-            <SearchBar 
-              value={search} 
-              onChangeText={setSearch} 
-              placeholder={isAdmin ? "Buscar vendedor..." : "Buscar por ID de venta..."} 
-              style={{marginBottom: 30}} 
-            />
+            <Animated.View entering={FadeInUp.delay(200)}>
+              <SearchBar 
+                value={search} 
+                onChangeText={setSearch} 
+                placeholder={isAdmin ? "Buscar vendedor..." : "Buscar por ID de venta..."} 
+                style={{marginBottom: 30}} 
+              />
+            </Animated.View>
           }
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
             <VentaCard 
                 item={item} 
+                index={index}
                 onPress={() => router.push(`/(app)/ventas/${item.id_venta}`)} 
                 onLongPress={() => {}} 
             />
           )}
+          ListEmptyComponent={!loading ? (
+            <EmptyState 
+              title="No hay ventas" 
+              message="No se encontraron transacciones con los filtros aplicados." 
+              icon="cash-register"
+              actionLabel="REGISTRAR VENTA"
+              onAction={() => router.push('/ventas/create')}
+            />
+          ) : null}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={Colors.primary} />}
         />
 
@@ -194,19 +212,19 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '900', color: Colors.dark },
-  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 0.5 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 28, fontWeight: '900', color: Colors.dark, textTransform: 'uppercase' },
+  subtitle: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1 },
   list: { paddingHorizontal: 20, paddingBottom: 150 },
   card: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, marginBottom: 15, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 5, height: 5 }, shadowOpacity: 1, elevation: 0 },
   cardPressed: { transform: [{translateY: 2}, {translateX: 2}], shadowOffset: {width: 2, height: 2} },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  idBadge: { backgroundColor: Colors.beige, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 1, borderColor: Colors.dark },
+  idBadge: { backgroundColor: Colors.beige, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6, borderWidth: 2, borderColor: Colors.dark },
   cardId: { fontSize: 10, fontWeight: '900' },
-  cardAmount: { fontSize: 28, fontWeight: '900', marginBottom: 15 },
-  infoBox: { backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' },
+  cardAmount: { fontSize: 32, fontWeight: '900', marginBottom: 15 },
+  infoBox: { backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12, borderWidth: 2, borderColor: Colors.dark },
   label: { fontSize: 8, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
   value: { fontSize: 14, fontWeight: '800' },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 15 },

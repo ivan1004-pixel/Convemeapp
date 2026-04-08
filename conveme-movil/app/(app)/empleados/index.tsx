@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { FadeInUp, Layout, FadeInRight } from 'react-native-reanimated';
 import { getEmpleados, deleteEmpleado } from '../../../src/services/empleado.service';
 import { useEmpleadoStore } from '../../../src/store/empleadoStore';
 import { Colors } from '../../../src/theme/colors';
@@ -34,10 +35,12 @@ const EMPLEADO_IMAGES = [
 
 function EmpleadoCard({
   item,
+  index,
   onPress,
   onLongPress,
 }: {
   item: Empleado;
+  index: number;
   onPress: () => void;
   onLongPress: () => void;
 }) {
@@ -45,45 +48,50 @@ function EmpleadoCard({
   const avatarImage = EMPLEADO_IMAGES[imageIndex];
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(500).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <Image source={avatarImage} style={styles.avatarImg} />
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
-          <Text style={styles.cardPuesto}>{item.puesto?.toUpperCase() ?? 'EMPLEADO'}</Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
-      </View>
-
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{item.email.toUpperCase()}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{item.telefono || 'SIN TELÉFONO'}</Text>
-        </View>
-        {item.municipio && (
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="map-marker-outline" size={16} color={Colors.primary} />
-            <Text style={styles.infoText}>
-              {item.municipio.nombre.toUpperCase()}, {item.municipio.estado?.nombre.toUpperCase()}
-            </Text>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={({ pressed }) => [
+          styles.card,
+          pressed && styles.cardPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarContainer}>
+            <Image source={avatarImage} style={styles.avatarImg} />
           </View>
-        )}
-      </View>
-    </Pressable>
+          <View style={styles.headerInfo}>
+            <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
+            <Text style={styles.cardPuesto}>{item.puesto?.toUpperCase() ?? 'EMPLEADO'}</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
+        </View>
+
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>{item.email.toUpperCase()}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>{item.telefono || 'SIN TELÉFONO'}</Text>
+          </View>
+          {item.municipio && (
+            <View style={styles.infoRow}>
+              <MaterialCommunityIcons name="map-marker-outline" size={16} color={Colors.primary} />
+              <Text style={styles.infoText}>
+                {item.municipio.nombre.toUpperCase()}, {item.municipio.estado?.nombre.toUpperCase()}
+              </Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -106,7 +114,7 @@ export default function EmpleadosScreen() {
     } finally {
       setLoading(false);
     }
-  }, [setEmpleados]);
+  }, [setEmpleados, showToast]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -118,7 +126,7 @@ export default function EmpleadosScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [setEmpleados]);
+  }, [setEmpleados, showToast]);
 
   useEffect(() => {
     fetchData();
@@ -148,17 +156,17 @@ export default function EmpleadosScreen() {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeEmpleado]);
+  }, [deleteId, removeEmpleado, showToast]);
 
   const deleteTarget = empleados.find((e) => e.id_empleado === deleteId);
 
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>EMPLEADOS</Text>
@@ -173,15 +181,15 @@ export default function EmpleadosScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.searchContainer}>
+        <Animated.View entering={FadeInUp.delay(200)} style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
             placeholder="BUSCAR POR NOMBRE, PUESTO..."
           />
-        </View>
+        </Animated.View>
 
         {loading && empleados.length === 0 ? (
           <LoadingSpinner fullScreen message="CARGANDO..." />
@@ -193,9 +201,10 @@ export default function EmpleadosScreen() {
               styles.listContent,
               filtered.length === 0 && styles.listEmpty,
             ]}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <EmpleadoCard
                 item={item}
+                index={index}
                 onPress={() => router.push(`/empleados/${item.id_empleado}`)}
                 onLongPress={() => setDeleteId(item.id_empleado)}
               />
@@ -243,11 +252,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
   subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 0 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
@@ -265,16 +274,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: Colors.dark,
     shadowColor: Colors.dark,
-    shadowOffset: { width: 4, height: 4 },
+    shadowOffset: { width: 5, height: 5 },
     shadowOpacity: 1,
-    elevation: 3,
+    elevation: 0,
   },
   cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{translateY: 2}, {translateX: 2}], 
+    shadowOffset: {width: 2, height: 2}
   },
   cardHeader: {
     flexDirection: 'row',
@@ -286,7 +295,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     backgroundColor: '#F3F4F6',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: Colors.dark,
     overflow: 'hidden',
     marginRight: Spacing.md,
@@ -308,8 +317,8 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopWidth: 2,
+    borderTopColor: Colors.dark,
     paddingTop: 12,
   },
   infoRow: {

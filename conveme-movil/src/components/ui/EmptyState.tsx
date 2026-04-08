@@ -1,9 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet, ViewStyle } from 'react-native';
+import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
+import { Button } from './Button';
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
@@ -27,27 +29,30 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   style,
 }) => {
   return (
-    <View style={[styles.container, style]}>
-      {icon && (
+    <Animated.View 
+      entering={FadeInUp.duration(600).springify()}
+      style={[styles.container, style]}
+    >
+      <View style={styles.iconContainer}>
         <MaterialCommunityIcons
           name={icon}
-          size={48}
+          size={60}
           color={iconColor ?? Colors.primary}
-          style={styles.icon}
         />
-      )}
+      </View>
       <Text style={styles.title}>{title}</Text>
       {message && <Text style={styles.message}>{message}</Text>}
       {actionLabel && onAction && (
-        <Pressable
-          onPress={onAction}
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>{actionLabel}</Text>
-        </Pressable>
+        <Animated.View entering={FadeInDown.delay(300).duration(500)}>
+          <Button
+            title={actionLabel}
+            onPress={onAction}
+            style={styles.button}
+            variant="primary"
+          />
+        </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
@@ -56,34 +61,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: Spacing.xl,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    margin: Spacing.lg,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    borderStyle: 'dashed',
   },
-  icon: {
-    marginBottom: Spacing.md,
+  iconContainer: {
+    marginBottom: Spacing.lg,
+    backgroundColor: '#FFFFFF',
+    padding: Spacing.lg,
+    borderRadius: 50,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   title: {
-    ...Typography.h4,
+    ...Typography.h3,
     textAlign: 'center',
     marginBottom: Spacing.sm,
-    color: Colors.textLight,
+    color: Colors.dark,
+    fontWeight: '900',
   },
   message: {
     ...Typography.body,
     textAlign: 'center',
     marginBottom: Spacing.lg,
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(0,0,0,0.6)',
+    fontWeight: '600',
+    paddingHorizontal: Spacing.md,
   },
   button: {
-    marginTop: Spacing.sm,
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.lg,
-    backgroundColor: Colors.primary,
-    borderRadius: BorderRadius.lg,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  buttonText: {
-    ...Typography.button,
-    color: '#ffffff',
+    minWidth: 180,
   },
 });

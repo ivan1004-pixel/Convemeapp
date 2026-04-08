@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -7,6 +7,13 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  interpolate,
+  withTiming
+} from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
@@ -30,19 +37,48 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
   const [isFocused, setIsFocused] = useState(false);
+  
+  const focusAnim = useSharedValue(0);
+
+  useEffect(() => {
+    focusAnim.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
+  }, [isFocused]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: interpolate(focusAnim.value, [0, 1], [0, 2]) },
+        { translateY: interpolate(focusAnim.value, [0, 1], [0, 2]) },
+      ],
+      shadowOffset: {
+        width: interpolate(focusAnim.value, [0, 1], [4, 2]),
+        height: interpolate(focusAnim.value, [0, 1], [4, 2]),
+      },
+    };
+  });
 
   return (
-    <View
+    <Animated.View
       style={[
         styles.container,
         {
-          backgroundColor: '#F9F4EE', // Beige claro fijo para todas las barras de búsqueda
+          backgroundColor: '#F9F4EE',
           borderColor: isFocused ? Colors.primary : Colors.dark,
+          shadowColor: Colors.dark,
+          shadowOpacity: 1,
+          shadowRadius: 0,
+          elevation: 4,
         },
-        isFocused && styles.focused,
+        animatedStyle,
         style,
       ]}
     >
+      <MaterialCommunityIcons 
+        name="magnify" 
+        size={20} 
+        color="rgba(26,26,26,0.5)" 
+        style={styles.searchIcon}
+      />
       <TextInput
         style={[styles.input, { color: Colors.dark }]}
         value={value}
@@ -62,7 +98,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           style={({ pressed }) => [
             styles.clearButton,
             pressed && styles.pressed,
-            { backgroundColor: isFocused ? 'rgba(0,0,0,0.05)' : 'transparent' }
           ]}
           accessibilityLabel="Limpiar búsqueda"
           accessibilityRole="button"
@@ -75,7 +110,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           />
         </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 };
 
@@ -83,30 +118,23 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 3,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.md,
-    height: 44,
-  },
-  focused: {
-    borderWidth: 2,
+    height: 50,
   },
   searchIcon: {
-    fontSize: 16,
-    marginRight: Spacing.sm,
+    marginRight: Spacing.xs,
   },
   input: {
     flex: 1,
     ...Typography.body,
+    fontWeight: '700',
     paddingVertical: 0,
   },
   clearButton: {
     padding: Spacing.xs,
     marginLeft: Spacing.xs,
-  },
-  clearIcon: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   pressed: {
     opacity: 0.6,

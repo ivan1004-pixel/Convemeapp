@@ -8,6 +8,12 @@ import {
   TextStyle,
   View,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  interpolate
+} from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
@@ -24,6 +30,8 @@ interface ButtonProps {
   style?: ViewStyle;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
@@ -36,6 +44,8 @@ export const Button: React.FC<ButtonProps> = ({
 }) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  
+  const pressed = useSharedValue(0);
 
   const getVariantStyles = (): { container: ViewStyle; text: TextStyle; indicator: string } => {
     switch (variant) {
@@ -116,6 +126,19 @@ export const Button: React.FC<ButtonProps> = ({
   const sizeStyles = getSizeStyles();
   const isDisabled = disabled || loading;
 
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: withSpring(pressed.value * 2) },
+        { translateY: withSpring(pressed.value * 2) },
+      ],
+      shadowOffset: {
+        width: withSpring(interpolate(pressed.value, [0, 1], [4, 0])),
+        height: withSpring(interpolate(pressed.value, [0, 1], [4, 0])),
+      },
+    };
+  });
+
   const shadowStyle: ViewStyle = variant !== 'ghost' ? {
     shadowColor: Colors.dark,
     shadowOffset: { width: 4, height: 4 },
@@ -125,16 +148,18 @@ export const Button: React.FC<ButtonProps> = ({
   } : {};
 
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
+      onPressIn={() => (pressed.value = 1)}
+      onPressOut={() => (pressed.value = 0)}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         variantStyles.container,
         sizeStyles.container,
         shadowStyle,
+        animatedStyle,
         isDisabled && styles.disabled,
-        pressed && !isDisabled && styles.pressed,
         style,
       ]}
       accessibilityRole="button"
@@ -152,7 +177,7 @@ export const Button: React.FC<ButtonProps> = ({
         )}
         <Text style={[styles.baseText, variantStyles.text, sizeStyles.text]}>{title}</Text>
       </View>
-    </Pressable>
+    </AnimatedPressable>
   );
 };
 
@@ -169,6 +194,7 @@ const styles = StyleSheet.create({
   },
   baseText: {
     textAlign: 'center',
+    fontWeight: '900', // Bold neobrutalist text
   },
   leftIcon: {
     marginRight: Spacing.xs,
@@ -178,8 +204,5 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.8,
   },
 });

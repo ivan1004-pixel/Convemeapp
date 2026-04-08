@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Animated, { FadeInUp, Layout, FadeInRight } from 'react-native-reanimated';
 import { getClientes, deleteCliente } from '../../../src/services/cliente.service';
 import { useClienteStore } from '../../../src/store/clienteStore';
 import { Colors } from '../../../src/theme/colors';
@@ -34,10 +35,12 @@ const CLIENTE_IMAGES = [
 
 function ClienteCard({
   item,
+  index,
   onPress,
   onLongPress,
 }: {
   item: Cliente;
+  index: number;
   onPress: () => void;
   onLongPress: () => void;
 }) {
@@ -46,37 +49,42 @@ function ClienteCard({
   const avatarImage = CLIENTE_IMAGES[imageIndex];
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).duration(500).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <Image source={avatarImage} style={styles.avatarImg} />
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={({ pressed }) => [
+          styles.card,
+          pressed && styles.cardPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarContainer}>
+            <Image source={avatarImage} style={styles.avatarImg} />
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
+            <Text style={styles.cardMeta}>CLIENTE REGISTRADO</Text>
+          </View>
+          <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
         </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.nombre_completo.toUpperCase()}</Text>
-          <Text style={styles.cardMeta}>CLIENTE REGISTRADO</Text>
-        </View>
-        <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark} />
-      </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{item.email?.toUpperCase() || 'SIN EMAIL'}</Text>
+        <View style={styles.cardContent}>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="email-outline" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>{item.email?.toUpperCase() || 'SIN EMAIL'}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
+            <Text style={styles.infoText}>{item.telefono ? formatPhone(item.telefono) : 'SIN TELÉFONO'}</Text>
+          </View>
         </View>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="phone-outline" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{item.telefono ? formatPhone(item.telefono) : 'SIN TELÉFONO'}</Text>
-        </View>
-      </View>
-    </Pressable>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -148,10 +156,10 @@ export default function AdminClientesScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>CLIENTES</Text>
@@ -166,15 +174,15 @@ export default function AdminClientesScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.searchContainer}>
+        <Animated.View entering={FadeInUp.delay(200)} style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
             placeholder="BUSCAR POR NOMBRE, EMAIL..."
           />
-        </View>
+        </Animated.View>
 
         {loading && clientes.length === 0 ? (
           <LoadingSpinner fullScreen message="CARGANDO..." />
@@ -186,9 +194,10 @@ export default function AdminClientesScreen() {
               styles.listContent,
               filtered.length === 0 && styles.listEmpty,
             ]}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <ClienteCard
                 item={item}
+                index={index}
                 onPress={() => router.push(`/clientes/${item.id_cliente}`)}
                 onLongPress={() => setDeleteId(item.id_cliente)}
               />
@@ -236,11 +245,11 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
   subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 0 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
@@ -258,16 +267,16 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     padding: Spacing.lg,
     marginBottom: Spacing.md,
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: Colors.dark,
     shadowColor: Colors.dark,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.1,
-    elevation: 3,
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    elevation: 0,
   },
   cardPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{translateY: 2}, {translateX: 2}], 
+    shadowOffset: {width: 2, height: 2}
   },
   cardHeader: {
     flexDirection: 'row',
@@ -279,7 +288,7 @@ const styles = StyleSheet.create({
     height: 52,
     borderRadius: 14,
     backgroundColor: '#F3F4F6',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: Colors.dark,
     overflow: 'hidden',
     marginRight: Spacing.md,
@@ -301,8 +310,8 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     gap: 6,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopWidth: 2,
+    borderTopColor: Colors.dark,
     paddingTop: 12,
   },
   infoRow: {

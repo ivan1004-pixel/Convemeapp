@@ -6,6 +6,12 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  interpolate
+} from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
@@ -21,6 +27,8 @@ interface CardProps {
   noPadding?: boolean;
 }
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export const Card: React.FC<CardProps> = ({
   title,
   subtitle,
@@ -32,6 +40,8 @@ export const Card: React.FC<CardProps> = ({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
+  
+  const pressed = useSharedValue(0);
 
   const cardContent = (
     <>
@@ -49,6 +59,19 @@ export const Card: React.FC<CardProps> = ({
     </>
   );
 
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: withSpring(pressed.value * 2) },
+        { translateY: withSpring(pressed.value * 2) },
+      ],
+      shadowOffset: {
+        width: withSpring(interpolate(pressed.value, [0, 1], [6, 0])),
+        height: withSpring(interpolate(pressed.value, [0, 1], [6, 0])),
+      },
+    };
+  });
+
   const cardStyle = [
     styles.card,
     { backgroundColor: theme.card, borderColor: theme.border },
@@ -64,16 +87,18 @@ export const Card: React.FC<CardProps> = ({
 
   if (onPress) {
     return (
-      <Pressable
+      <AnimatedPressable
         onPress={onPress}
-        style={({ pressed }) => [
+        onPressIn={() => (pressed.value = 1)}
+        onPressOut={() => (pressed.value = 0)}
+        style={[
           ...cardStyle,
-          pressed && styles.pressed,
+          animatedStyle,
         ]}
         accessibilityRole="button"
       >
         {cardContent}
-      </Pressable>
+      </AnimatedPressable>
     );
   }
 
@@ -83,7 +108,7 @@ export const Card: React.FC<CardProps> = ({
 const styles = StyleSheet.create({
   card: {
     borderRadius: BorderRadius.xl,
-    borderWidth: 1,
+    borderWidth: 3, // Robust neobrutalist border
     overflow: 'hidden',
   },
   header: {
@@ -101,12 +126,10 @@ const styles = StyleSheet.create({
   },
   title: {
     ...Typography.h4,
+    fontWeight: '900', // Ultra bold
     marginBottom: Spacing.xs / 2,
   },
   subtitle: {
     ...Typography.bodySmall,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

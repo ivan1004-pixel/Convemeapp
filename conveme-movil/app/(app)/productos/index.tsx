@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import Animated, { FadeInUp, FadeInRight, Layout } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getProductos, deleteProducto } from '../../../src/services/producto.service';
 import { useProductoStore } from '../../../src/store/productoStore';
@@ -30,58 +31,64 @@ import type { Producto } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMN_GAP = Spacing.sm;
+const COLUMN_GAP = Spacing.md;
 const CARD_WIDTH = (SCREEN_WIDTH - Spacing.lg * 2 - COLUMN_GAP) / 2;
 
 function ProductoCard({
   item,
+  index,
   onPress,
   onLongPress,
 }: {
   item: Producto;
+  index: number;
   onPress: () => void;
   onLongPress: () => void;
 }) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
 
   return (
-    <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.productCard,
-        { backgroundColor: '#FFF', borderColor: Colors.dark, width: CARD_WIDTH },
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
+    <Animated.View 
+      entering={FadeInUp.delay(index * 50).duration(400).springify()}
+      layout={Layout.springify()}
     >
-      <View style={styles.productIconContainer}>
-        <MaterialCommunityIcons name="package-variant-closed" size={28} color={Colors.primary} />
-      </View>
-      {item.categoria && (
-        <View style={styles.categoryBadgeContainer}>
-            <Text style={styles.categoryBadgeText}>{item.categoria.nombre.toUpperCase()}</Text>
+      <Pressable
+        onPress={onPress}
+        onLongPress={onLongPress}
+        style={({ pressed }) => [
+          styles.productCard,
+          { backgroundColor: '#FFF', borderColor: Colors.dark, width: CARD_WIDTH },
+          pressed && styles.cardPressed,
+        ]}
+        accessibilityRole="button"
+      >
+        <View style={styles.productIconContainer}>
+          <MaterialCommunityIcons name="package-variant-closed" size={32} color={Colors.primary} />
         </View>
-      )}
-      <Text style={styles.productName} numberOfLines={2}>
-        {item.nombre.toUpperCase()}
-      </Text>
-      <Text style={styles.productSku} numberOfLines={1}>
-        {item.sku}
-      </Text>
-      <View style={styles.priceContainer}>
-        <Text style={styles.productPrice}>
-            {formatCurrency(item.precio_unitario)}
-        </Text>
-        {item.precio_mayoreo > 0 && (
-            <Text style={styles.productMayoreo}>
-            M: {formatCurrency(item.precio_mayoreo)}
-            </Text>
+        {item.categoria && (
+          <View style={styles.categoryBadgeContainer}>
+              <Text style={styles.categoryBadgeText}>{item.categoria.nombre.toUpperCase()}</Text>
+          </View>
         )}
-      </View>
-    </Pressable>
+        <Text style={styles.productName} numberOfLines={2}>
+          {item.nombre.toUpperCase()}
+        </Text>
+        <Text style={styles.productSku} numberOfLines={1}>
+          {item.sku}
+        </Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.productPrice}>
+              {formatCurrency(item.precio_unitario)}
+          </Text>
+          {item.precio_mayoreo > 0 && (
+              <Text style={styles.productMayoreo}>
+              M: {formatCurrency(item.precio_mayoreo)}
+              </Text>
+          )}
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -91,30 +98,6 @@ export default function ProductosScreen() {
   const { isAdmin } = useAuth();
   const colorScheme = useColorScheme();
   
-  if (!isAdmin) {
-    return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container} edges={['top']}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.replace('/(app)')} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          <EmptyState 
-            icon="shield-lock" 
-            title="ACCESO DENEGADO" 
-            message="No tienes permisos para ver esta sección." 
-            actionLabel="VOLVER AL INICIO"
-            onAction={() => router.replace('/(app)')}
-          />
-        </SafeAreaView>
-      </NeobrutalistBackground>
-    );
-  }
-
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? Colors.dark2 : Colors.light2;
-
   const { productos, setProductos, removeProducto } = useProductoStore();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -177,22 +160,22 @@ export default function ProductosScreen() {
 
   const deleteTarget = productos.find((p) => p.id_producto === deleteId);
 
-  if (loading && productos.length === 0) {
+  if (!isAdmin) {
     return (
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container} edges={['top']}>
           <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-                </TouchableOpacity>
-                <View>
-                    <Text style={styles.title}>PRODUCTOS</Text>
-                    <Text style={styles.subtitle}>CARGANDO...</Text>
-                </View>
-            </View>
+            <TouchableOpacity onPress={() => router.replace('/(app)')} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
           </View>
-          <LoadingSpinner fullScreen message="Cargando productos..." />
+          <EmptyState 
+            icon="shield-lock" 
+            title="ACCESO DENEGADO" 
+            message="No tienes permisos para ver esta sección." 
+            actionLabel="VOLVER AL INICIO"
+            onAction={() => router.replace('/(app)')}
+          />
         </SafeAreaView>
       </NeobrutalistBackground>
     );
@@ -201,10 +184,10 @@ export default function ProductosScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
+        <Animated.View entering={FadeInRight.duration(600)} style={styles.header}>
             <View style={styles.headerTitleRow}>
                 <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
                 </TouchableOpacity>
                 <View>
                     <Text style={styles.title}>PRODUCTOS</Text>
@@ -219,55 +202,60 @@ export default function ProductosScreen() {
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.searchContainer}>
+        <Animated.View entering={FadeInUp.delay(200)} style={styles.searchContainer}>
           <SearchBar
             value={search}
             onChangeText={setSearch}
             placeholder="BUSCAR POR NOMBRE, SKU..."
           />
-        </View>
+        </Animated.View>
 
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => String(item.id_producto)}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
-          contentContainerStyle={[
-            styles.listContent,
-            filtered.length === 0 && styles.listEmpty,
-          ]}
-          renderItem={({ item }) => (
-            <ProductoCard
-              item={item}
-              onPress={() => router.push(`/productos/${item.id_producto}`)}
-              onLongPress={() => setDeleteId(item.id_producto)}
-            />
-          )}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
-            />
-          }
-          ListEmptyComponent={
-            <EmptyState
-              icon="package-variant"
-              title="Sin productos"
-              message={
-                search
-                  ? 'No hay productos que coincidan con tu búsqueda.'
-                  : 'Aún no hay productos registrados.'
-              }
-              actionLabel={!search ? 'AGREGAR PRODUCTO' : undefined}
-              onAction={!search ? () => router.push('/productos/create') : undefined}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-        />
+        {loading && productos.length === 0 ? (
+          <LoadingSpinner message="Cargando productos..." />
+        ) : (
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => String(item.id_producto)}
+            numColumns={2}
+            columnWrapperStyle={styles.columnWrapper}
+            contentContainerStyle={[
+              styles.listContent,
+              filtered.length === 0 && styles.listEmpty,
+            ]}
+            renderItem={({ item, index }) => (
+              <ProductoCard
+                item={item}
+                index={index}
+                onPress={() => router.push(`/productos/${item.id_producto}`)}
+                onLongPress={() => setDeleteId(item.id_producto)}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[Colors.primary]}
+                tintColor={Colors.primary}
+              />
+            }
+            ListEmptyComponent={
+              <EmptyState
+                icon="package-variant"
+                title="Sin productos"
+                message={
+                  search
+                    ? 'No hay productos que coincidan con tu búsqueda.'
+                    : 'Aún no hay productos registrados.'
+                }
+                actionLabel={!search ? 'AGREGAR PRODUCTO' : undefined}
+                onAction={!search ? () => router.push('/productos/create') : undefined}
+              />
+            }
+            showsVerticalScrollIndicator={false}
+          />
+        )}
 
         <ConfirmDialog
           visible={deleteId !== null}
@@ -288,18 +276,18 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 20, paddingBottom: 15 },
   headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerActions: { flexDirection: 'row', gap: 10 },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
-  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: 26, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5, textTransform: 'uppercase' },
+  subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase', letterSpacing: 1 },
+  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 3, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
   searchContainer: {
     paddingHorizontal: Spacing.lg,
     paddingBottom: Spacing.lg,
   },
   listContent: {
     paddingHorizontal: Spacing.lg,
-    paddingBottom: 140, // Espacio extra para que no estorbe la barra de abajo
+    paddingBottom: 140,
   },
   listEmpty: {
     flexGrow: 1,
@@ -311,62 +299,64 @@ const styles = StyleSheet.create({
   },
   productCard: {
     borderRadius: BorderRadius.xl,
-    borderWidth: 2,
+    borderWidth: 3,
     padding: Spacing.md,
     overflow: 'hidden',
     shadowColor: Colors.dark,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
     elevation: 2,
   },
-  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  cardPressed: { transform: [{translateY: 2}, {translateX: 2}], shadowOffset: {width: 2, height: 2} },
   productIconContainer: {
-    width: 48,
-    height: 48,
+    width: 54,
+    height: 54,
     borderRadius: BorderRadius.lg,
     backgroundColor: '#F3F4F6',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.sm,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.05)',
+    borderWidth: 2,
+    borderColor: Colors.dark,
   },
   categoryBadgeContainer: { 
     alignSelf: 'flex-start',
-    backgroundColor: Colors.primary + '15',
+    backgroundColor: Colors.primaryLight,
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.dark,
     marginBottom: Spacing.xs,
   },
   categoryBadgeText: {
     fontSize: 9,
     fontWeight: '900',
-    color: Colors.primary,
+    color: Colors.dark,
   },
   productName: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '900',
     color: Colors.dark,
     marginBottom: 2,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   productSku: {
     fontSize: 10,
     fontWeight: '700',
-    color: 'rgba(0,0,0,0.4)',
+    color: 'rgba(0,0,0,0.5)',
     marginBottom: Spacing.sm,
   },
   priceContainer: {
       marginTop: 'auto',
   },
   productPrice: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '900',
     color: Colors.primary,
   },
   productMayoreo: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: Colors.success,
     marginTop: 1,

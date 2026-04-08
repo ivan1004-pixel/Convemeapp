@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,13 @@ import {
   TextStyle,
   TextInputProps,
 } from 'react-native';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  interpolate,
+  withTiming
+} from 'react-native-reanimated';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
@@ -36,6 +43,12 @@ export const Input: React.FC<InputProps> = ({
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
   const [isFocused, setIsFocused] = useState(false);
+  
+  const focusAnim = useSharedValue(0);
+
+  useEffect(() => {
+    focusAnim.value = withTiming(isFocused ? 1 : 0, { duration: 200 });
+  }, [isFocused]);
 
   const borderColor = error
     ? Colors.error
@@ -43,24 +56,37 @@ export const Input: React.FC<InputProps> = ({
     ? Colors.primary
     : Colors.dark;
 
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: interpolate(focusAnim.value, [0, 1], [0, 2]) },
+        { translateY: interpolate(focusAnim.value, [0, 1], [0, 2]) },
+      ],
+      shadowOffset: {
+        width: interpolate(focusAnim.value, [0, 1], [4, 2]),
+        height: interpolate(focusAnim.value, [0, 1], [4, 2]),
+      },
+    };
+  });
+
   return (
     <View style={[styles.container, containerStyle]}>
       {label && (
         <Text style={[styles.label, { color: Colors.dark }]}>{label}</Text>
       )}
-      <View
+      <Animated.View
         style={[
           styles.inputWrapper,
           {
             borderColor,
             backgroundColor: theme.surface,
-            borderWidth: isFocused ? 3 : 2,
+            borderWidth: 3,
             shadowColor: Colors.dark,
-            shadowOffset: isFocused ? { width: 2, height: 2 } : { width: 4, height: 4 },
             shadowOpacity: 1,
             shadowRadius: 0,
-            elevation: isFocused ? 2 : 4,
+            elevation: 4,
           },
+          animatedStyle,
         ]}
       >
         {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
@@ -84,7 +110,7 @@ export const Input: React.FC<InputProps> = ({
           {...textInputProps}
         />
         {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
-      </View>
+      </Animated.View>
       {error ? (
         <Text style={styles.errorText}>{error}</Text>
       ) : helperText ? (
@@ -100,17 +126,14 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.label,
+    fontWeight: '900', // Neobrutalist bold
     marginBottom: Spacing.xs,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
     borderRadius: BorderRadius.lg,
     minHeight: 48,
-  },
-  focused: {
-    borderWidth: 2,
   },
   input: {
     flex: 1,
@@ -136,6 +159,7 @@ const styles = StyleSheet.create({
     ...Typography.caption,
     color: Colors.error,
     marginTop: Spacing.xs,
+    fontWeight: '700',
   },
   helperText: {
     ...Typography.caption,

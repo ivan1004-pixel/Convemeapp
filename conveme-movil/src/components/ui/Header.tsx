@@ -35,7 +35,11 @@ export const Header: React.FC<HeaderProps> = ({
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.surface, borderBottomColor: theme.border },
+        { 
+          backgroundColor: '#FFFFFF', 
+          borderBottomColor: Colors.dark,
+          borderBottomWidth: 3,
+        },
         style,
       ]}
     >
@@ -43,15 +47,19 @@ export const Header: React.FC<HeaderProps> = ({
         {showBack && (
           <Pressable
             onPress={onBack}
-            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.backButton, 
+              pressed && styles.pressed,
+              { backgroundColor: Colors.primaryLight, borderWidth: 2, borderColor: Colors.dark, borderRadius: 8 }
+            ]}
             accessibilityLabel="Volver"
             accessibilityRole="button"
           >
-            <Text style={[styles.backIcon, { color: Colors.primary }]}>←</Text>
+            <Text style={[styles.backIcon, { color: Colors.dark }]}>←</Text>
           </Pressable>
         )}
       </View>
-      <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
+      <Text style={[styles.title, { color: Colors.dark }]} numberOfLines={1}>
         {title}
       </Text>
       <View style={styles.right}>
@@ -63,35 +71,42 @@ export const Header: React.FC<HeaderProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    height: Platform.OS === 'ios' ? 56 : 56,
+    height: Platform.OS === 'ios' ? 70 : 64,
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: Spacing.md,
+    zIndex: 10,
   },
   left: {
-    width: 44,
+    width: 50,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
   right: {
-    width: 44,
+    width: 50,
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
   title: {
-    ...Typography.h4,
+    ...Typography.h3,
+    fontWeight: '900',
     flex: 1,
     textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: -0.5,
   },
   backButton: {
-    padding: Spacing.xs,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   backIcon: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '900',
+    marginTop: -2,
   },
   pressed: {
-    opacity: 0.6,
+    transform: [{ scale: 0.95 }],
   },
 });
