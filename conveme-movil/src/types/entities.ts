@@ -5,6 +5,7 @@ export interface Usuario {
   activo?: boolean;
   created_at?: string;
   rol?: { nombre: string };
+  id_vendedor?: number; // 👈 Agregado para guardar el ID del vendedor
 }
 
 export interface Rol {
@@ -55,6 +56,8 @@ export interface Cliente {
   fecha_registro?: string;
   activo?: boolean;
   usuario?: Usuario;
+  vendedor?: Vendedor;
+  vendedor_id?: number; // ID directo del vendedor
 }
 
 export interface Escuela {
@@ -104,6 +107,8 @@ export interface Venta {
   metodo_pago?: string;
   estado?: string;
   vendedor?: Vendedor;
+  vendedor_id?: number; // ID directo del vendedor
+  id_vendedor?: number; // Alias alternativo
   detalles?: DetalleVenta[];
 }
 
@@ -121,6 +126,8 @@ export interface Pedido {
   anticipo?: number;
   estado?: string;
   vendedor?: Vendedor;
+  vendedor_id?: number; // ID directo del vendedor
+  id_vendedor?: number; // Alias alternativo
   cliente?: Cliente;
   detalles?: DetallePedido[];
 }
@@ -164,6 +171,8 @@ export interface Comprobante {
   fecha_corte?: string;
   notas?: string;
   vendedor?: Vendedor;
+  vendedor_id?: number; // ID directo del vendedor
+  id_vendedor?: number; // Alias alternativo
   admin?: Usuario;
 }
 
@@ -206,6 +215,8 @@ export interface Corte {
   diferencia_corte?: number;
   observaciones?: string;
   vendedor?: Vendedor;
+  vendedor_id?: number; // ID directo del vendedor
+  id_vendedor?: number; // Alias alternativo
   asignacion?: Asignacion;
   detalles?: DetalleCorte[];
 }

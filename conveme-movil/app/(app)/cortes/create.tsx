@@ -21,7 +21,7 @@ import { getVendedores } from '../../../src/services/vendedor.service';
 import { getAsignaciones, updateAsignacion } from '../../../src/services/asignacion.service';
 import { loginService } from '../../../src/services/auth.service';
 import { useCorteStore } from '../../../src/store/corteStore';
-import { useAuthStore } from '../../../src/store/authStore';
+import { useAuth } from '../../../src/hooks/useAuth';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
@@ -47,10 +47,25 @@ export default function CorteCreateScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { toast, show: showToast, hide: hideToast } = useToast();
   const { cortes, addCorte, updateCorte: updateCorteStore, removeCorte } = useCorteStore();
-  const { usuario } = useAuthStore();
+  const { usuario, isAdmin } = useAuth();
 
   const isEditing = !!id;
   const existing = cortes.find((c) => c.id_corte === Number(id));
+
+  // Bloquear edición para no-admins
+  useEffect(() => {
+    if (isEditing && !isAdmin) {
+      showToast('No tienes permisos para editar cortes', 'error');
+      setTimeout(() => router.back(), 2000);
+    }
+  }, [isEditing, isAdmin]);
+
+  // Asegurar que el vendedor sea el usuario actual si no es admin
+  useEffect(() => {
+    if (!isAdmin && usuario?.id_vendedor) {
+      setForm(prev => ({ ...prev, vendedor_id: usuario.id_vendedor }));
+    }
+  }, [isAdmin, usuario]);
 
   const [form, setForm] = useState({
     vendedor_id: null as number | null,
@@ -342,13 +357,13 @@ export default function CorteCreateScreen() {
               <TouchableOpacity
                 style={[styles.selector, errors.vendedor_id && styles.selectorError, { marginBottom: Spacing.md }]}
                 onPress={() => { setSearchQuery(''); setShowVendedorModal(true); }}
-                disabled={isEditing}
+                disabled={isEditing || !isAdmin}
               >
                 <MaterialCommunityIcons name="account-tie-outline" size={20} color={Colors.primary} />
                 <Text style={[styles.selectorText, !selectedVendedor && styles.placeholderText]}>
                   {selectedVendedor ? selectedVendedor.nombre_completo.toUpperCase() : 'SELECCIONAR VENDEDOR'}
                 </Text>
-                {!isEditing && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />}
+                {(!isEditing && isAdmin) && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(0,0,0,0.3)" />}
               </TouchableOpacity>
 
               <TouchableOpacity

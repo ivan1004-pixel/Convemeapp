@@ -16,6 +16,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { useAuth } from '../../hooks/useAuth';
 import { getVentas } from '../../services/venta.service';
 import { getPedidos } from '../../services/pedido.service';
+import { getCortes } from '../../services/corte.service';
 import { formatCurrency } from '../../utils';
 import { Colors } from '../../theme/colors';
 import { PredictionChart } from '../PredictionChart';
@@ -76,14 +77,27 @@ export function VendedorDashboard() {
   const loadStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [ventas, pedidos] = await Promise.all([getVentas(), getPedidos()]);
+      const [ventas, pedidos, cortes] = await Promise.all([
+        getVentas(), 
+        getPedidos(),
+        getCortes()
+      ]);
       
-      // FILTRO ABSOLUTO PARA EL VENDEDOR ACTUAL
+      // Filtrar por el vendedor logueado usando id_vendedor
       const miID = usuario?.id_vendedor;
-      const miUser = usuario?.username;
 
-      const misVentas = ventas.filter((v: any) => v.id_vendedor === miID || v.vendedor?.username === miUser || v.vendedor_id === miID);
-      const misPedidos = pedidos.filter((p: any) => p.id_vendedor === miID || p.vendedor?.username === miUser || p.vendedor_id === miID);
+      const misVentas = ventas.filter((v: any) => 
+        v.vendedor?.id_vendedor === miID || 
+        v.id_vendedor === miID
+      );
+      const misPedidos = pedidos.filter((p: any) => 
+        p.vendedor?.id_vendedor === miID || 
+        p.id_vendedor === miID
+      );
+      const misCortes = cortes.filter((c: any) => 
+        c.vendedor?.id_vendedor === miID || 
+        c.id_vendedor === miID
+      );
 
       const now = new Date();
       const m = now.getMonth();
@@ -94,8 +108,24 @@ export function VendedorDashboard() {
         return d.getMonth() === m && d.getFullYear() === y;
       });
 
+      const mesActualCortes = misCortes.filter((c: any) => {
+        const d = new Date(c.fecha_corte);
+        return d.getMonth() === m && d.getFullYear() === y;
+      });
+
       const totalVentasMes = mesActualVentas.length;
-      const totalComisiones = mesActualVentas.reduce((acc: number, v: any) => acc + (v.monto_total * 0.10), 0);
+      
+      // Calcular comisiones de ventas (10% del monto total)
+      const comisionesVentas = mesActualVentas.reduce((acc: number, v: any) => 
+        acc + (v.monto_total * 0.10), 0
+      );
+      
+      // Calcular comisiones de cortes (campo comision_vendedor si existe)
+      const comisionesCortes = mesActualCortes.reduce((acc: number, c: any) => 
+        acc + (c.comision_vendedor || 0), 0
+      );
+      
+      const totalComisiones = comisionesVentas + comisionesCortes;
 
       setStats({
         ventasMes: totalVentasMes,
@@ -161,14 +191,6 @@ export function VendedorDashboard() {
           <QuickActionCard index={1} icon="plus-circle" label="Nueva Venta" onPress={() => router.push('/ventas/create')} color={Colors.primary} />
           <QuickActionCard index={2} icon="account-group" label="Mis Clientes" onPress={() => router.push('/clientes')} color={Colors.success} />
           <QuickActionCard index={3} icon="clipboard-list" label="Mis Pedidos" onPress={() => router.push('/pedidos')} color={Colors.warning} />
-        </View>
-      </View>
-
-      <View style={{ marginTop: 20 }}>
-        <Text style={styles.sectionTitle}>CATÁLOGOS</Text>
-        <View style={styles.actionsGrid}>
-          <QuickActionCard index={1} icon="food-apple" label="Productos" onPress={() => router.push('/productos')} color={Colors.info} />
-          <QuickActionCard index={2} icon="tag" label="Promociones" onPress={() => router.push('/promociones')} color={Colors.pink} />
         </View>
       </View>
 

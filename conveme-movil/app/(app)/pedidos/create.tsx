@@ -124,6 +124,13 @@ export default function PedidoCreateScreen() {
     }
   }, [isEditing, isAdmin]);
 
+  // Asegurar que el vendedor sea el usuario actual si no es admin
+  useEffect(() => {
+    if (!isAdmin && usuario?.id_vendedor) {
+      setForm(prev => ({ ...prev, vendedor_id: usuario.id_vendedor }));
+    }
+  }, [isAdmin, usuario]);
+
   const [form, setForm] = useState({
     cliente_id: (existing?.cliente?.id_cliente ?? null) as number | null,
     vendedor_id: (existing?.vendedor?.id_vendedor ?? (isAdmin ? null : usuario?.id_vendedor)) as number | null,
@@ -162,7 +169,7 @@ export default function PedidoCreateScreen() {
       
       // AUTO-SELECCIÓN PARA VENDEDORES
       if (!isAdmin && usuario) {
-        const yo = vendedoresData.find((v: any) => v.id_vendedor === usuario.id_vendedor || v.username === usuario.username);
+        const yo = vendedoresData.find((v: any) => v.id_vendedor === usuario.id_vendedor);
         if (yo) {
           setForm(prev => ({ ...prev, vendedor_id: yo.id_vendedor }));
         }
@@ -201,7 +208,8 @@ export default function PedidoCreateScreen() {
   const filteredVendedores = useMemo(() => {
     let list = vendedores;
     if (!isAdmin) {
-      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor || v.username === usuario?.username);
+      // Filtrar solo el vendedor logueado
+      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor);
     }
     return searchQuery.trim()
       ? list.filter((v) => v.nombre_completo.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -306,12 +314,13 @@ export default function PedidoCreateScreen() {
               <Pressable 
                 onPress={() => { setSearchQuery(''); setShowVendedorModal(true); }} 
                 style={[styles.selectorButton, !isAdmin && { backgroundColor: 'rgba(26,26,26,0.05)' }]}
+                disabled={!isAdmin}
               >
                 <MaterialCommunityIcons name="account-tie-outline" size={20} color={Colors.primary} />
                 <Text style={[styles.selectorValue, !selectedVendedor && styles.selectorPlaceholder]}>
                   {selectedVendedor ? selectedVendedor.nombre_completo : 'Seleccionar vendedor'}
                 </Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />
+                {isAdmin && <MaterialCommunityIcons name="chevron-down" size={20} color="rgba(26,26,26,0.3)" />}
               </Pressable>
             </View>
           </View>

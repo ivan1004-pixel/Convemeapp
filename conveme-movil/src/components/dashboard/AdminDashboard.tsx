@@ -75,10 +75,35 @@ function EventBadge({ evento }: { evento: Evento }) {
   const handleRegisterCalendar = async () => {
     try {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status !== 'granted') { Alert.alert('Permiso denegado', 'No se puede registrar sin permisos del calendario.'); return; }
+      if (status !== 'granted') { 
+        Alert.alert('Permiso denegado', 'No se puede registrar sin permisos del calendario.'); 
+        return; 
+      }
+      
       const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
       const defaultCalendar = calendars.find(c => c.isPrimary) || calendars[0];
-      if (!defaultCalendar) { showToast('No se encontró un calendario disponible', 'error'); return; }
+      if (!defaultCalendar) { 
+        showToast('No se encontró un calendario disponible', 'error'); 
+        return; 
+      }
+      
+      // Verificar si el evento ya existe en el calendario
+      const existingEvents = await Calendar.getEventsAsync(
+        [defaultCalendar.id],
+        new Date(start.getTime() - 24 * 60 * 60 * 1000), // 1 día antes
+        new Date(end.getTime() + 24 * 60 * 60 * 1000) // 1 día después
+      );
+      
+      const eventExists = existingEvents.some(e => 
+        e.title === evento.nombre && 
+        Math.abs(new Date(e.startDate).getTime() - start.getTime()) < 60000 // Diferencia menor a 1 minuto
+      );
+      
+      if (eventExists) {
+        Alert.alert('Evento ya registrado', 'Este evento ya está registrado en tu calendario.');
+        return;
+      }
+      
       await Calendar.createEventAsync(defaultCalendar.id, {
         title: evento.nombre,
         startDate: start,
@@ -88,7 +113,10 @@ function EventBadge({ evento }: { evento: Evento }) {
         timeZone: 'GMT-6',
       });
       showToast('¡LISTO! EL EVENTO SE GUARDÓ EN TU CALENDARIO', 'success');
-    } catch (err) { showToast('UPS, NO PUDIMOS GUARDAR EL EVENTO', 'error'); console.error(err); }
+    } catch (err) { 
+      showToast('UPS, NO PUDIMOS GUARDAR EL EVENTO', 'error'); 
+      console.error(err); 
+    }
   };
 
   return (
@@ -249,7 +277,7 @@ const styles = StyleSheet.create({
   logoutBtn: { backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 2, borderColor: Colors.dark },
   logoutText: { fontSize: 10, fontWeight: '900', color: Colors.primary },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
-  statCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 0, overflow: 'hidden' },
+  statCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: Colors.dark, overflow: 'hidden' },
   statWatermark: { position: 'absolute', right: -15, bottom: -15 },
   statIconBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
   statInfo: { gap: 2 },
@@ -259,7 +287,7 @@ const styles = StyleSheet.create({
   sectionTitleList: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 15, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
   actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: GRID_PADDING - CARD_MARGIN, justifyContent: 'flex-start' },
   animatedCardContainer: { width: BUTTON_WIDTH, margin: CARD_MARGIN },
-  actionCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, borderTopWidth: 4, height: 95, justifyContent: 'center' },
+  actionCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, borderTopWidth: 4, height: 95, justifyContent: 'center' },
   actionIconContainer: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   actionLabel: { fontSize: 8.5, fontWeight: '900', color: '#1A1A1A', textAlign: 'center', width: '100%', textTransform: 'uppercase' },
   eventSearch: { marginBottom: 12 },
@@ -269,7 +297,7 @@ const styles = StyleSheet.create({
   emptyEvents: { alignItems: 'center', justifyContent: 'center', paddingVertical: 20 },
   emptyEventsText: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.3)', marginTop: 8 },
   createEventText: { fontSize: 11, fontWeight: '900', color: Colors.primary, marginTop: 4, textDecorationLine: 'underline' },
-  eventCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 10, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1 },
+  eventCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 12, padding: 10, borderWidth: 2, borderColor: Colors.dark },
   eventDateBadge: { width: 45, height: 50, backgroundColor: '#FFF', borderRadius: 8, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', overflow: 'hidden', marginRight: 12 },
   eventMonthStrip: { width: '100%', backgroundColor: Colors.primary, paddingVertical: 2, alignItems: 'center' },
   eventMonth: { fontSize: 8, fontWeight: '900', color: '#FFF' },
@@ -281,6 +309,6 @@ const styles = StyleSheet.create({
   calendarAddBtn: { padding: 8, marginRight: 4, backgroundColor: Colors.primary + '10', borderRadius: 8 },
   viewAllEvents: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, marginTop: 4 },
   viewAllText: { fontSize: 10, fontWeight: '900', color: Colors.primary },
-  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1 },
+  predSection: { backgroundColor: '#FFFFFF', borderRadius: 20, padding: 20, borderWidth: 3, borderColor: Colors.dark },
   predTitle: { fontSize: 16, fontWeight: '900', marginBottom: 15 },
 });

@@ -185,7 +185,7 @@ export default function VentaCreateScreen() {
 
         // AUTO-SELECCIÓN PARA VENDEDORES
         if (!isAdmin && usuario) {
-          const yo = vData.find((v: any) => v.id_vendedor === usuario.id_vendedor || v.username === usuario.username);
+          const yo = vData.find((v: any) => v.id_vendedor === usuario.id_vendedor);
           if (yo) {
             setField('vendedor_id', yo.id_vendedor);
           }
@@ -370,7 +370,7 @@ export default function VentaCreateScreen() {
   const filteredVendedores = useMemo(() => {
     let list = vendedores;
     if (!isAdmin) {
-      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor || v.username === usuario?.username);
+      list = vendedores.filter(v => v.id_vendedor === usuario?.id_vendedor);
     }
     return searchVendedor.trim()
       ? list.filter((v) => v.nombre_completo.toLowerCase().includes(searchVendedor.toLowerCase()))

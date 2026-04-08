@@ -57,7 +57,6 @@ export default function AppLayout() {
         },
       }}
     >
-      {/* ── Visible tabs (common) ── */}
       <Tabs.Screen
         name="index"
         options={{
@@ -96,14 +95,16 @@ export default function AppLayout() {
       />
       <Tabs.Screen
         name="productos"
-        options={{
+        options={isAdmin ? {
           title: 'Productos',
           tabBarIcon: ({ color, size }) => (
             <TabIcon name="shopping" color={color} size={size} />
           ),
-        }}
+        } : HIDDEN}
         listeners={{
-          tabPress: () => router.push('/(app)/productos'),
+          tabPress: () => {
+            if (isAdmin) router.push('/(app)/productos');
+          },
         }}
       />
       <Tabs.Screen
@@ -119,7 +120,6 @@ export default function AppLayout() {
         }}
       />
 
-      {/* ── Hidden from tab bar ── */}
       <Tabs.Screen name="clientes" options={HIDDEN} />
       <Tabs.Screen name="empleados" options={HIDDEN} />
       <Tabs.Screen name="vendedores" options={HIDDEN} />
@@ -135,7 +135,7 @@ export default function AppLayout() {
       <Tabs.Screen name="produccion" options={HIDDEN} />
       <Tabs.Screen name="cuentas-bancarias" options={HIDDEN} />
       <Tabs.Screen name="perfil" options={HIDDEN} />
-      <Tabs.Screen name="resumen-mensual/index" options={HIDDEN} />
+      <Tabs.Screen name="resumen-mensual" options={HIDDEN} />
     </Tabs>
   );
 }
