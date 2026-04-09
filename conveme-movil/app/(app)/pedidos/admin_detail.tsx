@@ -4,8 +4,8 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  Alert,
   TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -23,6 +23,8 @@ import { Toast, useToast } from '../../../src/components/Toast';
 import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
 import type { Pedido } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { useAuth } from '../../../src/hooks/useAuth';
+import { SalesTicket } from '../../../src/components/ui/SalesTicket';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> = {
   Pendiente: 'warning',
@@ -35,53 +37,60 @@ function InfoRow({ label, value, icon }: { label: string; value?: string | null;
   if (!value) return null;
   return (
     <View style={styles.infoRow}>
-      <View style={styles.labelContainer}>
-        {icon && <MaterialCommunityIcons name={icon as any} size={16} color="rgba(0,0,0,0.4)" style={{ marginRight: 6 }} />}
-        <Text style={styles.infoLabel}>{label}</Text>
-      </View>
-      <Text style={styles.infoValue}>{value.toUpperCase()}</Text>
+    <View style={styles.labelContainer}>
+    {icon && (
+      <MaterialCommunityIcons
+      name={icon as any}
+      size={16}
+      color="rgba(0,0,0,0.4)"
+      style={{ marginRight: 6 }}
+      />
+    )}
+    <Text style={styles.infoLabel}>{label}</Text>
+    </View>
+    <Text style={styles.infoValue}>{value.toUpperCase()}</Text>
     </View>
   );
 }
-
-import { useAuth } from '../../../src/hooks/useAuth';
-import { SalesTicket } from '../../../src/components/ui/SalesTicket';
-import { Modal } from 'react-native';
 
 export default function AdminPedidoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAdmin } = useAuth();
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const { toast, show: showToast, hide: hideToast } = useToast();
+
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showTicket, setShowTicket] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [targetStatus, setTargetStatus] = useState<string | null>(null);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+
+  // Estado para saber si acabamos de eliminar el pedido (evita el loop)
+  const [isDeleted, setIsDeleted] = useState(false);
 
   const pedidoId = Number(id);
   const pedido: Pedido | undefined = pedidos.find((p) => p.id_pedido === pedidoId);
 
   const handleStatusChange = async () => {
-      if (!targetStatus) return;
-      setDeleting(true); // Reusamos el estado de carga
-      try {
-          // Asumimos que tienes un servicio de updateEstadoPedido o similar
-          // Si no, importamos updatePedido y lo usamos
-          await import('../../../src/services/pedido.service').then(s => s.updateEstadoPedido(pedidoId, targetStatus));
-          // Actualizar store...
-          showToast(`Pedido actualizado a ${targetStatus}`, 'success');
-      } catch (err) {
-          showToast('Error al actualizar', 'error');
-      } finally {
-          setDeleting(false);
-          setShowStatus(false);
-      }
+    if (!targetStatus) return;
+    setDeleting(true);
+    try {
+      await import('../../../src/services/pedido.service').then((s) =>
+      s.updateEstadoPedido(pedidoId, targetStatus),
+      );
+      showToast(`Pedido actualizado a ${targetStatus}`, 'success');
+    } catch (err) {
+      showToast('Error al actualizar', 'error');
+    } finally {
+      setDeleting(false);
+      setShowStatus(false);
+    }
   };
 
   const fetchIfNeeded = useCallback(async () => {
-    if (!pedido) {
+    if (!pedido && !isDeleted) {
       setLoading(true);
       try {
         const data = await getPedidos();
@@ -92,7 +101,7 @@ export default function AdminPedidoDetail() {
         setLoading(false);
       }
     }
-  }, [pedido, setPedidos, showToast]);
+  }, [pedido, isDeleted, setPedidos, showToast]);
 
   useEffect(() => {
     fetchIfNeeded();
@@ -102,170 +111,322 @@ export default function AdminPedidoDetail() {
     setDeleting(true);
     try {
       await deletePedido(pedidoId);
+
+      setIsDeleted(true);
       removePedido(pedidoId);
-      showToast('Pedido eliminado correctamente', 'success');
-      setTimeout(() => router.back(), 500);
+
+      showToast(`Pedido #${pedidoId} eliminado correctamente`, 'success');
+
+      setShowDelete(false);
+      setShowDeleteSuccess(true);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
+      setShowDelete(false);
     } finally {
       setDeleting(false);
-      setShowDelete(false);
     }
   }, [pedidoId, removePedido, showToast]);
 
-  if (loading || !pedido) {
+  if (isDeleted) {
     return (
       <NeobrutalistBackground>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>DETALLE</Text>
-            <View style={styles.headerPlaceholder} />
-          </View>
-          <LoadingSpinner fullScreen message="CARGANDO..." />
-        </SafeAreaView>
+      <SafeAreaView style={styles.container}>
+      <ConfirmDialog
+      visible={showDeleteSuccess}
+      title="PEDIDO ELIMINADO"
+      message={`El pedido #${pedidoId} se eliminó correctamente.`}
+      confirmText="ACEPTAR"
+      hideCancel
+      onConfirm={() => {
+        setShowDeleteSuccess(false);
+        router.replace('/(app)/pedidos/admin');
+      }}
+      />
+      </SafeAreaView>
+      </NeobrutalistBackground>
+    );
+  }
+
+  if ((loading || !pedido) && !isDeleted) {
+    return (
+      <NeobrutalistBackground>
+      <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+      <TouchableOpacity
+      onPress={() => router.push('/(app)')}
+      style={styles.backBtn}
+      >
+      <MaterialCommunityIcons
+      name="arrow-left"
+      size={24}
+      color={Colors.primary}
+      />
+      </TouchableOpacity>
+      <Text style={styles.headerTitle}>DETALLE</Text>
+      <View style={styles.headerPlaceholder} />
+      </View>
+      <LoadingSpinner fullScreen message="CARGANDO..." />
+      </SafeAreaView>
       </NeobrutalistBackground>
     );
   }
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>DETALLE DE PEDIDO</Text>
-          {isAdmin && (
-            <TouchableOpacity onPress={() => setShowDelete(true)} style={styles.deleteHeaderBtn}>
-              <MaterialCommunityIcons name="trash-can-outline" size={24} color={Colors.error} />
-            </TouchableOpacity>
-          )}
+    <SafeAreaView style={styles.container}>
+    <View style={styles.header}>
+    <TouchableOpacity
+    onPress={() => router.push('/(app)')}
+    style={styles.backBtn}
+    >
+    <MaterialCommunityIcons
+    name="arrow-left"
+    size={24}
+    color={Colors.primary}
+    />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>DETALLE DE PEDIDO</Text>
+    {isAdmin && (
+      <TouchableOpacity
+      onPress={() => setShowDelete(true)}
+      style={styles.deleteHeaderBtn}
+      >
+      <MaterialCommunityIcons
+      name="trash-can-outline"
+      size={24}
+      color={Colors.error}
+      />
+      </TouchableOpacity>
+    )}
+    </View>
+
+    <ScrollView
+    contentContainerStyle={styles.scrollContent}
+    showsVerticalScrollIndicator={false}
+    >
+    {/* Summary Card */}
+    <View style={styles.heroCard}>
+    <View style={styles.summaryTop}>
+    <Text style={styles.heroId}>PEDIDO #{pedido.id_pedido}</Text>
+    <Badge
+    text={pedido.estado?.toUpperCase() ?? 'PENDIENTE'}
+    color={
+      ESTADO_BADGE[pedido.estado ?? 'Pendiente'] ?? 'warning'
+    }
+    />
+    </View>
+    <Text style={styles.heroAmount}>
+    {formatCurrency(pedido.monto_total)}
+    </Text>
+    {pedido.anticipo != null && pedido.anticipo > 0 && (
+      <View style={styles.anticipoRow}>
+      <MaterialCommunityIcons
+      name="cash-check"
+      size={16}
+      color={Colors.success}
+      />
+      <Text style={styles.heroAnticipo}>
+      ANTICIPO: {formatCurrency(pedido.anticipo)}
+      </Text>
+      </View>
+    )}
+    </View>
+
+    {/* Details Card */}
+    <View style={styles.card}>
+    <Text style={styles.sectionTitle}>INFORMACIÓN GENERAL</Text>
+    <InfoRow
+    label="FECHA PEDIDO"
+    value={formatDate(pedido.fecha_pedido)}
+    icon="calendar-outline"
+    />
+    <InfoRow
+    label="FECHA ENTREGA"
+    value={formatDate(pedido.fecha_entrega_estimada)}
+    icon="truck-delivery-outline"
+    />
+    <InfoRow
+    label="ESTADO"
+    value={pedido.estado}
+    icon="progress-check"
+    />
+    <InfoRow
+    label="CLIENTE"
+    value={pedido.cliente?.nombre_completo}
+    icon="account-outline"
+    />
+    <InfoRow
+    label="VENDEDOR"
+    value={pedido.vendedor?.nombre_completo}
+    icon="account-tie-outline"
+    />
+    </View>
+
+    {/* Products List */}
+    {pedido.detalles && pedido.detalles.length > 0 && (
+      <View style={styles.card}>
+      <Text style={styles.sectionTitle}>
+      PRODUCTOS ({pedido.detalles.length})
+      </Text>
+      {pedido.detalles.map((det, i) => (
+        <View key={i} style={styles.detRow}>
+        <View style={styles.detInfo}>
+        <Text style={styles.detName}>
+        {det.producto?.nombre?.toUpperCase() || 'PRODUCTO'}
+        </Text>
+        <Text style={styles.detSku}>
+        SKU: {det.producto?.sku || 'N/A'}
+        </Text>
         </View>
+        <View style={styles.detRight}>
+        <Text style={styles.detQty}>×{det.cantidad}</Text>
+        <Text style={styles.detPrice}>
+        {formatCurrency(det.precio_unitario)}
+        </Text>
+        </View>
+        </View>
+      ))}
+      </View>
+    )}
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Summary Card */}
-          <View style={styles.heroCard}>
-            <View style={styles.summaryTop}>
-                <Text style={styles.heroId}>PEDIDO #{pedido.id_pedido}</Text>
-                <Badge
-                    text={pedido.estado?.toUpperCase() ?? 'PENDIENTE'}
-                    color={ESTADO_BADGE[pedido.estado ?? 'Pendiente'] ?? 'warning'}
-                />
-            </View>
-            <Text style={styles.heroAmount}>{formatCurrency(pedido.monto_total)}</Text>
-            {pedido.anticipo != null && pedido.anticipo > 0 && (
-                <View style={styles.anticipoRow}>
-                    <MaterialCommunityIcons name="cash-check" size={16} color={Colors.success} />
-                    <Text style={styles.heroAnticipo}>ANTICIPO: {formatCurrency(pedido.anticipo)}</Text>
-                </View>
-            )}
-          </View>
+    {/* 🟢 SECCIÓN DE BOTONES ACTUALIZADA 🟢 */}
+    <View style={styles.actions}>
 
-          {/* Details Card */}
-          <View style={styles.card}>
-            <Text style={styles.sectionTitle}>INFORMACIÓN GENERAL</Text>
-            <InfoRow label="FECHA PEDIDO" value={formatDate(pedido.fecha_pedido)} icon="calendar-outline" />
-            <InfoRow label="FECHA ENTREGA" value={formatDate(pedido.fecha_entrega_estimada)} icon="truck-delivery-outline" />
-            <InfoRow label="ESTADO" value={pedido.estado} icon="progress-check" />
-            <InfoRow label="CLIENTE" value={pedido.cliente?.nombre_completo} icon="account-outline" />
-            <InfoRow label="VENDEDOR" value={pedido.vendedor?.nombre_completo} icon="account-tie-outline" />
-          </View>
+    {/* LADO A LADO: Confirmar y Entregar */}
+    {isAdmin && pedido.estado !== 'Entregado' && (
+      <View
+      style={{
+        flexDirection: 'row', // Lado a lado
+        gap: 15, // Espaciado entre los dos
+        marginBottom: 15,
+      }}
+      >
+      <View style={{ flex: 1 }}>
+      <Button
+      title="CONFIRMA"
+      onPress={() => {
+        setTargetStatus('Confirmado');
+        setShowStatus(true);
+      }}
+      size="lg" // Más grandes
+      style={[styles.actionBtn, styles.btnBlue]}
+      />
+      </View>
 
-          {/* Products List */}
-          {pedido.detalles && pedido.detalles.length > 0 && (
-            <View style={styles.card}>
-              <Text style={styles.sectionTitle}>PRODUCTOS ({pedido.detalles.length})</Text>
-              {pedido.detalles.map((det, i) => (
-                <View key={i} style={styles.detRow}>
-                  <View style={styles.detInfo}>
-                    <Text style={styles.detName}>{det.producto?.nombre?.toUpperCase() || 'PRODUCTO'}</Text>
-                    <Text style={styles.detSku}>SKU: {det.producto?.sku || 'N/A'}</Text>
-                  </View>
-                  <View style={styles.detRight}>
-                    <Text style={styles.detQty}>×{det.cantidad}</Text>
-                    <Text style={styles.detPrice}>{formatCurrency(det.precio_unitario)}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          )}
+      <View style={{ flex: 1 }}>
+      <Button
+      title="ENTREGA"
+      onPress={() => {
+        setTargetStatus('Entregado');
+        setShowStatus(true);
+      }}
+      size="lg" // Más grandes
+      style={[styles.actionBtn, styles.btnPink]}
+      />
+      </View>
+      </View>
+    )}
 
-          <View style={styles.actions}>
-            {isAdmin && pedido.estado !== 'Entregado' && (
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
-                    <Button title="CONFIRMAR" onPress={() => { setTargetStatus('Confirmado'); setShowStatus(true); }} size="sm" variant="primary" />
-                    <Button title="ENTREGAR" onPress={() => { setTargetStatus('Entregado'); setShowStatus(true); }} size="sm" variant="success" />
-                </View>
-            )}
-            <Button
-              title="VER TICKET"
-              onPress={() => setShowTicket(true)}
-              style={styles.actionBtn}
-              size="lg"
-            />
-            {isAdmin && (
-              <Button
-                title="EDITAR PEDIDO"
-                onPress={() => router.push(`/pedidos/create?id=${pedido.id_pedido}`)}
-                style={[styles.actionBtn, { marginTop: 15 }]}
-                variant="outline"
-                size="lg"
-              />
-            )}
-          </View>
+    {/* VER TICKET: Grande y SIN sombra */}
+    <Button
+    title="VER TICKET"
+    onPress={() => setShowTicket(true)}
+    style={styles.flatBtn} // 🟢 Estilo plano sin sombra
+    size="lg" // Más grande
+    />
 
-        <ConfirmDialog
-          visible={showStatus}
-          title="CAMBIAR ESTADO"
-          message={`¿CAMBIAR ESTADO A ${targetStatus?.toUpperCase()}?`}
-          onConfirm={handleStatusChange}
-          onCancel={() => setShowStatus(false)}
-          loading={deleting}
-          confirmText={targetStatus?.toUpperCase() || 'CONFIRMAR'}
-        />
-        </ScrollView>
+    {/* EDITAR PEDIDO: Grande y SIN sombra */}
+    {isAdmin && (
+      <Button
+      title="EDITAR PEDIDO"
+      onPress={() =>
+        router.push(`/(app)/pedidos/create?id=${pedido.id_pedido}`)
+      }
+      style={[styles.flatBtn, { marginTop: 15 }]} // 🟢 Estilo plano sin sombra
+      variant="outline"
+      size="lg" // Más grande
+      />
+    )}
+    </View>
 
-        <ConfirmDialog
-          visible={showDelete}
-          title="ELIMINAR PEDIDO"
-          message={`¿DESEAS ELIMINAR EL PEDIDO #${pedido.id_pedido}?`}
-          onConfirm={handleDelete}
-          onCancel={() => setShowDelete(false)}
-          loading={deleting}
-          destructive
-        />
+    <ConfirmDialog
+    visible={showStatus}
+    title="CAMBIAR ESTADO"
+    message={`¿CAMBIAR ESTADO A ${targetStatus?.toUpperCase()}?`}
+    onConfirm={handleStatusChange}
+    onCancel={() => setShowStatus(false)}
+    loading={deleting}
+    confirmText={targetStatus?.toUpperCase() || 'CONFIRMAR'}
+    />
+    </ScrollView>
 
-        <Modal visible={showTicket} transparent animationType="fade">
-          <View style={styles.ticketOverlay}>
-            <View style={styles.ticketModalContainer}>
-              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ alignItems: 'center' }}>
-                <SalesTicket venta={pedido as any} />
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeTicketButton}
-                onPress={() => setShowTicket(false)}
-              >
-                <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      </SafeAreaView>
+    <ConfirmDialog
+    visible={showDelete}
+    title="ELIMINAR PEDIDO"
+    message={`¿DESEAS ELIMINAR EL PEDIDO #${pedido.id_pedido}? ESTA ACCIÓN NO SE PUEDE DESHACER.`}
+    onConfirm={handleDelete}
+    onCancel={() => setShowDelete(false)}
+    loading={deleting}
+    destructive
+    />
+
+    <Modal visible={showTicket} transparent animationType="fade">
+    <View style={styles.ticketOverlay}>
+    <View style={styles.ticketModalContainer}>
+    <ScrollView
+    showsVerticalScrollIndicator={false}
+    contentContainerStyle={{ alignItems: 'center' }}
+    >
+    <SalesTicket venta={pedido as any} />
+    </ScrollView>
+    <TouchableOpacity
+    style={styles.closeTicketButton}
+    onPress={() => setShowTicket(false)}
+    >
+    <Text style={styles.closeTicketText}>✕ CERRAR TICKET</Text>
+    </TouchableOpacity>
+    </View>
+    </View>
+    </Modal>
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: Spacing.sm },
-  backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '900', color: Colors.dark, flex: 1, marginLeft: 15 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: Colors.dark,
+    flex: 1,
+    marginLeft: 15,
+  },
   headerPlaceholder: { width: 40 },
   deleteHeaderBtn: { padding: Spacing.xs },
-  scrollContent: { paddingHorizontal: Spacing.lg, paddingTop: Spacing.md, paddingBottom: 100 },
+  scrollContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: 100,
+  },
   heroCard: {
     backgroundColor: '#FFF',
     borderRadius: BorderRadius.xl,
@@ -276,12 +437,32 @@ const styles = StyleSheet.create({
     shadowColor: Colors.dark,
     shadowOffset: { width: 6, height: 6 },
     shadowOpacity: 1,
-    elevation: 6
+    elevation: 6,
   },
-  summaryTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  heroId: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+  summaryTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  heroId: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(0,0,0,0.4)',
+                                 letterSpacing: 1,
+  },
   heroAmount: { fontSize: 28, fontWeight: '900', color: Colors.dark },
-  anticipoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, backgroundColor: Colors.success + '10', alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  anticipoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    backgroundColor: Colors.success + '10',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
   heroAnticipo: { fontSize: 12, fontWeight: '900', color: Colors.success },
   card: {
     backgroundColor: '#FFFFFF',
@@ -295,22 +476,98 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     elevation: 3,
   },
-  sectionTitle: { fontSize: 10, fontWeight: '900', color: Colors.primary, marginBottom: Spacing.md, textTransform: 'uppercase', letterSpacing: 1.5 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: Colors.primary,
+    marginBottom: Spacing.md,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
   labelContainer: { flexDirection: 'row', alignItems: 'center' },
-  infoLabel: { fontSize: 11, fontWeight: '700', color: 'rgba(0,0,0,0.5)', textTransform: 'uppercase' },
-  infoValue: { fontSize: 13, fontWeight: '800', color: Colors.dark, textAlign: 'right', flexShrink: 1, marginLeft: 10 },
-  detRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  infoLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(0,0,0,0.5)',
+                                 textTransform: 'uppercase',
+  },
+  infoValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: Colors.dark,
+    textAlign: 'right',
+    flexShrink: 1,
+    marginLeft: 10,
+  },
+  detRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
   detInfo: { flex: 1 },
   detName: { fontSize: 14, fontWeight: '800', color: Colors.dark },
-  detSku: { fontSize: 10, fontWeight: '600', color: 'rgba(0,0,0,0.4)' },
+  detSku: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'rgba(0,0,0,0.4)',
+  },
   detRight: { alignItems: 'flex-end' },
   detQty: { fontSize: 12, fontWeight: '900', color: Colors.primary },
   detPrice: { fontSize: 13, fontWeight: '800', color: Colors.dark },
   actions: { marginTop: Spacing.sm },
-  actionBtn: { shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 1, elevation: 5 },
-  ticketOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+
+  /* ESTILOS DE LOS BOTONES */
+  actionBtn: {
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    elevation: 5,
+  },
+  // 🟢 Estilo nuevo para eliminar las sombras de Ver Ticket y Editar Pedido
+  flatBtn: {
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  btnBlue: {
+    backgroundColor: '#33CCFF', // Azul
+    borderColor: Colors.dark,
+    borderWidth: 2,
+  },
+  btnPink: {
+    backgroundColor: '#FF66CC', // Rosa
+    borderColor: Colors.dark,
+    borderWidth: 2,
+  },
+
+  ticketOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+                                 justifyContent: 'center',
+                                 alignItems: 'center',
+                                 padding: 20,
+  },
   ticketModalContainer: { width: '100%', maxHeight: '90%' },
-  closeTicketButton: { backgroundColor: Colors.dark, padding: 15, borderRadius: BorderRadius.full, marginTop: 20, alignItems: 'center', borderWidth: 2, borderColor: '#FFF' },
+  closeTicketButton: {
+    backgroundColor: Colors.dark,
+    padding: 15,
+    borderRadius: BorderRadius.full,
+    marginTop: 20,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
+  },
   closeTicketText: { color: '#FFF', fontWeight: '900', fontSize: 14 },
 });
