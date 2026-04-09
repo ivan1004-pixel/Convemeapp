@@ -19,25 +19,23 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       isAuthenticated: false,
       setToken: (token) => set({ token, isAuthenticated: true }),
-      setUsuario: (usuario) => set({ usuario }),
-      logout: () => set({ token: null, usuario: null, isAuthenticated: false }),
+              setUsuario: (usuario) => set({ usuario }),
+              logout: () => set({ token: null, usuario: null, isAuthenticated: false }),
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => {
-        if (!state.usuario) return state;
-        // Excluimos foto_perfil para no guardar strings base64 enormes en SecureStore
-        const { foto_perfil, ...usuarioSinFoto } = state.usuario;
-        return {
-          ...state,
-          usuario: usuarioSinFoto as any,
-        };
-      },
+      partialize: (state) => ({
+        // Solo persistimos lo mínimo necesario
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+        // No persistimos usuario para no romper foto_perfil ni guardar base64
+        usuario: null,
+      }),
       storage: createJSONStorage(() => ({
         getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,
-        setItem: async (name, value) => SecureStore.setItemAsync(name, value),
-        removeItem: async (name) => SecureStore.deleteItemAsync(name),
+                                        setItem: async (name, value) => SecureStore.setItemAsync(name, value),
+                                        removeItem: async (name) => SecureStore.deleteItemAsync(name),
       })),
-    }
-  )
+    },
+  ),
 );

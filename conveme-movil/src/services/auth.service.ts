@@ -11,6 +11,7 @@ export const loginService = async (username: string, password_raw: string) => {
                 id_usuario
                 rol_id
                 username
+                foto_perfil
             }
         }
     }
@@ -18,9 +19,9 @@ export const loginService = async (username: string, password_raw: string) => {
 
     const { data } = await convemeApi.post<LoginResponse>('', {
         query,
-        variables: { 
+        variables: {
             u: username,
-            p: password_raw
+            p: password_raw,
         },
     });
 
@@ -34,7 +35,6 @@ export const loginService = async (username: string, password_raw: string) => {
 
     return loginData;
 };
-
 
 export const logoutService = async () => {
     await SecureStore.deleteItemAsync('token');
@@ -55,7 +55,8 @@ export const updatePushTokenService = async (push_token: string) => {
             query,
             variables: { push_token },
         });
-        if (data.errors) console.error('Error updating push token:', data.errors[0].message);
+        if (data.errors)
+            console.error('Error updating push token:', data.errors[0].message);
         return data.data?.updatePushToken;
     } catch (error) {
         console.error('Failed to update push token:', error);
