@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 
 import { UsuariosModule } from './usuarios/usuarios.module';
@@ -36,10 +37,15 @@ import { GastosOperativosModule } from './gastos-operativos/gastos-operativos.mo
 import { BitacoraAuditoriaModule } from './bitacora-auditoria/bitacora-auditoria.module';
 import { PrediccionesModule } from './predicciones/predicciones.module';
 import { ComprobantesModule } from './comprobantes/comprobantes.module';
-import { NotificationsModule } from './notifications/notifications.module';
+import { UploadController } from './common/controllers/upload.controller';
 
 @Module({
+  controllers: [UploadController],
   imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
@@ -88,7 +94,6 @@ import { NotificationsModule } from './notifications/notifications.module';
     BitacoraAuditoriaModule,
     PrediccionesModule,
     ComprobantesModule,
-    NotificationsModule,
   ],
 })
 export class AppModule {}

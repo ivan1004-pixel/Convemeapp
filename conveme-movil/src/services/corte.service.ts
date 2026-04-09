@@ -47,9 +47,9 @@ export const createCorte = async (input: any) => {
     `;
     const { data } = await convemeApi.post('', { query, variables: { input } });
     if (data.errors) throw new Error(data.errors[0].message);
-    return data.data.createCorteVendedor;
-};
 
+    return data.data.createCorteVendedor;
+    };
 export const updateCorte = async (input: any) => {
     const query = `
     mutation UpdateCorteVendedor($input: UpdateCorteVendedorInput!) {

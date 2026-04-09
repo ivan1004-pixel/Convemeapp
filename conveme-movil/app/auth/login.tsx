@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
     elevation: 6,
   },
-  mascota: { width: 80, height: 80 },
+  mascota: { width: 150, height: 150 },
   appName: {
     ...Typography.h1,
     color: Colors.dark,

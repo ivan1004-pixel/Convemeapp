@@ -41,9 +41,9 @@ export const createAsignacion = async (input: any) => {
     `;
     const { data } = await convemeApi.post('', { query, variables: { input } });
     if (data.errors) throw new Error(data.errors[0].message);
-    return data.data.createAsignacionVendedor;
-};
 
+    return data.data.createAsignacionVendedor;
+    };
 export const updateAsignacion = async (input: any) => {
     const query = `
     mutation UpdateAsignacionVendedor($input: UpdateAsignacionVendedorInput!) {

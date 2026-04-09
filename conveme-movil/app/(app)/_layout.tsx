@@ -17,7 +17,7 @@ const HIDDEN: { href: null } = { href: null };
 export default function AppLayout() {
   const { isAuthenticated, usuario } = useAuthStore();
   const isAdmin = usuario?.rol_id === ROLE_ADMIN;
-
+  
   useEffect(() => {
     if (!isAuthenticated) {
       router.replace('/auth/splash');

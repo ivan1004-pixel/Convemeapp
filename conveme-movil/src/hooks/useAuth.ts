@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { useAuthStore } from '../store/authStore';
-import { loginService, logoutService, updatePushTokenService } from '../services/auth.service';
+import { loginService, logoutService } from '../services/auth.service';
 import { getVendedorByUsuarioId } from '../services/vendedor.service';
-import { registerForPushNotificationsAsync } from '../utils/notifications';
 
 export const ROLE_ADMIN = 1;
 export const ROLE_VENDEDOR = 2;
@@ -30,17 +29,6 @@ export const useAuth = () => {
       
       setToken(result.token);
       
-      // 👇 Registrar token de notificaciones (silencioso para no bloquear)
-      try {
-        const pushToken = await registerForPushNotificationsAsync();
-        if (pushToken) {
-          console.log('Token push obtenido:', pushToken);
-          await updatePushTokenService(pushToken);
-        }
-      } catch (err) {
-        console.warn('Error no crítico en notificaciones:', err);
-      }
-      
       // 👇 Si es vendedor, obtener su id_vendedor
       let vendedorData = null;
       if (result.usuario.rol_id === ROLE_VENDEDOR) {
@@ -53,10 +41,10 @@ export const useAuth = () => {
         }
       }
       
-      // 👇 Guardar el usuario con el id_vendedor incluido
+      // 👇 Guardar el usuario asegurando que id_vendedor no sea borrado si ya venía del backend
       setUsuario({
         ...result.usuario,
-        id_vendedor: vendedorData?.id_vendedor || null,
+        id_vendedor: vendedorData?.id_vendedor || result.usuario.id_vendedor || null,
       });
       
       // Redirect based on role
