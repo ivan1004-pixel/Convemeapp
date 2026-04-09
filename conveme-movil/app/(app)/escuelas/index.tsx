@@ -35,57 +35,64 @@ function EscuelaCard({
   onLongPress: () => void;
 }) {
   const location = [item.municipio?.nombre, item.municipio?.estado?.nombre]
-    .filter(Boolean)
-    .join(', ');
+  .filter(Boolean)
+  .join(', ');
 
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
-      accessibilityRole="button"
+    onPress={onPress}
+    onLongPress={onLongPress}
+    style={({ pressed }) => [
+      styles.card,
+      pressed && styles.cardPressed,
+    ]}
+    accessibilityRole="button"
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <Text style={styles.initialsText}>{item.siglas?.substring(0, 3).toUpperCase() || 'ESC'}</Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.cardName} numberOfLines={1}>{item.nombre.toUpperCase()}</Text>
-          <Text style={styles.cardMeta}>{item.siglas?.toUpperCase() || 'SIN SIGLAS'}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: item.activa ? Colors.success + '22' : Colors.error + '22', borderColor: item.activa ? Colors.success : Colors.error }]}>
-          <Text style={[styles.statusText, { color: item.activa ? Colors.success : Colors.error }]}>
-            {item.activa ? 'ACTIVA' : 'INACTIVA'}
-          </Text>
-        </View>
-      </View>
+    <View style={styles.cardHeader}>
+    <View style={[styles.avatarContainer, !item.activa && { borderColor: Colors.error, backgroundColor: Colors.error + '10' }]}>
+    <Text style={[styles.initialsText, !item.activa && { color: Colors.error }]}>
+    {item.siglas?.substring(0, 3).toUpperCase() || 'ESC'}
+    </Text>
+    </View>
+    <View style={styles.headerInfo}>
+    <Text style={styles.cardName} numberOfLines={1}>{item.nombre.toUpperCase()}</Text>
+    <Text style={styles.cardMeta}>{item.siglas?.toUpperCase() || 'SIN SIGLAS'}</Text>
+    </View>
+    <View style={[styles.statusBadge, { backgroundColor: item.activa ? Colors.success + '22' : Colors.error + '22', borderColor: item.activa ? Colors.success : Colors.error }]}>
+    <Text style={[styles.statusText, { color: item.activa ? Colors.success : Colors.error }]}>
+    {item.activa ? 'ACTIVA' : 'INACTIVA'}
+    </Text>
+    </View>
+    </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="map-marker" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{location?.toUpperCase() || 'SIN UBICACIÓN'}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.cardFooter}>
-         <Text style={styles.footerAction}>GESTIONAR ESCUELA</Text>
-         <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
-      </View>
+    <View style={styles.cardContent}>
+    <View style={styles.infoRow}>
+    <MaterialCommunityIcons name="map-marker" size={16} color={Colors.primary} />
+    <Text style={styles.infoText}>{location?.toUpperCase() || 'SIN UBICACIÓN'}</Text>
+    </View>
+    </View>
+
+    <View style={styles.cardFooter}>
+    <Text style={styles.footerAction}>GESTIONAR ESCUELA</Text>
+    <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.primary} />
+    </View>
     </Pressable>
   );
 }
 
 export default function EscuelasScreen() {
   const { toast, show: showToast, hide: hideToast } = useToast();
-  const { escuelas, setEscuelas, removeEscuela } = useEscuelaStore();
+  // 🟢 Traemos updateEscuela para actualizar el estado local al borrar
+  const { escuelas, setEscuelas, updateEscuela: updateEscuelaStore } = useEscuelaStore();
+
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // 🟢 Nuevo estado para ocultar/mostrar las inactivas
+  const [mostrarInactivas, setMostrarInactivas] = useState(false);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -116,22 +123,40 @@ export default function EscuelasScreen() {
   }, [fetchData]);
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return escuelas;
-    const q = search.toLowerCase();
-    return escuelas.filter(
-      (e) =>
+    let result = escuelas;
+
+    // 🟢 1. Ocultar inactivas por defecto
+    if (!mostrarInactivas) {
+      result = result.filter(e => e.activa === true);
+    }
+
+    // 🟢 2. Filtro de búsqueda
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (e) =>
         e.nombre.toLowerCase().includes(q) ||
         e.siglas.toLowerCase().includes(q) ||
         e.municipio?.nombre?.toLowerCase().includes(q)
-    );
-  }, [escuelas, search]);
+      );
+    }
+
+    return result;
+  }, [escuelas, search, mostrarInactivas]);
 
   const handleDelete = useCallback(async () => {
     if (deleteId == null) return;
     setDeleting(true);
     try {
       await deleteEscuela(deleteId);
-      removeEscuela(deleteId);
+
+      // 🟢 En lugar de borrarla del estado, la apagamos.
+      // Como mostrarInactivas es false, desaparecerá de la vista al instante.
+      const escuelaABorrar = escuelas.find(e => e.id_escuela === deleteId);
+      if (escuelaABorrar) {
+        updateEscuelaStore({ ...escuelaABorrar, activa: false });
+      }
+
       showToast('ESCUELA ELIMINADA', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
@@ -139,92 +164,106 @@ export default function EscuelasScreen() {
       setDeleting(false);
       setDeleteId(null);
     }
-  }, [deleteId, removeEscuela, showToast]);
+  }, [deleteId, escuelas, updateEscuelaStore, showToast]);
 
   const deleteTarget = escuelas.find((e) => e.id_escuela === deleteId);
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-                </TouchableOpacity>
-                <View>
-                    <Text style={styles.title}>ESCUELAS</Text>
-                    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
-                </View>
-            </View>
-            <View style={styles.headerActions}>
-                <TouchableOpacity onPress={() => router.push('/escuelas/create')} style={styles.addBtn}>
-                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
-                </TouchableOpacity>
-            </View>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.header}>
+    <View style={styles.headerTitleRow}>
+    <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+    </TouchableOpacity>
+    <View>
+    <Text style={styles.title}>ESCUELAS</Text>
+    <Text style={styles.subtitle}>{filtered.length} REGISTROS</Text>
+    </View>
+    </View>
+    <View style={styles.headerActions}>
+    <TouchableOpacity onPress={() => router.push('/escuelas/create')} style={styles.addBtn}>
+    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+    </TouchableOpacity>
+    <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
+    </TouchableOpacity>
+    </View>
+    </View>
 
-        <View style={styles.searchSection}>
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            placeholder="BUSCAR ESCUELA..."
-          />
-        </View>
+    <View style={styles.searchSection}>
+    <SearchBar
+    value={search}
+    onChangeText={setSearch}
+    placeholder="BUSCAR ESCUELA..."
+    />
+    {/* 🟢 Botón discreto para mostrar inactivas */}
+    <TouchableOpacity
+    style={styles.toggleContainer}
+    onPress={() => setMostrarInactivas(!mostrarInactivas)}
+    >
+    <MaterialCommunityIcons
+    name={mostrarInactivas ? "eye-outline" : "eye-off-outline"}
+    size={18}
+    color={mostrarInactivas ? Colors.primary : 'rgba(0,0,0,0.4)'}
+    />
+    <Text style={[styles.toggleText, mostrarInactivas && styles.toggleTextActive]}>
+    {mostrarInactivas ? 'OCULTAR ESCUELAS INACTIVAS' : 'MOSTRAR ESCUELAS ELIMINADAS (INACTIVAS)'}
+    </Text>
+    </TouchableOpacity>
+    </View>
 
-        {loading && escuelas.length === 0 ? (
-          <LoadingSpinner fullScreen message="CARGANDO..." />
-        ) : (
-          <FlatList
-            data={filtered}
-            keyExtractor={(item) => String(item.id_escuela)}
-            contentContainerStyle={[
-              styles.listContent,
-              filtered.length === 0 && styles.listEmpty,
-            ]}
-            renderItem={({ item }) => (
-              <EscuelaCard
-                item={item}
-                onPress={() => router.push(`/escuelas/create?id=${item.id_escuela}`)}
-                onLongPress={() => setDeleteId(item.id_escuela)}
-              />
-            )}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[Colors.primary]}
-                tintColor={Colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <EmptyState
-                icon="school"
-                title="SIN ESCUELAS"
-                message={search ? 'No hay resultados que coincidan.' : 'Aún no hay escuelas registradas.'}
-                actionLabel="AGREGAR ESCUELA"
-                onAction={() => router.push('/escuelas/create')}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-
-        <ConfirmDialog
-          visible={deleteId !== null}
-          title="ELIMINAR ESCUELA"
-          message={`¿DESEAS ELIMINAR "${deleteTarget?.nombre.toUpperCase() ?? ''}"?`}
-          confirmText="ELIMINAR"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
-          loading={deleting}
-          destructive
+    {loading && escuelas.length === 0 ? (
+      <LoadingSpinner fullScreen message="CARGANDO..." />
+    ) : (
+      <FlatList
+      data={filtered}
+      keyExtractor={(item) => String(item.id_escuela)}
+      contentContainerStyle={[
+        styles.listContent,
+        filtered.length === 0 && styles.listEmpty,
+      ]}
+      renderItem={({ item }) => (
+        <EscuelaCard
+        item={item}
+        onPress={() => router.push(`/escuelas/${item.id_escuela}`)}
+        onLongPress={() => setDeleteId(item.id_escuela)}
         />
+      )}
+      refreshControl={
+        <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        colors={[Colors.primary]}
+        tintColor={Colors.primary}
+        />
+      }
+      ListEmptyComponent={
+        <EmptyState
+        icon="school"
+        title="SIN ESCUELAS"
+        message={search ? 'No hay resultados que coincidan.' : 'Aún no hay escuelas registradas.'}
+        actionLabel="AGREGAR ESCUELA"
+        onAction={() => router.push('/escuelas/create')}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      />
+    )}
 
-        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </SafeAreaView>
+    <ConfirmDialog
+    visible={deleteId !== null}
+    title="ELIMINAR ESCUELA"
+    message={`¿DESEAS ELIMINAR "${deleteTarget?.nombre.toUpperCase() ?? ''}"?`}
+    confirmText="ELIMINAR"
+    onConfirm={handleDelete}
+    onCancel={() => setDeleteId(null)}
+    loading={deleting}
+    destructive
+    />
+
+    <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
@@ -237,24 +276,30 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, borderRadius: 10, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '900', color: Colors.dark, letterSpacing: -0.5 },
   subtitle: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase', letterSpacing: 1 },
-  refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
-  addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
-  searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
-  listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 100 },
-  listEmpty: { flexGrow: 1, justifyContent: 'center' },
-  card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
-  cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
-  avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.primary + '10', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
-  initialsText: { fontSize: 14, fontWeight: '900', color: Colors.primary },
-  headerInfo: { flex: 1 },
-  cardName: { fontSize: 16, fontWeight: '900', color: Colors.dark },
-  cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
-  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
-  statusText: { fontSize: 8, fontWeight: '900' },
-  cardContent: { gap: 6, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12, paddingBottom: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
-  infoText: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.5)' },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
-  footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
+                                 refreshBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFF', borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center' },
+                                 addBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.primary, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.dark, shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, elevation: 5 },
+                                 searchSection: { paddingHorizontal: Spacing.lg, paddingBottom: Spacing.lg },
+
+                                 // 🟢 Estilos para el nuevo botón discreto
+                                 toggleContainer: { flexDirection: 'row', alignItems: 'center', marginTop: Spacing.sm, paddingHorizontal: Spacing.xs, gap: 6 },
+                                 toggleText: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', letterSpacing: 0.5 },
+                                 toggleTextActive: { color: Colors.primary },
+
+                                 listContent: { paddingHorizontal: Spacing.lg, paddingBottom: 100 },
+                                 listEmpty: { flexGrow: 1, justifyContent: 'center' },
+                                 card: { backgroundColor: '#FFFFFF', borderRadius: BorderRadius.xl, padding: Spacing.lg, marginBottom: Spacing.md, borderWidth: 2, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 4, height: 4 }, shadowOpacity: 0.1, elevation: 3 },
+                                 cardPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+                                 cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+                                 avatarContainer: { width: 52, height: 52, borderRadius: 14, backgroundColor: Colors.primary + '10', borderWidth: 2, borderColor: Colors.primary, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
+                                 initialsText: { fontSize: 14, fontWeight: '900', color: Colors.primary },
+                                 headerInfo: { flex: 1 },
+                                 cardName: { fontSize: 16, fontWeight: '900', color: Colors.dark },
+                                 cardMeta: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
+                                 statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
+                                 statusText: { fontSize: 8, fontWeight: '900' },
+                                 cardContent: { gap: 6, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12, paddingBottom: 12 },
+                                 infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+                                 infoText: { fontSize: 12, fontWeight: '700', color: 'rgba(0,0,0,0.5)' },
+                                 cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 12 },
+                                 footerAction: { fontSize: 10, fontWeight: '900', color: Colors.primary, letterSpacing: 0.5 },
 });

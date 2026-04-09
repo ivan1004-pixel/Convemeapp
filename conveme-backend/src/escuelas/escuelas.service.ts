@@ -21,8 +21,8 @@ export class EscuelasService {
 
     async findAll(): Promise<Escuela[]> {
         return this.escuelaRepository.find({
-            // 👇 FILTRO: Solo le mandamos a React las escuelas que están "vivas"
-            where: { activa: true },
+            // Quitamos el "where" para que la app reciba TODAS,
+            // y así puedas entrar a reactivar las que digan "INACTIVA"
             relations: ['municipio', 'municipio.estado', 'municipio.estado.pais']
         });
     }
