@@ -59,7 +59,9 @@ export default function AdminCorteDetail() {
     setDeleting(true);
     try {
       await deleteCorte(Number(id));
-      router.push('/(app)');
+      showToast('Corte eliminado', 'success');
+      // Volver a la lista de cortes
+      router.replace('/cortes');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {

@@ -20,7 +20,7 @@ export class CortesVendedorService {
     async create(createCorteInput: CreateCorteVendedorInput): Promise<CorteVendedor> {
         const nuevo = this.corteRepository.create(createCorteInput);
         const guardado = await this.corteRepository.save(nuevo);
-        
+
         // Notificar al vendedor
         const corteCompleto = await this.findOne(guardado.id_corte);
         if (corteCompleto.vendedor?.usuario?.push_token) {
@@ -82,15 +82,43 @@ export class CortesVendedorService {
         return corte;
     }
 
-    async update(id_corte: number, updateCorteInput: UpdateCorteVendedorInput): Promise<CorteVendedor> {
+    async update(
+        id_corte: number,
+        updateCorteInput: UpdateCorteVendedorInput,
+    ): Promise<CorteVendedor> {
         const corte = await this.findOne(id_corte);
-        Object.assign(corte, updateCorteInput);
+        if (!corte) throw new NotFoundException(`Corte #${id_corte} no encontrado`);
+
+        const {
+            vendedor_id,
+            asignacion_id,
+            dinero_esperado,
+            dinero_total_entregado,
+            diferencia_corte,
+            observaciones,
+            detalles,
+        } = updateCorteInput;
+
+        if (vendedor_id !== undefined) corte.vendedor_id = vendedor_id;
+        if (asignacion_id !== undefined) corte.asignacion_id = asignacion_id;
+        if (dinero_esperado !== undefined) corte.dinero_esperado = dinero_esperado;
+        if (dinero_total_entregado !== undefined)
+            corte.dinero_total_entregado = dinero_total_entregado;
+        if (diferencia_corte !== undefined) corte.diferencia_corte = diferencia_corte;
+        if (observaciones !== undefined) corte.observaciones = observaciones;
+
+        if (detalles !== undefined) {
+            // gracias a cascade: true, TypeORM se encarga de crear/actualizar/borrar detalle
+            corte.detalles = detalles as any;
+        }
+
         await this.corteRepository.save(corte);
         return this.findOne(id_corte);
     }
-
     async remove(id_corte: number): Promise<boolean> {
         const resultado = await this.corteRepository.delete(id_corte);
         return (resultado.affected ?? 0) > 0;
     }
+
+
 }

@@ -40,81 +40,123 @@ function CorteCard({
 
   const handleShare = async () => {
     try {
-      const message = `--NoManchesMx--\n` +
-                      `RESUMEN DE CORTE #${item.id_corte}\n` +
-                      `VENDEDOR: ${item.vendedor?.nombre_completo?.toUpperCase()}\n` +
-                      `FECHA: ${formatDate(item.fecha_corte)}\n` +
-                      `ESPERADO: ${formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}\n` +
-                      `ENTREGADO: ${formatCurrency(item.dinero_total_entregado || 0)}\n` +
-                      `DIFERENCIA: ${formatCurrency(diff)}\n` +
-                      `ESTADO: ${isOk ? 'CUADRADO' : 'CON DIFERENCIA'}\n\n` +
-                      `nos vemos nomancherito`;
+      const message =
+      `--NoManchesMx--\n` +
+      `RESUMEN DE CORTE #${item.id_corte}\n` +
+      `VENDEDOR: ${item.vendedor?.nombre_completo?.toUpperCase()}\n` +
+      `FECHA: ${formatDate(item.fecha_corte)}\n` +
+      `ESPERADO: ${formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}\n` +
+      `ENTREGADO: ${formatCurrency(item.dinero_total_entregado || 0)}\n` +
+      `DIFERENCIA: ${formatCurrency(diff)}\n` +
+      `ESTADO: ${isOk ? 'CUADRADO' : 'CON DIFERENCIA'}\n\n` +
+      `nos vemos nomancherito`;
       await Share.share({ message });
-    } catch (error) { console.error(error); }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
   return (
     <Pressable
-      onPress={onPress}
-      onLongPress={onLongPress}
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed,
-      ]}
+    onPress={onPress}
+    onLongPress={onLongPress}
+    style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarContainer}>
-          <MaterialCommunityIcons name="cash-register" size={28} color={Colors.success} />
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.cardName}>{item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}</Text>
-          <Text style={styles.cardMeta}>CORTE #{item.id_corte} • ASIG #{item.asignacion?.id_asignacion}</Text>
-        </View>
-        <View style={[styles.statusBadge, { backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22', borderColor: isOk ? Colors.success : Colors.error }]}>
-          <Text style={[styles.statusText, { color: isOk ? Colors.success : Colors.error }]}>
-            {isOk ? 'CUADRADO' : 'CON DIF.'}
-          </Text>
-        </View>
-      </View>
+    <View style={styles.cardHeader}>
+    <View style={styles.avatarContainer}>
+    <MaterialCommunityIcons name="cash-register" size={28} color={Colors.success} />
+    </View>
+    <View style={styles.headerInfo}>
+    <Text style={styles.cardName}>
+    {item.vendedor?.nombre_completo?.toUpperCase() || 'SIN VENDEDOR'}
+    </Text>
+    <Text style={styles.cardMeta}>
+    CORTE #{item.id_corte} • ASIG #{item.asignacion?.id_asignacion}
+    </Text>
+    </View>
+    <View
+    style={[
+      styles.statusBadge,
+      {
+        backgroundColor: isOk ? Colors.success + '22' : Colors.error + '22',
+        borderColor: isOk ? Colors.success : Colors.error,
+      },
+    ]}
+    >
+    <Text
+    style={[
+      styles.statusText,
+      { color: isOk ? Colors.success : Colors.error },
+    ]}
+    >
+    {isOk ? 'CUADRADO' : 'CON DIF.'}
+    </Text>
+    </View>
+    </View>
 
-      <View style={styles.cardContent}>
-        <View style={styles.moneyRow}>
-            <View style={styles.moneyItem}>
-                <Text style={styles.moneyLabel}>ESPERADO</Text>
-                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}</Text>
-            </View>
-            <View style={styles.moneyDivider} />
-            <View style={styles.moneyItem}>
-                <Text style={styles.moneyLabel}>ENTREGADO</Text>
-                <Text style={styles.moneyValue}>{formatCurrency(item.dinero_total_entregado || 0)}</Text>
-            </View>
-        </View>
+    <View style={styles.cardContent}>
+    <View style={styles.moneyRow}>
+    <View style={styles.moneyItem}>
+    <Text style={styles.moneyLabel}>ESPERADO</Text>
+    <Text style={styles.moneyValue}>
+    {formatCurrency(item.dinero_expected || item.dinero_esperado || 0)}
+    </Text>
+    </View>
+    <View style={styles.moneyDivider} />
+    <View style={styles.moneyItem}>
+    <Text style={styles.moneyLabel}>ENTREGADO</Text>
+    <Text style={styles.moneyValue}>
+    {formatCurrency(item.dinero_total_entregado || 0)}
+    </Text>
+    </View>
+    </View>
 
-        {!isOk && (
-            <View style={styles.diffAlert}>
-                <MaterialCommunityIcons name="alert-circle" size={16} color={Colors.error} />
-                <Text style={styles.diffText}>
-                    DIFERENCIA: <Text style={{fontWeight: '900'}}>{formatCurrency(diff)}</Text>
-                </Text>
-            </View>
-        )}
+    {!isOk && (
+      <View style={styles.diffAlert}>
+      <MaterialCommunityIcons
+      name="alert-circle"
+      size={16}
+      color={Colors.error}
+      />
+      <Text style={styles.diffText}>
+      DIFERENCIA:{' '}
+      <Text style={{ fontWeight: '900' }}>
+      {formatCurrency(diff)}
+      </Text>
+      </Text>
+      </View>
+    )}
 
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="calendar-clock" size={16} color={Colors.primary} />
-          <Text style={styles.infoText}>{formatDate(item.fecha_corte).toUpperCase()}</Text>
-        </View>
-      </View>
-      
-      <View style={styles.cardFooter}>
-         <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
-            <MaterialCommunityIcons name="share-variant" size={18} color={Colors.primary} />
-            <Text style={styles.shareText}>COMPARTIR</Text>
-         </TouchableOpacity>
-         <View style={styles.footerActionRow}>
-            <Text style={styles.footerAction}>VER DETALLES</Text>
-            <MaterialCommunityIcons name="arrow-right" size={16} color={Colors.success} />
-         </View>
-      </View>
+    <View style={styles.infoRow}>
+    <MaterialCommunityIcons
+    name="calendar-clock"
+    size={16}
+    color={Colors.primary}
+    />
+    <Text style={styles.infoText}>
+    {formatDate(item.fecha_corte).toUpperCase()}
+    </Text>
+    </View>
+    </View>
+
+    <View style={styles.cardFooter}>
+    <TouchableOpacity onPress={handleShare} style={styles.shareBtn}>
+    <MaterialCommunityIcons
+    name="share-variant"
+    size={18}
+    color={Colors.primary}
+    />
+    <Text style={styles.shareText}>COMPARTIR</Text>
+    </TouchableOpacity>
+    <View style={styles.footerActionRow}>
+    <Text style={styles.footerAction}>VER DETALLES</Text>
+    <MaterialCommunityIcons
+    name="arrow-right"
+    size={16}
+    color={Colors.success}
+    />
+    </View>
+    </View>
     </Pressable>
   );
 }
@@ -155,19 +197,23 @@ export default function CortesScreen() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
   const filteredCortes = useMemo(() => {
     let list = cortes;
     if (!isAdmin) {
-      list = cortes.filter(c => 
-        c.vendedor?.id_vendedor === usuario?.id_vendedor || 
-        c.id_vendedor === usuario?.id_vendedor
+      list = cortes.filter(
+        (c) =>
+        c.vendedor?.id_vendedor === usuario?.id_vendedor ||
+        c.id_vendedor === usuario?.id_vendedor,
       );
     }
-    return list.filter(c => 
-      c.vendedor?.nombre_completo?.toLowerCase().includes(search.toLowerCase()) ||
-      c.id_corte.toString().includes(search)
+    return list.filter(
+      (c) =>
+      c.vendedor?.nombre_completo
+      ?.toLowerCase()
+      .includes(search.toLowerCase()) ||
+      c.id_corte.toString().includes(search),
     );
   }, [cortes, isAdmin, usuario, search]);
 
@@ -178,6 +224,7 @@ export default function CortesScreen() {
       await deleteCorte(deleteId);
       removeCorte(deleteId);
       showToast('CORTE ELIMINADO', 'success');
+      // No hace falta navegar, ya estás en la lista
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -188,86 +235,113 @@ export default function CortesScreen() {
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-            <View style={styles.headerTitleRow}>
-                <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-                </TouchableOpacity>
-                <View>
-                    <Text style={styles.title}>CORTES</Text>
-                    <Text style={styles.subtitle}>{filteredCortes.length} REGISTROS</Text>
-                </View>
-            </View>
-            <View style={styles.headerActions}>
-                <TouchableOpacity onPress={() => router.push('/cortes/create')} style={styles.addBtn}>
-                    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
-                    <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
-                </TouchableOpacity>
-            </View>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.header}>
+    <View style={styles.headerTitleRow}>
+    <TouchableOpacity
+    onPress={() => router.push('/(app)')}
+    style={styles.backBtn}
+    >
+    <MaterialCommunityIcons
+    name="arrow-left"
+    size={24}
+    color={Colors.primary}
+    />
+    </TouchableOpacity>
+    <View>
+    <Text style={styles.title}>CORTES</Text>
+    <Text style={styles.subtitle}>
+    {filteredCortes.length} REGISTROS
+    </Text>
+    </View>
+    </View>
+    <View style={styles.headerActions}>
+    <TouchableOpacity
+    onPress={() => router.push('/cortes/create')}
+    style={styles.addBtn}
+    >
+    <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
+    </TouchableOpacity>
+    <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
+    <MaterialCommunityIcons
+    name="refresh"
+    size={24}
+    color={Colors.dark}
+    />
+    </TouchableOpacity>
+    </View>
+    </View>
 
-        <View style={styles.searchSection}>
-          <SearchBar
-            value={search}
-            onChangeText={setSearch}
-            placeholder={isAdmin ? "BUSCAR POR VENDEDOR..." : "BUSCAR POR ID DE CORTE..."}
-          />
-        </View>
+    <View style={styles.searchSection}>
+    <SearchBar
+    value={search}
+    onChangeText={setSearch}
+    placeholder={
+      isAdmin ? 'BUSCAR POR VENDEDOR...' : 'BUSCAR POR ID DE CORTE...'
+    }
+    />
+    </View>
 
-        {loading && cortes.length === 0 ? (
-          <LoadingSpinner fullScreen message="CARGANDO..." />
-        ) : (
-          <FlatList
-            data={filteredCortes}
-            keyExtractor={(item) => String(item.id_corte)}
-            contentContainerStyle={[
-              styles.listContent,
-              filteredCortes.length === 0 && styles.listEmpty,
-            ]}
-            renderItem={({ item }) => (
-              <CorteCard
-                item={item}
-                onPress={() => router.push(`/cortes/${item.id_corte}`)}
-                onLongPress={() => isAdmin && setDeleteId(item.id_corte)}
-              />
-            )}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                colors={[Colors.primary]}
-                tintColor={Colors.primary}
-              />
-            }
-            ListEmptyComponent={
-              <EmptyState
-                icon="cash-register"
-                title="SIN CORTES"
-                message={search ? 'No hay resultados que coincidan.' : 'Aún no hay cortes registrados.'}
-                actionLabel="REALIZAR CORTE"
-                onAction={() => router.push('/cortes/create')}
-              />
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-
-        <ConfirmDialog
-          visible={deleteId !== null}
-          title="ELIMINAR CORTE"
-          message={`¿DESEAS ELIMINAR EL CORTE #${deleteId}?`}
-          confirmText="ELIMINAR"
-          onConfirm={handleDelete}
-          onCancel={() => setDeleteId(null)}
-          loading={deleting}
-          destructive
+    {loading && cortes.length === 0 ? (
+      <LoadingSpinner fullScreen message="CARGANDO..." />
+    ) : (
+      <FlatList
+      data={filteredCortes}
+      keyExtractor={(item) => String(item.id_corte)}
+      contentContainerStyle={[
+        styles.listContent,
+        filteredCortes.length === 0 && styles.listEmpty,
+      ]}
+      renderItem={({ item }) => (
+        <CorteCard
+        item={item}
+        onPress={() => router.push(`/cortes/${item.id_corte}`)}
+        onLongPress={() => isAdmin && setDeleteId(item.id_corte)}
         />
+      )}
+      refreshControl={
+        <RefreshControl
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        colors={[Colors.primary]}
+        tintColor={Colors.primary}
+        />
+      }
+      ListEmptyComponent={
+        <EmptyState
+        icon="cash-register"
+        title="SIN CORTES"
+        message={
+          search
+          ? 'No hay resultados que coincidan.'
+          : 'Aún no hay cortes registrados.'
+        }
+        actionLabel="REALIZAR CORTE"
+        onAction={() => router.push('/cortes/create')}
+        />
+      }
+      showsVerticalScrollIndicator={false}
+      />
+    )}
 
-        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </SafeAreaView>
+    <ConfirmDialog
+    visible={deleteId !== null}
+    title="ELIMINAR CORTE"
+    message={`¿DESEAS ELIMINAR EL CORTE #${deleteId}?`}
+    confirmText="ELIMINAR"
+    onConfirm={handleDelete}
+    onCancel={() => setDeleteId(null)}
+    loading={deleting}
+    destructive
+    />
+
+    <Toast
+    visible={toast.visible}
+    type={toast.type}
+    message={toast.message}
+    onHide={hideToast}
+    />
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
