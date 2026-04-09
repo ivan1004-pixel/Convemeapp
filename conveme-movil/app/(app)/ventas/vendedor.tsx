@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Pressable,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -53,33 +54,55 @@ export default function VendedorVentasScreen() {
   const { ventas, setVentas } = useVentaStore();
   const [cortes, setCortes] = useState<Corte[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const TAKE = 20;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isRefresh = true) => {
+    if (isRefresh) {
+        setLoading(true);
+        setHasMore(true);
+    } else {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+    }
+
     try {
-      const [vData, cData] = await Promise.all([getVentas(), getCortes()]);
-      // Filtrar por el vendedor logueado usando id_vendedor
-      const myVentas = vData.filter(v => 
-        v.vendedor?.id_vendedor === usuario?.id_vendedor || 
-        v.id_vendedor === usuario?.id_vendedor
-      );
-      const myCortes = cData.filter(c => 
-        c.vendedor?.id_vendedor === usuario?.id_vendedor || 
-        c.id_vendedor === usuario?.id_vendedor
-      );
+      const skip = isRefresh ? 0 : ventas.length;
+      // Note: getCortes doesn't have pagination yet, keeping it as is for now
+      const [vData, cData] = await Promise.all([
+          getVentas(skip, TAKE), 
+          isRefresh ? getCortes() : Promise.resolve(cortes)
+      ]);
       
-      setVentas(myVentas);
-      setCortes(myCortes);
+      if (vData.length < TAKE) {
+        setHasMore(false);
+      }
+
+      if (isRefresh) {
+        setVentas(vData);
+        setCortes(cData);
+      } else {
+        setVentas([...ventas, ...vData]);
+      }
     } catch (err) { 
         show(parseGraphQLError(err), 'error'); 
     } finally { 
         setLoading(false); 
+        setLoadingMore(false);
     }
-  }, [usuario, setVentas, show]);
+  }, [usuario, setVentas, show, ventas.length, hasMore, loadingMore, cortes]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  const onRefresh = () => fetchData(true);
+  const onEndReached = () => fetchData(false);
+
+  useEffect(() => { 
+    if (ventas.length === 0) {
+        fetchData(true); 
+    }
+  }, []);
 
   const filteredVentas = useMemo(() => {
     return ventas.filter(v => 
@@ -117,7 +140,7 @@ export default function VendedorVentasScreen() {
                 <TouchableOpacity onPress={() => router.push('/ventas/create')} style={styles.addBtn}>
                     <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
@@ -125,7 +148,7 @@ export default function VendedorVentasScreen() {
 
         <FlatList
           data={filteredVentas}
-          keyExtractor={item => String(item.id_venta)}
+          keyExtractor={(item, index) => `${item.id_venta}-${index}`}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <SearchBar 
@@ -141,7 +164,16 @@ export default function VendedorVentasScreen() {
                 onPress={() => router.push(`/(app)/ventas/${item.id_venta}`)} 
             />
           )}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={Colors.primary} />}
+          refreshControl={<RefreshControl refreshing={loading && ventas.length > 0} onRefresh={onRefresh} tintColor={Colors.primary} />}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+                <View style={styles.footerLoading}>
+                    <ActivityIndicator color={Colors.primary} />
+                </View>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState 
                 icon="cash-register" 
@@ -197,4 +229,5 @@ const styles = StyleSheet.create({
   statsSummary: { marginTop: 20, padding: 15, backgroundColor: '#FFF', borderRadius: 15, borderWidth: 2, borderColor: Colors.dark, alignItems: 'center' },
   statLabel: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 5 },
   statValue: { fontSize: 24, fontWeight: '900', color: Colors.primary },
+  footerLoading: { paddingVertical: 20, alignItems: 'center' },
 });

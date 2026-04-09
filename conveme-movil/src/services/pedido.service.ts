@@ -1,9 +1,10 @@
 import { convemeApi } from '../api/convemeApi';
 
-export const getPedidos = async () => {
+// 1. Obtener todos los pedidos con PAGINACIÓN (20 en 20)
+export const getPedidos = async (skip = 0, take = 20) => {
     const query = `
-    query {
-        pedidos {
+    query GetPedidos($skip: Int, $take: Int) {
+        pedidos(skip: $skip, take: $take) {
             id_pedido
             fecha_pedido
             fecha_entrega_estimada
@@ -18,7 +19,7 @@ export const getPedidos = async () => {
 
             cliente {
                 id_cliente
-                nombre_completo # 👈 ¡AQUÍ ESTABA EL ERROR!
+                nombre_completo
             }
             detalles {
                 cantidad
@@ -32,12 +33,15 @@ export const getPedidos = async () => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { query });
+    const { data } = await convemeApi.post('', { 
+        query, 
+        variables: { skip, take } 
+    });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.pedidos;
-
 };
-// 2. Crear un nuevo pedido (¡NUEVO para el Vendedor!)
+
+// 2. Crear un nuevo pedido
 export const createPedido = async (input: any) => {
     const query = `
     mutation CreatePedido($input: CreatePedidoInput!) {
@@ -53,7 +57,7 @@ export const createPedido = async (input: any) => {
     return data.data.createPedido;
 };
 
-// 3. Actualizar estado del pedido (Para el Admin)
+// 3. Actualizar estado del pedido
 export const updateEstadoPedido = async (id_pedido: number, estado: string) => {
     const query = `
     mutation UpdatePedido($input: UpdatePedidoInput!) {

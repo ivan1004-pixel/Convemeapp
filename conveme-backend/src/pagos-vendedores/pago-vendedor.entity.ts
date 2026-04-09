@@ -18,7 +18,7 @@ export class PagoVendedor {
     @JoinColumn({ name: 'vendedor_id' })
     vendedor: Vendedor;
 
-    @Field()
+    @Field({ nullable: true })
     @CreateDateColumn()
     fecha_pago: Date;
 

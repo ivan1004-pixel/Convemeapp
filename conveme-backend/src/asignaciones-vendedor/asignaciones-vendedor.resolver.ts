@@ -4,6 +4,8 @@ import { AsignacionVendedor } from './entities/asignacion-vendedor.entity';
 import { CreateAsignacionVendedorInput } from './dto/create-asignacion-vendedor.input';
 import { UpdateAsignacionVendedorInput } from './dto/update-asignacion-vendedor.input';
 
+import { SearchArgs } from '../common/dto/search.args';
+
 @Resolver(() => AsignacionVendedor)
 export class AsignacionesVendedorResolver {
     constructor(private readonly asignacionesVendedorService: AsignacionesVendedorService) {}
@@ -13,10 +15,12 @@ export class AsignacionesVendedorResolver {
         return this.asignacionesVendedorService.create(createAsignacionVendedorInput);
     }
 
-    // 👇 Solo un findAll, limpio y correcto
+    // 👇 Ahora recibe paginación y búsqueda unificadas
     @Query(() => [AsignacionVendedor], { name: 'asignacionesVendedor' })
-    findAll(@Args('search', { type: () => String, nullable: true }) search?: string) {
-        return this.asignacionesVendedorService.findAll(search || '');
+    findAll(
+        @Args() searchArgs: SearchArgs,
+    ) {
+        return this.asignacionesVendedorService.findAll(searchArgs);
     }
 
     @Query(() => AsignacionVendedor, { name: 'asignacionVendedor' })

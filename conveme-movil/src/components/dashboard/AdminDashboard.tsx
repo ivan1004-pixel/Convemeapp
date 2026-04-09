@@ -16,6 +16,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import * as Calendar from 'expo-calendar';
 
 import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../store/authStore';
 import { PredictionChart } from '../PredictionChart';
 import { useToast } from '../Toast';
 import { Colors } from '../../theme/colors';
@@ -160,10 +161,14 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(false);
 
   const loadStats = useCallback(async () => {
+    // Solo proceder si tenemos token
+    const { token } = useAuthStore.getState();
+    if (!token) return;
+
     setLoading(true);
     try {
       const [ventas, cortes, pedidos, empleados, vendedores, eventos] = await Promise.all([
-        getVentas(), getCortes(), getPedidos(), getEmpleados(), getVendedores(), getEventos()
+        getVentas(0, 50), getCortes('', 0, 50), getPedidos(0, 50), getEmpleados(), getVendedores(), getEventos()
       ]);
       const now = new Date();
       const m = now.getMonth();

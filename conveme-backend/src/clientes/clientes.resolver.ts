@@ -3,6 +3,7 @@ import { ClientesService } from './clientes.service';
 import { Cliente } from './cliente.entity';
 import { CreateClienteInput } from './dto/create-cliente.input';
 import { UpdateClienteInput } from './dto/update-cliente.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Resolver(() => Cliente)
 export class ClientesResolver {
@@ -14,14 +15,17 @@ export class ClientesResolver {
   }
 
   @Query(() => [Cliente], { name: 'clientes' })
-  findAll() {
-    return this.clientesService.findAll();
+  findAll(@Args() paginationArgs: PaginationArgs) {
+    return this.clientesService.findAll(paginationArgs);
   }
 
   // 👇 NUEVO: Exponemos el buscador para React
   @Query(() => [Cliente], { name: 'buscarClientes' })
-  searchClientes(@Args('termino', { type: () => String, nullable: true }) termino?: string) {
-    return this.clientesService.searchClientes(termino || '');
+  searchClientes(
+    @Args('termino', { type: () => String, nullable: true }) termino?: string,
+    @Args() paginationArgs?: PaginationArgs,
+  ) {
+    return this.clientesService.searchClientes(termino || '', paginationArgs);
   }
 
   @Query(() => Cliente, { name: 'cliente' })

@@ -6,6 +6,8 @@ export interface Usuario {
   created_at?: string;
   rol?: { nombre: string };
   id_vendedor?: number; // 👈 Agregado para guardar el ID del vendedor
+  push_token?: string;
+  foto_perfil?: string;
 }
 
 export interface Rol {

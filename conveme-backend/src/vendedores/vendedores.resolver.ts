@@ -3,6 +3,7 @@ import { VendedoresService } from './vendedores.service';
 import { Vendedor } from './vendedor.entity';
 import { CreateVendedorInput } from './dto/create-vendedor.input';
 import { UpdateVendedorInput } from './dto/update-vendedor.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Resolver(() => Vendedor)
 export class VendedoresResolver {
@@ -14,8 +15,8 @@ export class VendedoresResolver {
     }
 
     @Query(() => [Vendedor], { name: 'vendedores' })
-    findAll() {
-        return this.vendedoresService.findAll();
+    findAll(@Args() paginationArgs: PaginationArgs) {
+        return this.vendedoresService.findAll(paginationArgs);
     }
 
     @Query(() => Vendedor, { name: 'vendedorByUsuario', nullable: true })
@@ -39,8 +40,11 @@ export class VendedoresResolver {
     }
 
     @Query(() => [Vendedor], { name: 'buscarVendedores' })
-    searchVendedores(@Args('termino', { type: () => String, nullable: true }) termino?: string) {
+    searchVendedores(
+        @Args('termino', { type: () => String, nullable: true }) termino?: string,
+        @Args() paginationArgs?: PaginationArgs,
+    ) {
         // Le pasamos el término, o un string vacío si no mandaron nada
-        return this.vendedoresService.searchVendedores(termino || '');
+        return this.vendedoresService.searchVendedores(termino || '', paginationArgs);
     }
 }

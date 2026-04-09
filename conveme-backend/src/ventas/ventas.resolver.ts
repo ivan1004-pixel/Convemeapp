@@ -3,6 +3,11 @@ import { VentasService } from './ventas.service';
 import { Venta } from './entities/venta.entity';
 import { CreateVentaInput } from './dto/create-venta.input';
 import { UpdateVentaInput } from './dto/update-venta.input';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationArgs } from '../common/dto/pagination.args';
+import { GetUsuario } from '../auth/get-usuario.decorator';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Resolver(() => Venta)
 export class VentasResolver {
@@ -13,9 +18,13 @@ export class VentasResolver {
         return this.ventasService.create(createVentaInput);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Query(() => [Venta], { name: 'ventas' })
-    findAll() {
-        return this.ventasService.findAll();
+    findAll(
+        @Args() paginationArgs: PaginationArgs,
+        @GetUsuario() usuario: Usuario,
+    ) {
+        return this.ventasService.findAll(paginationArgs, usuario);
     }
 
     @Query(() => Venta, { name: 'venta' })

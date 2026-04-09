@@ -1,9 +1,9 @@
 import { convemeApi } from '../api/convemeApi';
 
-export const getClientes = async () => {
+export const getClientes = async (skip = 0, take = 20) => {
     const query = `
-    query {
-        clientes {
+    query GetClientes($skip: Int, $take: Int) {
+        clientes(skip: $skip, take: $take) {
             id_cliente
             nombre_completo
             email
@@ -17,15 +17,18 @@ export const getClientes = async () => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { query });
+    const { data } = await convemeApi.post('', { 
+        query, 
+        variables: { skip, take } 
+    });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.clientes;
 };
 
-export const buscarClientes = async (termino: string) => {
+export const buscarClientes = async (termino: string, skip = 0, take = 20) => {
     const query = `
-    query BuscarClientes($termino: String) {
-        buscarClientes(termino: $termino) {
+    query BuscarClientes($termino: String, $skip: Int, $take: Int) {
+        buscarClientes(termino: $termino, skip: $skip, take: $take) {
             id_cliente
             nombre_completo
             email
@@ -34,7 +37,10 @@ export const buscarClientes = async (termino: string) => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { query, variables: { termino } });
+    const { data } = await convemeApi.post('', { 
+        query, 
+        variables: { termino, skip, take } 
+    });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.buscarClientes;
 };

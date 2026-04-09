@@ -3,6 +3,7 @@ import { ProductosService } from './productos.service';
 import { Producto } from './producto.entity';
 import { CreateProductoInput } from './dto/create-producto.input';
 import { UpdateProductoInput } from './dto/update-producto.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Resolver(() => Producto)
 export class ProductosResolver {
@@ -14,8 +15,8 @@ export class ProductosResolver {
     }
 
     @Query(() => [Producto], { name: 'productos' })
-    findAll() {
-        return this.productosService.findAll();
+    findAll(@Args() paginationArgs: PaginationArgs) {
+        return this.productosService.findAll(paginationArgs);
     }
 
     @Query(() => Producto, { name: 'producto' })
@@ -24,18 +25,20 @@ export class ProductosResolver {
     }
 
     @Mutation(() => Producto)
-    updateProducto(@Args('updateProductoInput') updateProductoInput: UpdateProductoInput) {
-        return this.productosService.update(updateProductoInput.id_producto, updateProductoInput);
+    updateProducto(@Args('updateProductoInput') updateUsuarioInput: UpdateProductoInput) {
+        return this.productosService.update(updateUsuarioInput.id_producto, updateUsuarioInput);
     }
 
-    // 👇 Cambiamos Boolean por Producto
     @Mutation(() => Producto)
     removeProducto(@Args('id_producto', { type: () => Int }) id_producto: number) {
         return this.productosService.remove(id_producto);
     }
 
     @Query(() => [Producto], { name: 'buscarProductos' })
-    searchProductos(@Args('termino', { type: () => String, nullable: true }) termino?: string) {
-        return this.productosService.searchProductos(termino || '');
+    searchProductos(
+        @Args('termino', { type: () => String, nullable: true }) termino?: string,
+        @Args() paginationArgs?: PaginationArgs,
+    ) {
+        return this.productosService.searchProductos(termino || '', paginationArgs);
     }
 }

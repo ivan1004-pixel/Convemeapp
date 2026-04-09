@@ -11,7 +11,7 @@ export class Venta {
     @PrimaryGeneratedColumn()
     id_venta: number;
 
-    @Field()
+    @Field({ nullable: true })
     @CreateDateColumn()
     fecha_venta: Date;
 

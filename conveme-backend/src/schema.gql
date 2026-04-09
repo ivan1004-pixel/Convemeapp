@@ -16,17 +16,15 @@ type Usuario {
   activo: Boolean!
   ultimo_acceso: DateTime
   created_at: DateTime!
+  id_vendedor: Int
+  push_token: String
+  foto_perfil: String
 }
 
 """
 A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
 """
 scalar DateTime
-
-type AuthResponse {
-  token: String!
-  usuario: Usuario!
-}
 
 type Pais {
   id_pais: Int!
@@ -56,22 +54,6 @@ type Escuela {
   activa: Boolean!
 }
 
-type Empleado {
-  id_empleado: Int!
-  usuario_id: Int!
-  usuario: Usuario
-  nombre_completo: String!
-  email: String!
-  telefono: String
-  puesto: String
-  calle_y_numero: String
-  colonia: String
-  codigo_postal: String
-  municipio_id: Int
-  municipio: Municipio
-  activo: Boolean!
-}
-
 type Vendedor {
   id_vendedor: Int!
   usuario_id: Int!
@@ -93,6 +75,27 @@ type Vendedor {
   comision_fija_menudeo: Float!
   comision_fija_mayoreo: Float!
   meta_ventas_mensual: Float!
+}
+
+type AuthResponse {
+  token: String!
+  usuario: Usuario!
+}
+
+type Empleado {
+  id_empleado: Int!
+  usuario_id: Int!
+  usuario: Usuario
+  nombre_completo: String!
+  email: String!
+  telefono: String
+  puesto: String
+  calle_y_numero: String
+  colonia: String
+  codigo_postal: String
+  municipio_id: Int
+  municipio: Municipio
+  activo: Boolean!
 }
 
 type Cliente {
@@ -268,7 +271,7 @@ type PagoVendedor {
   id_pago: Int!
   vendedor_id: Int!
   vendedor: Vendedor
-  fecha_pago: DateTime!
+  fecha_pago: DateTime
   monto_pagado: Float!
   metodo_pago: String!
   referencia_o_comprobante: String
@@ -315,7 +318,7 @@ type Pedido {
   cliente: Cliente
   vendedor_id: Int
   vendedor: Vendedor
-  fecha_pedido: DateTime!
+  fecha_pedido: DateTime
   fecha_entrega_estimada: DateTime
   monto_total: Float!
   anticipo: Float!
@@ -335,7 +338,7 @@ type DetVenta {
 
 type Venta {
   id_venta: Int!
-  fecha_venta: DateTime!
+  fecha_venta: DateTime
   cliente_id: Int
   cliente: Cliente
   vendedor_id: Int
@@ -382,6 +385,8 @@ type PrediccionVentasType {
   factor_alpha: Float!
   crecimiento_pct: Float!
   confianza_pct: Float!
+  tendencia: Float
+  promedio_ponderado: Float
 }
 
 type PrediccionDemandaProductoType {
@@ -406,7 +411,7 @@ type Comprobante {
 }
 
 type Query {
-  usuarios: [Usuario!]!
+  usuarios(skip: Int = 0, take: Int = 20): [Usuario!]!
   usuario(id_usuario: Int!): Usuario!
   validarPasswordAdmin(id_usuario: Int!, password: String!): Boolean!
   paises: [Pais!]!
@@ -422,20 +427,20 @@ type Query {
   escuela(id_escuela: Int!): Escuela!
   empleados: [Empleado!]!
   empleado(id_empleado: Int!): Empleado!
-  vendedores: [Vendedor!]!
+  vendedores(skip: Int = 0, take: Int = 20): [Vendedor!]!
   vendedorByUsuario(usuario_id: Int!): Vendedor
   vendedor(id_vendedor: Int!): Vendedor!
-  buscarVendedores(termino: String): [Vendedor!]!
-  clientes: [Cliente!]!
-  buscarClientes(termino: String): [Cliente!]!
+  buscarVendedores(termino: String, skip: Int = 0, take: Int = 20): [Vendedor!]!
+  clientes(skip: Int = 0, take: Int = 20): [Cliente!]!
+  buscarClientes(termino: String, skip: Int = 0, take: Int = 20): [Cliente!]!
   cliente(id_cliente: Int!): Cliente!
   categorias: [Categoria!]!
   categoria(id_categoria: Int!): Categoria!
   tamanos: [Tamano!]!
   tamano(id_tamano: Int!): Tamano!
-  productos: [Producto!]!
+  productos(skip: Int = 0, take: Int = 20): [Producto!]!
   producto(id_producto: Int!): Producto!
-  buscarProductos(termino: String): [Producto!]!
+  buscarProductos(termino: String, skip: Int = 0, take: Int = 20): [Producto!]!
   insumos: [Insumo!]!
   insumo(id_insumo: Int!): Insumo!
   comprasInsumos: [CompraInsumo!]!
@@ -446,9 +451,9 @@ type Query {
   inventarioProducto(id_inventario: Int!): InventarioProducto!
   movimientosInventario: [MovimientoInventario!]!
   movimientoInventario(id_movimiento: Int!): MovimientoInventario!
-  asignacionesVendedor(search: String): [AsignacionVendedor!]!
+  asignacionesVendedor(skip: Int = 0, take: Int = 20, search: String): [AsignacionVendedor!]!
   asignacionVendedor(id_asignacion: Int!): AsignacionVendedor!
-  cortesVendedor(search: String): [CorteVendedor!]!
+  cortesVendedor(skip: Int = 0, take: Int = 20, search: String): [CorteVendedor!]!
   cortesPorVendedor(vendedor_id: Int!): [CorteVendedor!]!
   corteVendedor(id_corte: Int!): CorteVendedor!
   cuentasBancarias: [CuentaBancaria!]!
@@ -461,9 +466,9 @@ type Query {
   evento(id_evento: Int!): Evento!
   promociones: [Promocion!]!
   promocion(id_promocion: Int!): Promocion!
-  pedidos: [Pedido!]!
+  pedidos(skip: Int = 0, take: Int = 20): [Pedido!]!
   pedido(id_pedido: Int!): Pedido!
-  ventas: [Venta!]!
+  ventas(skip: Int = 0, take: Int = 20): [Venta!]!
   venta(id_venta: Int!): Venta!
   categoriasGasto: [CategoriaGasto!]!
   categoriaGasto(id_categoria: Int!): CategoriaGasto!
@@ -481,7 +486,8 @@ type Query {
 type Mutation {
   createUsuario(createUsuarioInput: CreateUsuarioInput!): Usuario!
   updateUsuario(updateUsuarioInput: UpdateUsuarioInput!): Usuario!
-  removeUsuario(id_usuario: Int!): Boolean!
+  removeUsuario(id_usuario: Int!): Usuario!
+  updatePushToken(push_token: String!): Usuario!
   login(loginInput: LoginInput!): AuthResponse!
   createPais(createPaisInput: CreatePaisInput!): Pais!
   updatePais(updatePaisInput: UpdatePaisInput!): Pais!
@@ -574,13 +580,18 @@ input CreateUsuarioInput {
   username: String!
   password_raw: String!
   rol_id: Int
+  foto_perfil: String
+  push_token: String
 }
 
 input UpdateUsuarioInput {
   username: String
   password_raw: String
   rol_id: Int
+  foto_perfil: String
+  push_token: String
   id_usuario: Int!
+  activo: Boolean
 }
 
 input LoginInput {

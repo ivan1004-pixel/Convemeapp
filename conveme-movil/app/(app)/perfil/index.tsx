@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { Camera } from 'expo-camera';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useAuth, ROLE_ADMIN } from '../../../src/hooks/useAuth';
 import { useAuthStore } from '../../../src/store/authStore';
 import { getEmpleados } from '../../../src/services/empleado.service';
 import { getVendedores } from '../../../src/services/vendedor.service';
+import { updateUserService } from '../../../src/services/user.service';
 import type { Empleado, Vendedor } from '../../../src/types';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
@@ -17,8 +20,9 @@ import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistB
 
 export default function PerfilScreen() {
   const { logout } = useAuth();
-  const { usuario } = useAuthStore();
+  const { usuario, setUsuario } = useAuthStore();
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [empleado, setEmpleado] = useState<Empleado | null>(null);
   const [vendedor, setVendedor] = useState<Vendedor | null>(null);
 
@@ -55,6 +59,91 @@ export default function PerfilScreen() {
     }
   };
 
+  const pickImage = async () => {
+    Alert.alert(
+      'CAMBIAR FOTO',
+      'SELECCIONA UNA OPCIÓN',
+      [
+        {
+          text: 'CÁMARA',
+          onPress: handleCamera,
+        },
+        {
+          text: 'GALERÍA',
+          onPress: handleGallery,
+        },
+        {
+          text: 'CANCELAR',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const handleCamera = async () => {
+    const { status } = await Camera.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE CÁMARA PARA ESTA FUNCIÓN');
+      return;
+    }
+
+    let result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0].base64) {
+      uploadImage(result.assets[0].base64);
+    }
+  };
+
+  const handleGallery = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE GALERÍA PARA ESTA FUNCIÓN');
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets[0].base64) {
+      uploadImage(result.assets[0].base64);
+    }
+  };
+
+  const uploadImage = async (base64: string) => {
+    if (!usuario) return;
+    try {
+      setUploading(true);
+      const base64Data = `data:image/jpeg;base64,${base64}`;
+      const updatedUser = await updateUserService(usuario.id_usuario, undefined, undefined, undefined, base64Data);
+      
+      // Actualizar el store de auth
+      setUsuario({
+        ...usuario,
+        foto_perfil: updatedUser.foto_perfil
+      });
+
+      Alert.alert('ÉXITO', 'FOTO DE PERFIL ACTUALIZADA');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      Alert.alert('ERROR', 'NO SE PUDO ACTUALIZAR LA FOTO');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const defaultAvatar = isAdmin ? require('../../../assets/images/fotoadmin.jpg') : require('../../../assets/images/fotovendedor.jpg');
+
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -78,13 +167,22 @@ export default function PerfilScreen() {
             <>
               {/* Avatar */}
               <Animated.View entering={FadeInDown.duration(400).delay(100)} style={styles.avatarSection}>
-                <View style={styles.avatarCircle}>
-                  <Image
-                    source={isAdmin ? require('../../../assets/images/fotoadmin.jpg') : require('../../../assets/images/fotovendedor.jpg')}
-                    style={styles.avatarImage}
-                    contentFit="cover"
-                  />
-                </View>
+                <TouchableOpacity onPress={pickImage} disabled={uploading} style={styles.avatarWrapper}>
+                    <View style={styles.avatarCircle}>
+                    {uploading ? (
+                        <ActivityIndicator size="large" color={Colors.dark} />
+                    ) : (
+                        <Image
+                            source={usuario?.foto_perfil ? { uri: usuario.foto_perfil } : defaultAvatar}
+                            style={styles.avatarImage}
+                            contentFit="cover"
+                        />
+                    )}
+                    </View>
+                    <View style={styles.editBadge}>
+                        <MaterialCommunityIcons name="camera" size={16} color="#FFF" />
+                    </View>
+                </TouchableOpacity>
                 <Text style={styles.username}>{(empleado?.nombre_completo || vendedor?.nombre_completo || username).toUpperCase()}</Text>
                 <View style={styles.rolBadge}>
                   <MaterialCommunityIcons 
@@ -256,14 +354,17 @@ const styles = StyleSheet.create({
     alignItems: 'center', 
     marginBottom: Spacing.xl 
   },
+  avatarWrapper: {
+    position: 'relative',
+    marginBottom: Spacing.md,
+  },
   avatarCircle: {
     width: 140,
     height: 140,
-    borderRadius: 20,
+    borderRadius: 70, // Cambiado a circular para que se vea mejor
     backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: Spacing.md,
     borderWidth: 3,
     borderColor: Colors.dark,
     shadowColor: Colors.dark,
@@ -271,6 +372,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     elevation: 0,
     overflow: 'hidden'
+  },
+  editBadge: {
+    position: 'absolute',
+    bottom: 5,
+    right: 5,
+    backgroundColor: Colors.dark,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFF',
   },
   avatarImage: {
     width: '100%',

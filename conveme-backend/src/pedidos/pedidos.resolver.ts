@@ -3,6 +3,11 @@ import { PedidosService } from './pedidos.service';
 import { Pedido } from './entities/pedido.entity';
 import { CreatePedidoInput } from './dto/create-pedido.input';
 import { UpdatePedidoInput } from './dto/update-pedido.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetUsuario } from '../auth/get-usuario.decorator';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Resolver(() => Pedido)
 export class PedidosResolver {
@@ -13,9 +18,13 @@ export class PedidosResolver {
         return this.pedidosService.create(createPedidoInput);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Query(() => [Pedido], { name: 'pedidos' })
-    findAll() {
-        return this.pedidosService.findAll();
+    findAll(
+        @Args() paginationArgs: PaginationArgs,
+        @GetUsuario() usuario: Usuario,
+    ) {
+        return this.pedidosService.findAll(paginationArgs, usuario);
     }
 
     @Query(() => Pedido, { name: 'pedido' })

@@ -14,6 +14,7 @@ import { Image } from 'expo-image';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 
 import { useAuth } from '../../hooks/useAuth';
+import { useAuthStore } from '../../store/authStore';
 import { getVentas } from '../../services/venta.service';
 import { getPedidos } from '../../services/pedido.service';
 import { getCortes } from '../../services/corte.service';
@@ -75,12 +76,16 @@ export function VendedorDashboard() {
   const [prediction, setPrediction] = useState({ value: 0, label: '' });
 
   const loadStats = useCallback(async () => {
+    // Solo proceder si tenemos token y usuario cargado
+    const { token } = useAuthStore.getState();
+    if (!token || !usuario) return;
+
     setLoading(true);
     try {
       const [ventas, pedidos, cortes] = await Promise.all([
-        getVentas(), 
-        getPedidos(),
-        getCortes()
+        getVentas(0, 50), 
+        getPedidos(0, 50),
+        getCortes('', 0, 50)
       ]);
       
       // Filtrar por el vendedor logueado usando id_vendedor

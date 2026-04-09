@@ -1,10 +1,10 @@
 import { convemeApi } from '../api/convemeApi';
 
-// 👇 Ahora acepta el buscador
-export const getCortes = async (search: string = '') => {
+// 👇 Ahora acepta el buscador y paginación
+export const getCortes = async (search: string = '', skip = 0, take = 20) => {
     const query = `
-    query GetCortesVendedor($search: String) {
-        cortesVendedor(search: $search) {
+    query GetCortesVendedor($search: String, $skip: Int, $take: Int) {
+        cortesVendedor(search: $search, skip: $skip, take: $take) {
             id_corte
             fecha_corte
             dinero_esperado
@@ -32,7 +32,7 @@ export const getCortes = async (search: string = '') => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { query, variables: { search } });
+    const { data } = await convemeApi.post('', { query, variables: { search, skip, take } });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.cortesVendedor;
 };

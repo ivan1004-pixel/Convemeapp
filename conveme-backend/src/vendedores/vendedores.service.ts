@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Vendedor } from './vendedor.entity';
 import { CreateVendedorInput } from './dto/create-vendedor.input';
 import { UpdateVendedorInput } from './dto/update-vendedor.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Injectable()
 export class VendedoresService {
@@ -39,17 +40,19 @@ export class VendedoresService {
         return this.findOne(guardado.id_vendedor);
     }
 
-    async findAll(): Promise<Vendedor[]> {
+    async findAll(paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Vendedor[]> {
+        const { skip, take } = paginationArgs;
         return this.vendedorRepository.find({
-            // 👇 Agregamos 'municipio.estado' aquí
-            relations: ['usuario', 'escuela', 'municipio', 'municipio.estado']
+            relations: ['usuario', 'escuela', 'municipio', 'municipio.estado'],
+            skip,
+            take,
+            order: { id_vendedor: 'DESC' }
         });
     }
 
     async findOne(id_vendedor: number): Promise<Vendedor> {
         const vendedor = await this.vendedorRepository.findOne({
             where: { id_vendedor },
-            // 👇 Y también aquí
             relations: ['usuario', 'escuela', 'municipio', 'municipio.estado'],
         });
         if (!vendedor) throw new NotFoundException(`Vendedor #${id_vendedor} no encontrado`);
@@ -79,14 +82,22 @@ export class VendedoresService {
         return vendedor;
     }
 
-    async searchVendedores(termino: string = ''): Promise<Vendedor[]> {
-        const query = this.vendedorRepository.createQueryBuilder('vendedor');
+    async searchVendedores(termino: string = '', paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Vendedor[]> {
+        const { skip, take } = paginationArgs;
+        const query = this.vendedorRepository.createQueryBuilder('vendedor')
+            .leftJoinAndSelect('vendedor.usuario', 'usuario')
+            .leftJoinAndSelect('vendedor.escuela', 'escuela')
+            .leftJoinAndSelect('vendedor.municipio', 'municipio')
+            .leftJoinAndSelect('municipio.estado', 'estado');
 
-        // Si escribieron algo, filtramos. Si no, nos saltamos el WHERE y trae todos.
         if (termino.trim() !== '') {
             query.where('vendedor.nombre_completo LIKE :termino', { termino: `%${termino}%` });
         }
 
-        return query.orderBy('vendedor.id_vendedor', 'DESC').take(20).getMany();
+        return query
+            .orderBy('vendedor.id_vendedor', 'DESC')
+            .offset(skip)
+            .limit(take)
+            .getMany();
     }
 }

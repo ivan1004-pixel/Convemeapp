@@ -3,6 +3,13 @@ import { CortesVendedorService } from './cortes-vendedor.service';
 import { CorteVendedor } from './entities/corte-vendedor.entity';
 import { CreateCorteVendedorInput } from './dto/create-corte-vendedor.input';
 import { UpdateCorteVendedorInput } from './dto/update-corte-vendedor.input';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PaginationArgs } from '../common/dto/pagination.args';
+import { GetUsuario } from '../auth/get-usuario.decorator';
+import { Usuario } from '../usuarios/usuario.entity';
+
+import { SearchArgs } from '../common/dto/search.args';
 
 @Resolver(() => CorteVendedor)
 export class CortesVendedorResolver {
@@ -13,10 +20,14 @@ export class CortesVendedorResolver {
         return this.cortesVendedorService.create(createCorteVendedorInput);
     }
 
-    // 👇 Actualizado para recibir la variable de búsqueda
+    // 👇 Actualizado para recibir variables de paginación y búsqueda unificadas
+    @UseGuards(JwtAuthGuard)
     @Query(() => [CorteVendedor], { name: 'cortesVendedor' })
-    findAll(@Args('search', { type: () => String, nullable: true }) search?: string) {
-        return this.cortesVendedorService.findAll(search || '');
+    findAll(
+        @Args() searchArgs: SearchArgs,
+        @GetUsuario() usuario: Usuario,
+    ) {
+        return this.cortesVendedorService.findAll(searchArgs, usuario);
     }
 
     // 👇 NUEVO: El endpoint para "Mis Finanzas"

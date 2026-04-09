@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Venta } from './entities/venta.entity';
 import { CreateVentaInput } from './dto/create-venta.input';
 import { UpdateVentaInput } from './dto/update-venta.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Injectable()
 export class VentasService {
@@ -28,9 +30,27 @@ export class VentasService {
         return this.findOne(guardada.id_venta);
     }
 
-    async findAll(): Promise<Venta[]> {
-        return this.ventaRepository.find({
-            relations: ['cliente', 'vendedor', 'detalles', 'detalles.producto']
+    async findAll(paginationArgs: PaginationArgs, usuario: Usuario): Promise<Venta[]> {
+        const { skip, take } = paginationArgs;
+        const queryBuilder = this.ventaRepository.createQueryBuilder('venta')
+            .leftJoinAndSelect('venta.cliente', 'cliente')
+            .leftJoinAndSelect('venta.vendedor', 'vendedor')
+            .leftJoinAndSelect('venta.detalles', 'detalles')
+            .leftJoinAndSelect('detalles.producto', 'producto')
+            .orderBy('venta.fecha_venta', 'DESC')
+            .offset(skip)
+            .limit(take);
+
+        if (usuario.rol_id === 2) {
+            queryBuilder.andWhere('venta.vendedor_id = :vendedor_id', { vendedor_id: usuario.id_vendedor });
+        }
+
+        const results = await queryBuilder.getMany();
+        return results.map(venta => {
+            if (venta.fecha_venta && typeof venta.fecha_venta === 'string') {
+                venta.fecha_venta = new Date(venta.fecha_venta);
+            }
+            return venta;
         });
     }
 
@@ -40,6 +60,11 @@ export class VentasService {
             relations: ['cliente', 'vendedor', 'detalles', 'detalles.producto'],
         });
         if (!venta) throw new NotFoundException(`Venta #${id_venta} no encontrada`);
+        
+        if (venta.fecha_venta && typeof venta.fecha_venta === 'string') {
+            venta.fecha_venta = new Date(venta.fecha_venta);
+        }
+
         return venta;
     }
 

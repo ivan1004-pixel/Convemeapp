@@ -9,6 +9,8 @@ import { UpdateUsuarioInput } from './dto/update-usuario.input';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { GetUsuario } from '../auth/get-usuario.decorator';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Resolver(() => Usuario)
 export class UsuariosResolver {
@@ -25,8 +27,8 @@ export class UsuariosResolver {
     }
 
     @Query(() => [Usuario], { name: 'usuarios' })
-    findAll() {
-        return this.usuariosService.findAll();
+    findAll(@Args() paginationArgs: PaginationArgs) {
+        return this.usuariosService.findAll(paginationArgs);
     }
 
     @Query(() => Usuario, { name: 'usuario' })
@@ -39,8 +41,18 @@ export class UsuariosResolver {
         return this.usuariosService.update(updateUsuarioInput.id_usuario, updateUsuarioInput);
     }
 
-    @Mutation(() => Boolean)
+    @Mutation(() => Usuario)
     removeUsuario(@Args('id_usuario', { type: () => Int }) id_usuario: number) {
         return this.usuariosService.remove(id_usuario);
     }
-}
+
+    @UseGuards(JwtAuthGuard)
+    @Mutation(() => Usuario)
+    updatePushToken(
+        @GetUsuario() usuario: Usuario,
+        @Args('push_token') push_token: string,
+    ) {
+        return this.usuariosService.updatePushToken(usuario.id_usuario, push_token);
+    }
+    }
+

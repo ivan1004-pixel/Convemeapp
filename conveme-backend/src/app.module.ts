@@ -36,6 +36,7 @@ import { GastosOperativosModule } from './gastos-operativos/gastos-operativos.mo
 import { BitacoraAuditoriaModule } from './bitacora-auditoria/bitacora-auditoria.module';
 import { PrediccionesModule } from './predicciones/predicciones.module';
 import { ComprobantesModule } from './comprobantes/comprobantes.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { ComprobantesModule } from './comprobantes/comprobantes.module';
     BitacoraAuditoriaModule,
     PrediccionesModule,
     ComprobantesModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

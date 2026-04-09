@@ -4,25 +4,43 @@ import { Repository } from 'typeorm';
 import { AsignacionVendedor } from './entities/asignacion-vendedor.entity';
 import { CreateAsignacionVendedorInput } from './dto/create-asignacion-vendedor.input';
 import { UpdateAsignacionVendedorInput } from './dto/update-asignacion-vendedor.input';
+import { NotificationsService } from '../notifications/notifications.service';
+import { SearchArgs } from '../common/dto/search.args';
 
 @Injectable()
 export class AsignacionesVendedorService {
     constructor(
         @InjectRepository(AsignacionVendedor)
         private readonly asignacionRepository: Repository<AsignacionVendedor>,
+        private readonly notificationsService: NotificationsService,
     ) {}
 
     async create(createAsignacionInput: CreateAsignacionVendedorInput): Promise<AsignacionVendedor> {
         const nueva = this.asignacionRepository.create(createAsignacionInput);
         const guardada = await this.asignacionRepository.save(nueva);
-        return this.findOne(guardada.id_asignacion);
+        
+        // Notificar al vendedor
+        const asignacionCompleta = await this.findOne(guardada.id_asignacion);
+        if (asignacionCompleta.vendedor?.usuario?.push_token) {
+            await this.notificationsService.sendPushNotification(
+                asignacionCompleta.vendedor.usuario.push_token,
+                '📦 Nueva Asignación',
+                `Se te ha asignado una nueva ruta/producto (Folio: ${asignacionCompleta.id_asignacion})`,
+                { id_asignacion: asignacionCompleta.id_asignacion }
+            );
+        }
+
+        return asignacionCompleta;
     }
 
-    async findAll(search: string = ''): Promise<AsignacionVendedor[]> {
+    async findAll(searchArgs: SearchArgs): Promise<AsignacionVendedor[]> {
+        const { skip, take, search = '' } = searchArgs;
         const query = this.asignacionRepository.createQueryBuilder('asignacion')
         .leftJoinAndSelect('asignacion.vendedor', 'vendedor')
         .leftJoinAndSelect('asignacion.detalles', 'detalles')
-        .leftJoinAndSelect('detalles.producto', 'producto');
+        .leftJoinAndSelect('detalles.producto', 'producto')
+        .offset(skip)
+        .limit(take);
 
         // Si el usuario escribió algo en la barra de búsqueda
         if (search.trim() !== '') {
@@ -34,13 +52,13 @@ export class AsignacionesVendedorService {
             }
         }
 
-        return query.orderBy('asignacion.id_asignacion', 'DESC').take(50).getMany();
+        return query.orderBy('asignacion.id_asignacion', 'DESC').getMany();
     }
 
     async findOne(id_asignacion: number): Promise<AsignacionVendedor> {
         const asignacion = await this.asignacionRepository.findOne({
             where: { id_asignacion },
-            relations: ['vendedor', 'detalles', 'detalles.producto'],
+            relations: ['vendedor', 'vendedor.usuario', 'detalles', 'detalles.producto'],
         });
         if (!asignacion) throw new NotFoundException(`Asignación #${id_asignacion} no encontrada`);
         return asignacion;

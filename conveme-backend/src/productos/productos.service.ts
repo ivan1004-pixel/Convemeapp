@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Producto } from './producto.entity';
 import { CreateProductoInput } from './dto/create-producto.input';
 import { UpdateProductoInput } from './dto/update-producto.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Injectable()
 export class ProductosService {
@@ -22,10 +23,12 @@ export class ProductosService {
 
         return this.findOne(guardado.id_producto);
     }
-    async findAll(): Promise<Producto[]> {
+    async findAll(paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Producto[]> {
+        const { skip, take } = paginationArgs;
         return this.productoRepository.find({
             relations: ['categoria', 'tamano'],
-            take: 50, // 👈 EL LÍMITE SALVAVIDAS
+            skip,
+            take,
             order: { id_producto: 'DESC' }
         });
     }
@@ -65,7 +68,8 @@ export class ProductosService {
     }
 
     // En productos.service.ts
-    async searchProductos(termino: string = ''): Promise<Producto[]> {
+    async searchProductos(termino: string = '', paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Producto[]> {
+        const { skip, take } = paginationArgs;
         const query = this.productoRepository.createQueryBuilder('producto')
         .where('producto.activo = :activo', { activo: true }); // Solo activos
 
@@ -73,6 +77,10 @@ export class ProductosService {
             query.andWhere('(producto.nombre LIKE :termino OR producto.sku LIKE :termino)', { termino: `%${termino}%` });
         }
 
-        return query.orderBy('producto.id_producto', 'DESC').take(20).getMany();
+        return query
+            .orderBy('producto.id_producto', 'DESC')
+            .offset(skip)
+            .limit(take)
+            .getMany();
     }
 }

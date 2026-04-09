@@ -4,8 +4,8 @@ import * as SecureStore from 'expo-secure-store'; // <-- Importamos la bóveda
 
 export const loginService = async (username: string, password_raw: string) => {
     const query = `
-    mutation Login($username: String!, $password_raw: String!) {
-        login(loginInput: { username: $username, password_raw: $password_raw }) {
+    mutation Login($u: String!, $p: String!) {
+        login(loginInput: { username: $u, password_raw: $p }) {
             token
             usuario {
                 id_usuario
@@ -18,7 +18,10 @@ export const loginService = async (username: string, password_raw: string) => {
 
     const { data } = await convemeApi.post<LoginResponse>('', {
         query,
-        variables: { username, password_raw },
+        variables: { 
+            u: username,
+            p: password_raw
+        },
     });
 
     if (data.errors) throw new Error(data.errors[0].message);
@@ -35,4 +38,26 @@ export const loginService = async (username: string, password_raw: string) => {
 
 export const logoutService = async () => {
     await SecureStore.deleteItemAsync('token');
+};
+
+export const updatePushTokenService = async (push_token: string) => {
+    const query = `
+    mutation UpdatePushToken($push_token: String!) {
+        updatePushToken(push_token: $push_token) {
+            id_usuario
+            push_token
+        }
+    }
+    `;
+
+    try {
+        const { data } = await convemeApi.post<any>('', {
+            query,
+            variables: { push_token },
+        });
+        if (data.errors) console.error('Error updating push token:', data.errors[0].message);
+        return data.data?.updatePushToken;
+    } catch (error) {
+        console.error('Failed to update push token:', error);
+    }
 };

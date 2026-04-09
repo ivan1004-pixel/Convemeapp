@@ -35,6 +35,12 @@ export class AuthService {
             rol_id: usuario.rol_id
         };
 
+        // Si es vendedor (rol_id === 2), buscamos su id_vendedor
+        if (usuario.rol_id === 2) {
+            const vendedor = await this.usuariosService.findVendedorByUsuario(usuario.id_usuario);
+            usuario.id_vendedor = vendedor?.id_vendedor;
+        }
+
         // 4. Firmamos el token y retornamos la respuesta
         return {
             token: this.jwtService.sign(payload),

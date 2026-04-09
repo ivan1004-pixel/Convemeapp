@@ -30,7 +30,7 @@ export class Pedido {
     @JoinColumn({ name: 'vendedor_id' })
     vendedor: Vendedor;
 
-    @Field()
+    @Field({ nullable: true })
     @CreateDateColumn()
     fecha_pedido: Date;
 

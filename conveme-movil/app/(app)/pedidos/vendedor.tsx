@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -70,26 +71,49 @@ export default function VendedorPedidosScreen() {
   const { usuario } = useAuth();
   const { pedidos, setPedidos } = usePedidoStore();
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
+  const [hasMore, setHasMore] = useState(true);
+  const TAKE = 20;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isRefresh = true) => {
+    if (isRefresh) {
+        setLoading(true);
+        setHasMore(true);
+    } else {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+    }
+
     try {
-      const data = await getPedidos();
-      // Filtrar por el vendedor logueado usando id_vendedor
-      const myPedidos = data.filter(p => 
-        p.vendedor?.id_vendedor === usuario?.id_vendedor || 
-        p.id_vendedor === usuario?.id_vendedor
-      );
-      setPedidos(myPedidos);
+      const skip = isRefresh ? 0 : pedidos.length;
+      const data = await getPedidos(skip, TAKE);
+      
+      if (data.length < TAKE) {
+        setHasMore(false);
+      }
+
+      if (isRefresh) {
+        setPedidos(data);
+      } else {
+        setPedidos([...pedidos, ...data]);
+      }
     } catch (err) {
       console.error(parseGraphQLError(err));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [usuario, setPedidos]);
+  }, [usuario, setPedidos, pedidos.length, hasMore, loadingMore]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { 
+    if (pedidos.length === 0) {
+        fetchData(true); 
+    }
+  }, []);
+
+  const onRefresh = () => fetchData(true);
+  const onEndReached = () => fetchData(false);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return pedidos;
@@ -118,7 +142,7 @@ export default function VendedorPedidosScreen() {
                 <TouchableOpacity onPress={() => router.push('/pedidos/create')} style={styles.addBtn}>
                     <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
@@ -133,12 +157,21 @@ export default function VendedorPedidosScreen() {
         ) : (
             <FlatList
             data={filtered}
-            keyExtractor={(item) => String(item.id_pedido)}
+            keyExtractor={(item, index) => `${item.id_pedido}-${index}`}
             contentContainerStyle={styles.listContent}
             renderItem={({ item }) => (
                 <PedidoCard item={item} onPress={() => router.push(`/pedidos/${item.id_pedido}`)} />
             )}
-            refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={Colors.primary} />}
+            refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={Colors.primary} />}
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+                loadingMore ? (
+                    <View style={styles.footerLoading}>
+                        <ActivityIndicator color={Colors.primary} />
+                    </View>
+                ) : null
+            }
             ListEmptyComponent={
                 <EmptyState
                 icon="package-variant"
@@ -179,4 +212,5 @@ const styles = StyleSheet.create({
   cardMeta: { fontSize: 12, fontWeight: '700', color: Colors.dark },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: Spacing.md },
   footerAction: { fontSize: 11, fontWeight: '900', color: Colors.dark, letterSpacing: 0.5 },
+  footerLoading: { paddingVertical: 20, alignItems: 'center' },
 });

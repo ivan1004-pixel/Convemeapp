@@ -10,6 +10,7 @@ import {
   Pressable,
   ScrollView,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -65,8 +66,11 @@ export default function VentasScreen() {
   const { ventas, setVentas, removeVenta } = useVentaStore();
   const [cortes, setCortes] = useState<Corte[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [showVendorAnalytics, setShowVendorAnalytics] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const TAKE = 20;
 
   // Filtrar ventas según el rol
   const filteredVentas = useMemo(() => {
@@ -83,17 +87,48 @@ export default function VentasScreen() {
     );
   }, [ventas, isAdmin, usuario, search]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [vData, cData] = await Promise.all([getVentas(), getCortes()]);
-      setVentas(vData);
-      setCortes(cData);
-    } catch (err) { show(parseGraphQLError(err), 'error'); }
-    finally { setLoading(false); }
-  }, [setVentas, show]);
+  const fetchData = useCallback(async (isRefresh = true) => {
+    if (isRefresh) {
+        setLoading(true);
+        setHasMore(true);
+    } else {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+    }
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    try {
+      const skip = isRefresh ? 0 : ventas.length;
+      const [vData, cData] = await Promise.all([
+          getVentas(skip, TAKE), 
+          isRefresh ? getCortes() : Promise.resolve(cortes)
+      ]);
+      
+      if (vData.length < TAKE) {
+        setHasMore(false);
+      }
+
+      if (isRefresh) {
+        setVentas(vData);
+        setCortes(cData);
+      } else {
+        setVentas([...ventas, ...vData]);
+      }
+    } catch (err) { 
+        show(parseGraphQLError(err), 'error'); 
+    } finally { 
+        setLoading(false); 
+        setLoadingMore(false);
+    }
+  }, [setVentas, show, ventas.length, hasMore, loadingMore, cortes]);
+
+  const onRefresh = () => fetchData(true);
+  const onEndReached = () => fetchData(false);
+
+  useEffect(() => { 
+    if (ventas.length === 0) {
+        fetchData(true); 
+    }
+  }, []);
 
   const vendorData = useMemo(() => {
     const map: Record<string, number> = {};
@@ -147,7 +182,7 @@ export default function VentasScreen() {
                 <TouchableOpacity onPress={() => router.push('/ventas/create')} style={styles.addBtn}>
                     <MaterialCommunityIcons name="plus" size={24} color="#FFF" />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={fetchData} style={styles.refreshBtn}>
+                <TouchableOpacity onPress={onRefresh} style={styles.refreshBtn}>
                     <MaterialCommunityIcons name="refresh" size={24} color={Colors.dark} />
                 </TouchableOpacity>
             </View>
@@ -155,7 +190,7 @@ export default function VentasScreen() {
 
         <FlatList
           data={filteredVentas}
-          keyExtractor={item => String(item.id_venta)}
+          keyExtractor={(item, index) => `${item.id_venta}-${index}`}
           contentContainerStyle={styles.list}
           ListHeaderComponent={
             <SearchBar 
@@ -172,7 +207,16 @@ export default function VentasScreen() {
                 onLongPress={() => {}} 
             />
           )}
-          refreshControl={<RefreshControl refreshing={loading} onRefresh={fetchData} tintColor={Colors.primary} />}
+          refreshControl={<RefreshControl refreshing={loading && ventas.length > 0} onRefresh={onRefresh} tintColor={Colors.primary} />}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            loadingMore ? (
+                <View style={styles.footerLoading}>
+                    <ActivityIndicator color={Colors.primary} />
+                </View>
+            ) : null
+          }
         />
 
         <Modal visible={showVendorAnalytics} transparent animationType="slide">
@@ -215,4 +259,5 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: Colors.beige, borderRadius: 24, padding: 25, borderWidth: 4, borderColor: Colors.dark },
   modalTitle: { fontSize: 20, fontWeight: '900', marginBottom: 20, textAlign: 'center' },
+  footerLoading: { paddingVertical: 20, alignItems: 'center' },
 });

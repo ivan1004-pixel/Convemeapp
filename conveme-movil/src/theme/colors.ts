@@ -1,13 +1,12 @@
 // ConveMe Neobrutalist Design System
 export const Colors = {
-  // Brand colors - Neobrutalist Style
-  primary: '#0000FF',        // brand-blue (Pure blue for better accessibility)
+  // Brand colors - Updated to match Web Project
+  primary: '#0301ff',        // brand-blue
   primaryLight: '#f88fea',   // brand-pink
-  secondary: '#F4F0E8',      // brand-beige (Lighter for better contrast)
-  success: '#00D084',
-  successLight: '#E6F9F3',   // Verde claro para fondos
-  info: '#0000FF',
-  warning: '#FFD600',
+  secondary: '#ede0d1',      // brand-beige
+  success: '#06d6a0',        // Web POS/Ventas color
+  info: '#00b4d8',           // Web Pedidos/Stock color
+  warning: '#ffbe0b',        // Web Finanzas/Ingresos color
   error: '#FF0000',
   dark: '#1A1A1A',
   light: '#FFFFFF',

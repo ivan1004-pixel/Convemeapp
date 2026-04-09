@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Cliente } from './cliente.entity';
 import { CreateClienteInput } from './dto/create-cliente.input';
 import { UpdateClienteInput } from './dto/update-cliente.input';
+import { PaginationArgs } from '../common/dto/pagination.args';
 
 @Injectable()
 export class ClientesService {
@@ -18,17 +19,19 @@ export class ClientesService {
     return this.findOne(guardado.id_cliente);
   }
 
-  async findAll(): Promise<Cliente[]> {
-    // 👇 LÍMITE DURO: Solo traemos los últimos 50 clientes registrados
+  async findAll(paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Cliente[]> {
+    const { skip, take } = paginationArgs;
     return this.clienteRepository.find({
       relations: ['usuario'],
-      take: 50,
+      skip,
+      take,
       order: { id_cliente: 'DESC' }
     });
   }
 
-  // 👇 NUEVO: Buscador predictivo para modales (Solo trae 20)
-  async searchClientes(termino: string = ''): Promise<Cliente[]> {
+  // 👇 NUEVO: Buscador predictivo para modales
+  async searchClientes(termino: string = '', paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Cliente[]> {
+    const { skip, take } = paginationArgs;
     const query = this.clienteRepository.createQueryBuilder('cliente')
     .leftJoinAndSelect('cliente.usuario', 'usuario'); // Por si necesitas datos del usuario
 
@@ -38,7 +41,11 @@ export class ClientesService {
       .orWhere('cliente.email LIKE :termino', { termino: `%${termino}%` });
     }
 
-    return query.orderBy('cliente.id_cliente', 'DESC').take(20).getMany();
+    return query
+      .orderBy('cliente.id_cliente', 'DESC')
+      .offset(skip)
+      .limit(take)
+      .getMany();
   }
 
   async findOne(id_cliente: number): Promise<Cliente> {

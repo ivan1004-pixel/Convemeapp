@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Alert,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -111,38 +112,51 @@ export default function PedidosScreen() {
 
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
   const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const TAKE = 20;
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (isRefresh = true) => {
+    if (isRefresh) {
+        setLoading(true);
+        setHasMore(true);
+    } else {
+        if (!hasMore || loadingMore) return;
+        setLoadingMore(true);
+    }
+
     try {
-      const data = await getPedidos();
-      setPedidos(data || []);
+      const skip = isRefresh ? 0 : pedidos.length;
+      const data = await getPedidos(skip, TAKE);
+      
+      if (data.length < TAKE) {
+        setHasMore(false);
+      }
+
+      if (isRefresh) {
+        setPedidos(data || []);
+      } else {
+        setPedidos([...pedidos, ...(data || [])]);
+      }
     } catch (err) {
       Alert.alert('No se pudieron cargar los pedidos', parseGraphQLError(err));
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [setPedidos]);
+  }, [setPedidos, pedidos.length, hasMore, loadingMore]);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      const data = await getPedidos();
-      setPedidos(data || []);
-    } catch (err) {
-      Alert.alert('No se pudieron actualizar los pedidos', parseGraphQLError(err));
-    } finally {
-      setRefreshing(false);
-    }
-  }, [setPedidos]);
+  const onRefresh = () => fetchData(true);
+  const onEndReached = () => fetchData(false);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (pedidos.length === 0) {
+        fetchData(true);
+    }
+  }, []);
 
   const filtered = useMemo(() => {
     let list = pedidos;
@@ -212,7 +226,7 @@ export default function PedidosScreen() {
         ) : (
             <FlatList
             data={filtered}
-            keyExtractor={(item) => String(item.id_pedido)}
+            keyExtractor={(item, index) => `${item.id_pedido}-${index}`}
             contentContainerStyle={[
                 styles.listContent,
                 filtered.length === 0 && styles.listEmpty,
@@ -226,11 +240,20 @@ export default function PedidosScreen() {
             )}
             refreshControl={
                 <RefreshControl
-                refreshing={refreshing}
+                refreshing={loading && pedidos.length > 0}
                 onRefresh={onRefresh}
                 colors={[Colors.primary]}
                 tintColor={Colors.primary}
                 />
+            }
+            onEndReached={onEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={
+                loadingMore ? (
+                    <View style={styles.footerLoading}>
+                        <ActivityIndicator color={Colors.primary} />
+                    </View>
+                ) : null
             }
             ListEmptyComponent={
                 <EmptyState
@@ -369,4 +392,5 @@ const styles = StyleSheet.create({
     color: Colors.dark,
     letterSpacing: 0.5,
   },
+  footerLoading: { paddingVertical: 20, alignItems: 'center' },
 });

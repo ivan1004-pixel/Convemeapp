@@ -19,7 +19,13 @@ export class PagosVendedoresService {
     }
 
     async findAll(): Promise<PagoVendedor[]> {
-        return this.pagoRepository.find({ relations: ['vendedor'] });
+        const results = await this.pagoRepository.find({ relations: ['vendedor'] });
+        return results.map(pago => {
+            if (pago.fecha_pago && typeof pago.fecha_pago === 'string') {
+                pago.fecha_pago = new Date(pago.fecha_pago);
+            }
+            return pago;
+        });
     }
 
     async findOne(id_pago: number): Promise<PagoVendedor> {
@@ -28,6 +34,11 @@ export class PagosVendedoresService {
             relations: ['vendedor'],
         });
         if (!pago) throw new NotFoundException(`Pago #${id_pago} no encontrado`);
+        
+        if (pago.fecha_pago && typeof pago.fecha_pago === 'string') {
+            pago.fecha_pago = new Date(pago.fecha_pago);
+        }
+
         return pago;
     }
 

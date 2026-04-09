@@ -9,6 +9,8 @@ export class PrediccionVentasType {
     @Field(() => Float) factor_alpha: number;
     @Field(() => Float) crecimiento_pct: number;
     @Field(() => Float) confianza_pct: number;
+    @Field(() => Float, { nullable: true }) tendencia: number;
+    @Field(() => Float, { nullable: true }) promedio_ponderado: number;
 }
 
 @ObjectType()
