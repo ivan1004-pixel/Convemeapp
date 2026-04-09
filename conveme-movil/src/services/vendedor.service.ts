@@ -13,6 +13,9 @@ export const getVendedores = async (skip = 0, take = 20) => {
             comision_fija_menudeo
             comision_fija_mayoreo
             meta_ventas_mensual
+            usuario {
+                foto_perfil
+            }
             escuela {
                 id_escuela
                 nombre
@@ -87,12 +90,16 @@ export const getUsuariosParaSelect = async (skip = 0, take = 50) => {
         usuarios(skip: $skip, take: $take) {
             id_usuario
             username
+            rol {            # 🟢 AQUÍ ESTÁ LA MAGIA QUE FALTABA
+                id_rol
+                nombre
+            }
         }
     }
     `;
-    const { data } = await convemeApi.post('', { 
-        query, 
-        variables: { skip, take } 
+    const { data } = await convemeApi.post('', {
+        query,
+        variables: { skip, take }
     });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.usuarios;
@@ -111,6 +118,9 @@ export const getVendedorByUsuarioId = async (usuario_id: number) => {
             comision_fija_menudeo
             comision_fija_mayoreo
             meta_ventas_mensual
+            usuario {
+                foto_perfil
+            }
             escuela {
                 nombre
             }

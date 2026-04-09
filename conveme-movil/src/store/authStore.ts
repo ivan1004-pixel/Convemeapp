@@ -5,7 +5,7 @@ import type { Usuario } from '../types';
 
 interface AuthState {
   token: string | null;
-  usuario: (Usuario & { rol_id: number }) | null;
+  usuario: (Usuario & { rol_id: number; id_vendedor?: number | null }) | null;
   isAuthenticated: boolean;
   setToken: (token: string) => void;
   setUsuario: (usuario: AuthState['usuario']) => void;
@@ -25,11 +25,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        // Solo persistimos lo mínimo necesario
+        // 🟢 Guardamos el token
         token: state.token,
+        // 🟢 Guardamos el estado de autenticación
         isAuthenticated: state.isAuthenticated,
-        // No persistimos usuario para no romper foto_perfil ni guardar base64
-        usuario: null,
+        // 🟢 Guardamos TODO el usuario (incluyendo el link de foto_perfil y el rol)
+        usuario: state.usuario,
       }),
       storage: createJSONStorage(() => ({
         getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,

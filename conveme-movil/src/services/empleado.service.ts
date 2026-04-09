@@ -16,6 +16,7 @@ export const getEmpleados = async () => {
             usuario {
                 id_usuario
                 username
+                foto_perfil  # 🟢 AQUÍ PEDIMOS LA FOTO DEL BACKEND
                 rol {
                     nombre
                 }
@@ -49,6 +50,9 @@ export const createEmpleado = async (input: any) => {
             calle_y_numero
             colonia
             codigo_postal
+            usuario {
+                foto_perfil # 🟢 La pedimos al crear para que la tarjeta se actualice al instante
+            }
         }
     }
     `;
@@ -70,6 +74,9 @@ export const updateEmpleado = async (input: any) => {
             calle_y_numero
             colonia
             codigo_postal
+            usuario {
+                foto_perfil # 🟢 También la pedimos al actualizar
+            }
         }
     }
     `;
@@ -104,6 +111,7 @@ export const getEmpleadoPorUsuario = async (id_usuario: number) => {
             puesto
             usuario {
                 id_usuario
+                foto_perfil
             }
         }
     }

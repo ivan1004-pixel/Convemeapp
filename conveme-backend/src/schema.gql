@@ -966,8 +966,8 @@ input UpdatePagoVendedorInput {
 input CreateEventoInput {
   nombre: String!
   descripcion: String
-  fecha_inicio: DateTime!
-  fecha_fin: DateTime!
+  fecha_inicio: String
+  fecha_fin: String
   escuela_id: Int
   municipio_id: Int
   costo_stand: Float
@@ -977,8 +977,8 @@ input CreateEventoInput {
 input UpdateEventoInput {
   nombre: String
   descripcion: String
-  fecha_inicio: DateTime
-  fecha_fin: DateTime
+  fecha_inicio: String
+  fecha_fin: String
   escuela_id: Int
   municipio_id: Int
   costo_stand: Float
