@@ -14,11 +14,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createVenta, updateVenta } from '../../../src/services/venta.service';
+import { Image } from 'expo-image';
+import { createVenta, updateVenta, getVenta } from '../../../src/services/venta.service';
 import { getProductos } from '../../../src/services/producto.service';
 import { getClientes, buscarClientes } from '../../../src/services/cliente.service';
 import { getVendedores } from '../../../src/services/vendedor.service';
 import { useVentaStore } from '../../../src/store/ventaStore';
+import { useProductoStore } from '../../../src/store/productoStore';
+import { useClienteStore } from '../../../src/store/clienteStore';
+import { useVendedorStore } from '../../../src/store/vendedorStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
 import { Spacing, BorderRadius } from '../../../src/theme/spacing';
@@ -114,34 +118,20 @@ export default function VentaCreateScreen() {
 
   const { toast, show, hide } = useToast();
   const { ventas, addVenta, updateVenta: updateVentaStore } = useVentaStore();
+  const { productos, setProductos } = useProductoStore();
+  const { clientes, setClientes } = useClienteStore();
+  const { vendedores, setVendedores } = useVendedorStore();
 
   const isEditing = !!id;
 
-  // Bloquear edición para no-admins
-  useEffect(() => {
-    if (isEditing && !isAdmin) {
-      show('No tienes permisos para editar ventas', 'error');
-      setTimeout(() => router.back(), 2000);
-    }
-  }, [isEditing, isAdmin]);
-
-  const existing: Venta | undefined = isEditing
-    ? ventas.find((v) => v.id_venta === Number(id))
-    : undefined;
-
   // Estados del formulario
   const [form, setForm] = useState({
-    cliente_id: existing?.cliente?.id_cliente ?? null,
-    vendedor_id: existing?.vendedor?.id_vendedor ?? (isAdmin ? null : usuario?.id_vendedor),
-    metodo_pago: existing?.metodo_pago ?? 'Efectivo',
+    cliente_id: null as number | null,
+    vendedor_id: (isAdmin ? null : usuario?.id_vendedor) as number | null,
+    metodo_pago: 'Efectivo',
   });
 
-  // Asegurar que el vendedor sea el usuario actual si no es admin
-  useEffect(() => {
-    if (!isAdmin && usuario?.id_vendedor) {
-      setForm(prev => ({ ...prev, vendedor_id: usuario.id_vendedor }));
-    }
-  }, [isAdmin, usuario]);
+  const [existing, setExisting] = useState<Venta | null>(null);
 
   // Carrito de productos
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -151,11 +141,6 @@ export default function VentaCreateScreen() {
   const [showProductModal, setShowProductModal] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
   const [showVendedorModal, setShowVendedorModal] = useState(false);
-
-  // Datos
-  const [productos, setProductos] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [vendedores, setVendedores] = useState<any[]>([]);
 
   // Estados de búsqueda
   const [searchProduct, setSearchProduct] = useState('');
@@ -174,34 +159,47 @@ export default function VentaCreateScreen() {
     const loadData = async () => {
       setLoading(true);
       try {
-        const [pData, cData, vData] = await Promise.all([
-          getProductos(),
-          getClientes(),
-          getVendedores(),
+        // Solo cargamos lo que falta para acelerar la entrada a la pantalla
+        const [pData, cData, vData, vFetch] = await Promise.all([
+          productos.length === 0 ? getProductos(0, 50) : Promise.resolve(productos),
+          clientes.length === 0 ? getClientes() : Promise.resolve(clientes),
+          vendedores.length === 0 ? getVendedores() : Promise.resolve(vendedores),
+          isEditing ? getVenta(Number(id)) : Promise.resolve(null),
         ]);
-        setProductos(pData);
-        setClientes(cData);
-        setVendedores(vData);
+        
+        // Actualizar stores si se descargaron datos nuevos
+        if (productos.length === 0) setProductos(pData);
+        if (clientes.length === 0) setClientes(cData);
+        if (vendedores.length === 0) setVendedores(vData);
 
-        // AUTO-SELECCIÓN PARA VENDEDORES
-        if (!isAdmin && usuario) {
-          const yo = vData.find((v: any) => v.id_vendedor === usuario.id_vendedor);
-          if (yo) {
-            setField('vendedor_id', yo.id_vendedor);
+        if (vFetch) {
+          setExisting(vFetch);
+          // Poblar formulario desde los datos frescos del servidor
+          setForm({
+            cliente_id: vFetch.cliente?.id_cliente ?? null,
+            vendedor_id: vFetch.vendedor?.id_vendedor ?? null,
+            metodo_pago: vFetch.metodo_pago ?? 'Efectivo',
+          });
+
+          if (vFetch.detalles) {
+            const initialCart = vFetch.detalles.map((det: any) => ({
+              producto_id: det.producto?.id_producto,
+              nombre: det.producto?.nombre || 'Producto',
+              sku: det.producto?.sku || '-',
+              cantidad: det.cantidad,
+              precio_unitario: det.precio_unitario,
+              subtotal: det.cantidad * det.precio_unitario,
+            }));
+            setCart(initialCart);
           }
-        }
-
-        // Si estamos editando, cargar carrito
-        if (isEditing && existing?.detalles) {
-          const initialCart = existing.detalles.map((det) => ({
-            producto_id: det.producto?.id_producto || 0,
-            nombre: det.producto?.nombre || 'Producto',
-            sku: det.producto?.sku || '-',
-            cantidad: det.cantidad,
-            precio_unitario: det.precio_unitario,
-            subtotal: det.cantidad * det.precio_unitario,
-          }));
-          setCart(initialCart);
+        } else {
+          // AUTO-SELECCIÓN PARA VENDEDORES EN NUEVA VENTA
+          if (!isAdmin && usuario) {
+            const yo = vData.find((v: any) => v.id_vendedor === usuario.id_vendedor);
+            if (yo) {
+              setField('vendedor_id', yo.id_vendedor);
+            }
+          }
         }
       } catch (err) {
         show(parseGraphQLError(err), 'error');
@@ -210,7 +208,7 @@ export default function VentaCreateScreen() {
       }
     };
     loadData();
-  }, [isEditing, existing, show]);
+  }, [id, isEditing, isAdmin, usuario, show]);
 
   // Recalcular total cuando cambia el carrito
   useEffect(() => {
@@ -311,19 +309,14 @@ export default function VentaCreateScreen() {
           vendedor_id: form.vendedor_id,
           metodo_pago: form.metodo_pago,
           monto_total,
-        });
-        
-        const updatedWithDetails = { 
-          ...existing, 
-          ...updated, 
-          detalles: cart.map(item => ({
-            id_det_venta: 0,
+          detalles: cart.map((item) => ({
+            producto_id: item.producto_id,
             cantidad: item.cantidad,
             precio_unitario: item.precio_unitario,
-            producto: { id_producto: item.producto_id, nombre: item.nombre, sku: item.sku, precio_unitario: item.precio_unitario }
-          }))
-        };
-        updateVentaStore(updatedWithDetails as any);
+          })),
+        });
+        
+        updateVentaStore(updated);
         show('Venta actualizada correctamente', 'success');
       } else {
         const created = await createVenta({
@@ -379,11 +372,18 @@ export default function VentaCreateScreen() {
 
   if (loading) {
     return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={[styles.container, { backgroundColor: 'transparent' }]}>
-          <LoadingSpinner fullScreen message="Cargando datos..." />
-        </SafeAreaView>
-      </NeobrutalistBackground>
+      <View style={styles.loadingContainer}>
+        <View style={styles.mascotaCircle}>
+          <Image
+            source={require('../../../assets/images/masconve.png')}
+            style={styles.mascota}
+            contentFit="contain"
+            accessibilityLabel="Cargando datos"
+          />
+        </View>
+        <Text style={styles.loadingText}>Cargando datos...</Text>
+        <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
     );
   }
 
@@ -695,4 +695,38 @@ const styles = StyleSheet.create({
   emptyText: { textAlign: 'center', padding: 20, fontWeight: '700', color: 'rgba(0,0,0,0.3)' },
   clearSelect: { padding: 15, alignItems: 'center', marginTop: 10 },
   clearSelectText: { color: Colors.error, fontWeight: '800' },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Colors.beige,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  mascotaCircle: {
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: Colors.primaryLight,
+    borderWidth: 4,
+    borderColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
+    overflow: 'hidden', // Asegura que la imagen no se salga del círculo
+  },
+  mascota: {
+    width: '100%',
+    height: '100%',
+  },
+  loadingText: {
+    ...Typography.h4,
+    fontWeight: '900',
+    color: Colors.dark,
+    marginBottom: 12,
+  },
 });

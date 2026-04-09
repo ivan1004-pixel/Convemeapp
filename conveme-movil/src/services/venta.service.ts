@@ -6,8 +6,17 @@ export const createVenta = async (input: any) => {
     mutation CreateVenta($input: CreateVentaInput!) {
         createVenta(createVentaInput: $input) {
             id_venta
+            fecha_venta
             monto_total
+            metodo_pago
             estado
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
+            detalles {
+                cantidad
+                precio_unitario
+                producto { id_producto nombre sku }
+            }
         }
     }
     `;
@@ -26,11 +35,12 @@ export const getVentas = async (skip = 0, take = 20) => {
             monto_total
             metodo_pago
             estado
-            vendedor { nombre_completo }
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
             detalles {
                 cantidad
                 precio_unitario
-                producto { nombre sku }
+                producto { id_producto nombre sku }
             }
         }
     }
@@ -41,6 +51,31 @@ export const getVentas = async (skip = 0, take = 20) => {
     });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.ventas;
+};
+
+// 2.1 Obtener una venta por ID
+export const getVenta = async (id: number) => {
+    const query = `
+    query GetVenta($id: Int!) {
+        venta(id_venta: $id) {
+            id_venta
+            fecha_venta
+            monto_total
+            metodo_pago
+            estado
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
+            detalles {
+                cantidad
+                precio_unitario
+                producto { id_producto nombre sku }
+            }
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query, variables: { id } });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.venta;
 };
 
 // 3. Eliminar una venta
@@ -57,8 +92,17 @@ export const updateVenta = async (input: any) => {
     mutation UpdateVenta($input: UpdateVentaInput!) {
         updateVenta(updateVentaInput: $input) {
             id_venta
+            fecha_venta
+            monto_total
             metodo_pago
             estado
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
+            detalles {
+                cantidad
+                precio_unitario
+                producto { id_producto nombre sku }
+            }
         }
     }
     `;

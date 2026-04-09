@@ -69,12 +69,32 @@ export class VentasService {
     }
 
     async update(id_venta: number, updateVentaInput: UpdateVentaInput): Promise<Venta> {
-        // 👇 SOLUCIÓN: Solo le pasamos el updateVentaInput, porque ya trae el id_venta por dentro
-        const venta = await this.ventaRepository.preload(updateVentaInput);
+        const { detalles, ...resto } = updateVentaInput;
 
-        if (!venta) throw new NotFoundException(`Venta #${id_venta} no encontrada`);
+        // 1. Buscar la venta con sus detalles actuales
+        const ventaExistente = await this.ventaRepository.findOne({
+            where: { id_venta },
+            relations: ['detalles']
+        });
 
-        await this.ventaRepository.save(venta);
+        if (!ventaExistente) throw new NotFoundException(`Venta #${id_venta} no encontrada`);
+
+        // 2. Si se enviaron detalles, manejamos la actualización de la colección
+        if (detalles) {
+            // Opción agresiva pero segura: eliminar detalles viejos y poner los nuevos
+            // Esto evita el error "venta_id cannot be null" que lanza TypeORM al intentar desvincular
+            await this.ventaRepository.manager.delete('det_ventas', { venta_id: id_venta });
+            
+            // Asignamos los nuevos detalles (TypeORM los insertará al guardar la venta por el cascade: true)
+            ventaExistente.detalles = detalles as any;
+        }
+
+        // 3. Actualizar el resto de campos (monto_total, cliente_id, etc.)
+        Object.assign(ventaExistente, resto);
+
+        // 4. Guardar los cambios
+        await this.ventaRepository.save(ventaExistente);
+
         return this.findOne(id_venta);
     }
 

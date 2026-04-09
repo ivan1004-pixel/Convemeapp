@@ -109,6 +109,7 @@ export interface Venta {
   metodo_pago?: string;
   estado?: string;
   vendedor?: Vendedor;
+  cliente?: Cliente;
   vendedor_id?: number; // ID directo del vendedor
   id_vendedor?: number; // Alias alternativo
   detalles?: DetalleVenta[];

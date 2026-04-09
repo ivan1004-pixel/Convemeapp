@@ -81,7 +81,7 @@ export default function AdminVentaDetail() {
     try {
       await deleteVenta(ventaId);
       removeVenta(ventaId);
-      router.push('/(app)');
+      router.back();
     } catch (err) {
       Alert.alert('No se pudo eliminar la venta', parseGraphQLError(err));
     } finally {
