@@ -57,7 +57,7 @@ export const createPedido = async (input: any) => {
     return data.data.createPedido;
 };
 
-// 3. Actualizar estado del pedido
+// 3. Actualizar estado del pedido (se mantiene por si se usa en otro lado)
 export const updateEstadoPedido = async (id_pedido: number, estado: string) => {
     const query = `
     mutation UpdatePedido($input: UpdatePedidoInput!) {
@@ -73,7 +73,49 @@ export const updateEstadoPedido = async (id_pedido: number, estado: string) => {
     return data.data.updatePedido;
 };
 
-// 4. Eliminar un pedido
+// 4. Actualizar un pedido completo
+export const updatePedido = async (input: any) => {
+    const query = `
+    mutation UpdatePedido($input: UpdatePedidoInput!) {
+        updatePedido(updatePedidoInput: $input) {
+            id_pedido
+            fecha_pedido
+            fecha_entrega_estimada
+            monto_total
+            anticipo
+            estado
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query, variables: { input } });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.updatePedido;
+};
+
+// 5. Obtener un pedido por ID
+export const getPedido = async (id: number) => {
+    const query = `
+    query GetPedido($id: Int!) {
+        pedido(id_pedido: $id) {
+            id_pedido
+            fecha_pedido
+            fecha_entrega_estimada
+            monto_total
+            anticipo
+            estado
+            vendedor { id_vendedor nombre_completo }
+            cliente { id_cliente nombre_completo }
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', { query, variables: { id } });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.pedido;
+};
+
+// 6. Eliminar un pedido
 export const deletePedido = async (id: number) => {
     const query = `mutation RemovePedido($id: Int!) { removePedido(id_pedido: $id) }`;
     const { data } = await convemeApi.post('', { query, variables: { id } });

@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { getProductos, deleteProducto } from '../../../src/services/producto.service';
+import { getProductos, deleteProducto, getProducto } from '../../../src/services/producto.service';
 import { useProductoStore } from '../../../src/store/productoStore';
 import { Colors } from '../../../src/theme/colors';
 import { Typography } from '../../../src/theme/typography';
@@ -21,6 +21,7 @@ import { Button } from '../../../src/components/ui/Button';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
+import { Toast, useToast } from '../../../src/components/Toast';
 import { formatCurrency, parseGraphQLError } from '../../../src/utils';
 import type { Producto } from '../../../src/types';
 
@@ -60,6 +61,7 @@ const rowStyles = StyleSheet.create({
 export default function ProductoDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { productos, setProductos, removeProducto } = useProductoStore();
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -71,15 +73,25 @@ export default function ProductoDetailScreen() {
     if (!producto) {
       setLoading(true);
       try {
-        const data = await getProductos();
-        setProductos(data);
+        // Usar getProducto para traer solo el que se necesita si no está en el store
+        const data = await getProducto(productoId);
+        // Añadir o actualizar el producto en el store
+        if(data) {
+          const storeProducto = productos.find(p => p.id_producto === data.id_producto);
+          if(!storeProducto) {
+            setProductos([...productos, data]);
+          }
+        } else {
+            throw new Error('Producto no encontrado en el servidor.');
+        }
       } catch (err) {
-        Alert.alert('No se pudo cargar el producto', parseGraphQLError(err));
+        showToast(parseGraphQLError(err), 'error');
+        router.back();
       } finally {
         setLoading(false);
       }
     }
-  }, [producto, setProductos]);
+  }, [producto, productoId, setProductos, showToast, productos]);
 
   useEffect(() => {
     fetchIfNeeded();
@@ -90,14 +102,17 @@ export default function ProductoDetailScreen() {
     try {
       await deleteProducto(productoId);
       removeProducto(productoId);
-      router.push('/(app)');
+      showToast('Producto eliminado correctamente', 'success');
+      setTimeout(() => {
+        router.back();
+      }, 1500);
     } catch (err) {
-      Alert.alert('No se pudo eliminar el producto', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setShowDelete(false);
     }
-  }, [productoId, removeProducto]);
+  }, [productoId, removeProducto, showToast]);
 
   if (loading) {
     return (
@@ -253,6 +268,7 @@ export default function ProductoDetailScreen() {
           confirmText={deleting ? 'ELIMINANDO...' : 'ELIMINAR'}
           destructive
         />
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
       </SafeAreaView>
     </NeobrutalistBackground>
   );

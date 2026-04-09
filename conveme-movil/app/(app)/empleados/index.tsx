@@ -141,7 +141,7 @@ export default function EmpleadosScreen() {
     try {
       await deleteEmpleado(deleteId);
       removeEmpleado(deleteId);
-      showToast('¡ADIÓS VAQUERO! EL EMPLEADO SE HA IDO CON ÉXITO 🤠', 'success');
+      showToast('Empleado eliminado correctamente', 'success');
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {

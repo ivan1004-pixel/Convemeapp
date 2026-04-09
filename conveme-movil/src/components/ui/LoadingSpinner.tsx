@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing } from '../../theme/spacing';
 import { useColorScheme } from '../../hooks/use-color-scheme';
+import { CircularMascot } from './CircularMascot';
 
 interface LoadingSpinnerProps {
   fullScreen?: boolean;
@@ -19,6 +20,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
+  const mascotSize = size === 'large' ? 100 : 50;
 
   return (
     <View
@@ -28,7 +30,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         fullScreen && { backgroundColor: theme.background },
       ]}
     >
-      <ActivityIndicator size={size} color={Colors.primary} />
+      <CircularMascot size={mascotSize} />
       {message && (
         <Text style={[styles.message, { color: theme.muted }]}>{message}</Text>
       )}

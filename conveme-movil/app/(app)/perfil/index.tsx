@@ -89,6 +89,7 @@ export default function PerfilScreen() {
     }
 
     let result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,

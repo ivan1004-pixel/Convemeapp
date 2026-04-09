@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { createPedido, updateEstadoPedido } from '../../../src/services/pedido.service';
+import { createPedido, updatePedido, getPedido } from '../../../src/services/pedido.service';
 import { getClientes } from '../../../src/services/cliente.service';
 import { getVendedores } from '../../../src/services/vendedor.service';
 import { usePedidoStore } from '../../../src/store/pedidoStore';
@@ -238,26 +238,29 @@ export default function PedidoCreateScreen() {
     }
 
     setSubmitting(true);
-    try {
-      const input: any = {
-        cliente_id: form.cliente_id,
-        estado: form.estado,
-        monto_total: Number(form.monto_total),
-      };
-      if (form.vendedor_id) input.vendedor_id = form.vendedor_id;
-      if (form.anticipo) input.anticipo = Number(form.anticipo);
-      if (form.fecha_entrega_estimada.trim()) input.fecha_entrega_estimada = form.fecha_entrega_estimada.trim();
+    
+    // Objeto base del input, sanitizado y listo para enviar
+    const input = {
+      cliente_id: form.cliente_id,
+      vendedor_id: form.vendedor_id,
+      estado: form.estado,
+      monto_total: Number(form.monto_total),
+      anticipo: form.anticipo ? Number(form.anticipo) : undefined,
+      fecha_entrega_estimada: form.fecha_entrega_estimada.trim() || undefined,
+    };
 
+    try {
       if (isEditing && existing) {
-        const updated = await updateEstadoPedido(existing.id_pedido, form.estado);
-        updatePedidoStore({ ...existing, ...updated, estado: form.estado });
-        showToast('Pedido actualizado con éxito', 'success');
+        const payload = { id_pedido: existing.id_pedido, ...input };
+        const updated = await updatePedido(payload);
+        updatePedidoStore({ ...existing, ...updated });
+        showToast('Pedido actualizado correctamente', 'success');
       } else {
         const created = await createPedido(input);
         addPedido(created);
-        showToast('Pedido creado con éxito', 'success');
+        showToast('Pedido creado correctamente', 'success');
       }
-      setTimeout(() => router.push('/(app)'), 1500);
+      setTimeout(() => router.back(), 1500);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {

@@ -144,7 +144,7 @@ export default function VendedoresScreen() {
     try {
       await deleteVendedor(deleteId);
       setVendedores((prev) => prev.filter((v) => v.id_vendedor !== deleteId));
-      showToast('¡VENDEDOR ELIMINADO! HASTA LA PRÓXIMA 🤠', 'success');
+      showToast('Vendedor eliminado correctamente', 'success');
     } catch (err: any) {
       showToast(parseGraphQLError(err), 'error');
     } finally {

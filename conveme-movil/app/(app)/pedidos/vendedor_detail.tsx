@@ -19,8 +19,8 @@ import { Badge } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
-import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';
-import type { Pedido } from '../../../src/types';
+import { Toast, useToast } from '../../../src/components/Toast';
+import { formatCurrency, formatDate, parseGraphQLError } from '../../../src/utils';import type { Pedido } from '../../../src/types';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 
 const ESTADO_BADGE: Record<string, 'warning' | 'primary' | 'success' | 'error'> = {
@@ -51,6 +51,7 @@ export default function VendedorPedidoDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isAdmin, usuario } = useAuth();
   const { pedidos, setPedidos, removePedido } = usePedidoStore();
+  const { toast, show: showToast, hide: hideToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -71,12 +72,12 @@ export default function VendedorPedidoDetail() {
         const data = await getPedidos();
         setPedidos(data);
       } catch (err) {
-        Alert.alert('No se pudo cargar el pedido', parseGraphQLError(err));
+        showToast(parseGraphQLError(err), 'error');
       } finally {
         setLoading(false);
       }
     }
-  }, [pedido, setPedidos]);
+  }, [pedido, setPedidos, showToast]);
 
   useEffect(() => {
     fetchIfNeeded();
@@ -87,14 +88,15 @@ export default function VendedorPedidoDetail() {
     try {
       await deletePedido(pedidoId);
       removePedido(pedidoId);
-      router.push('/(app)');
+      showToast('Pedido eliminado correctamente', 'success');
+      setTimeout(() => router.back(), 500);
     } catch (err) {
-      Alert.alert('No se pudo eliminar el pedido', parseGraphQLError(err));
+      showToast(parseGraphQLError(err), 'error');
     } finally {
       setDeleting(false);
       setShowDelete(false);
     }
-  }, [pedidoId, removePedido]);
+  }, [pedidoId, removePedido, showToast]);
 
   if (loading || !pedido) {
     return (

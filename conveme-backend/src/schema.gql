@@ -1010,11 +1010,11 @@ input UpdatePromocionInput {
 input CreatePedidoInput {
   cliente_id: Int
   vendedor_id: Int
-  fecha_entrega_estimada: DateTime
+  fecha_entrega_estimada: String
   monto_total: Float!
   anticipo: Float = 0
   estado: String
-  detalles: [CreateDetPedidoInput!]!
+  detalles: [CreateDetPedidoInput!]
 }
 
 input CreateDetPedidoInput {
@@ -1026,7 +1026,7 @@ input CreateDetPedidoInput {
 input UpdatePedidoInput {
   cliente_id: Int
   vendedor_id: Int
-  fecha_entrega_estimada: DateTime
+  fecha_entrega_estimada: String
   monto_total: Float
   anticipo: Float = 0
   estado: String

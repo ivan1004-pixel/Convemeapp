@@ -4,6 +4,7 @@ import { Colors } from '../../theme/colors';
 import { Typography } from '../../theme/typography';
 import { Spacing, BorderRadius } from '../../theme/spacing';
 import { useColorScheme } from '../../hooks/use-color-scheme';
+import { CircularMascot } from './CircularMascot';
 
 interface ErrorMessageProps {
   message: string;
@@ -24,12 +25,12 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
     <View
       style={[
         styles.container,
-        { backgroundColor: '#FEE2E2', borderColor: '#FECACA' },
+        { backgroundColor: isDark ? '#450a0a' : '#FEE2E2', borderColor: isDark ? '#991B1B' : '#FECACA' },
         style,
       ]}
     >
-      <Text style={styles.icon}>⚠️</Text>
-      <Text style={styles.message}>{message}</Text>
+      <CircularMascot isError size={60} style={styles.mascot} />
+      <Text style={[styles.message, { color: isDark ? '#fecaca' : '#991B1B' }]}>{message}</Text>
       {onRetry && (
         <Pressable
           onPress={onRetry}
@@ -47,16 +48,14 @@ const styles = StyleSheet.create({
   container: {
     borderRadius: BorderRadius.lg,
     borderWidth: 1,
-    padding: Spacing.md,
+    padding: Spacing.lg,
     alignItems: 'center',
   },
-  icon: {
-    fontSize: 24,
-    marginBottom: Spacing.sm,
+  mascot: {
+    marginBottom: Spacing.md,
   },
   message: {
     ...Typography.body,
-    color: '#991B1B',
     textAlign: 'center',
   },
   retryButton: {

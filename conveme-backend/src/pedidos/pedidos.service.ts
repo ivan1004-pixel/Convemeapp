@@ -70,9 +70,24 @@ export class PedidosService {
     }
 
     async update(id_pedido: number, updatePedidoInput: UpdatePedidoInput): Promise<Pedido> {
-        const pedido = await this.findOne(id_pedido);
-        Object.assign(pedido, updatePedidoInput);
-        await this.pedidoRepository.save(pedido);
+        const { detalles, ...resto } = updatePedidoInput;
+
+        const pedidoExistente = await this.pedidoRepository.findOne({
+            where: { id_pedido },
+            relations: ['detalles']
+        });
+        if (!pedidoExistente) throw new NotFoundException(`Pedido #${id_pedido} no encontrado`);
+
+        if (detalles) {
+            // Eliminar detalles viejos para evitar el error de FK a NULL
+            await this.pedidoRepository.manager.delete('det_pedidos', { pedido_id: id_pedido });
+            pedidoExistente.detalles = detalles as any;
+        }
+
+        Object.assign(pedidoExistente, resto);
+
+        await this.pedidoRepository.save(pedidoExistente);
+
         return this.findOne(id_pedido);
     }
 

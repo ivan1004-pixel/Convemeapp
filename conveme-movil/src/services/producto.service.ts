@@ -24,6 +24,31 @@ export const getProductos = async (skip = 0, take = 20) => {
     return data.data.productos;
 };
 
+export const getProducto = async (id: number) => {
+    const query = `
+    query GetProducto($id: Int!) {
+        producto(id_producto: $id) {
+            id_producto
+            sku
+            nombre
+            precio_unitario
+            precio_mayoreo
+            cantidad_minima_mayoreo
+            costo_produccion
+            activo
+            categoria { id_categoria nombre }
+            tamano { id_tamano descripcion }
+        }
+    }
+    `;
+    const { data } = await convemeApi.post('', {
+        query,
+        variables: { id }
+    });
+    if (data.errors) throw new Error(data.errors[0].message);
+    return data.data.producto;
+};
+
 export const createProducto = async (input: any) => {
     const query = `mutation CreateProducto($input: CreateProductoInput!) { createProducto(createProductoInput: $input) { id_producto nombre sku } }`;
     const { data } = await convemeApi.post('', { query, variables: { input } });
