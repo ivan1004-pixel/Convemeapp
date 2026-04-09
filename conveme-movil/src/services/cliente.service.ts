@@ -17,9 +17,9 @@ export const getClientes = async (skip = 0, take = 20) => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { 
-        query, 
-        variables: { skip, take } 
+    const { data } = await convemeApi.post('', {
+        query,
+        variables: { skip, take }
     });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.clientes;
@@ -37,9 +37,9 @@ export const buscarClientes = async (termino: string, skip = 0, take = 20) => {
         }
     }
     `;
-    const { data } = await convemeApi.post('', { 
-        query, 
-        variables: { termino, skip, take } 
+    const { data } = await convemeApi.post('', {
+        query,
+        variables: { termino, skip, take }
     });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.buscarClientes;
@@ -51,9 +51,14 @@ export const createCliente = async (input: any) => {
         createCliente(createClienteInput: $input) {
             id_cliente
             nombre_completo
+            email
+            telefono
+            direccion_envio
+            fecha_registro
         }
     }
     `;
+    // 🟢 Ahora pedimos todos los campos de regreso para actualizar bien el estado global
     const { data } = await convemeApi.post('', { query, variables: { input } });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.createCliente;
@@ -65,9 +70,14 @@ export const updateCliente = async (input: any) => {
         updateCliente(updateClienteInput: $input) {
             id_cliente
             nombre_completo
+            email
+            telefono
+            direccion_envio
+            fecha_registro
         }
     }
     `;
+    // 🟢 Igual aquí, pedimos los datos completos
     const { data } = await convemeApi.post('', { query, variables: { input } });
     if (data.errors) throw new Error(data.errors[0].message);
     return data.data.updateCliente;
