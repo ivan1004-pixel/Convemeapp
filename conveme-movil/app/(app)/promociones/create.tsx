@@ -56,7 +56,7 @@ const DatePickerModal = memo(({ visible, field, value, onConfirm, onCancel }: an
         <View style={styles.modalOverlay}>
           <View style={styles.datePickerCard}>
             <Text style={styles.datePickerTitle}>SELECCIONAR FECHA</Text>
-            
+
             <View style={styles.datePickerLabels}>
                 <Text style={styles.columnLabel}>AÑO</Text>
                 <Text style={styles.columnLabel}>MES</Text>
@@ -124,7 +124,7 @@ export default function PromocionCreateScreen() {
     if (!form.nombre.trim()) newErrors.nombre = 'REQUERIDO';
     if (!form.valor_descuento.trim()) newErrors.valor_descuento = 'REQUERIDO';
     if (isNaN(Number(form.valor_descuento))) newErrors.valor_descuento = 'NÚMERO INVÁLIDO';
-    
+
     if (
       form.tipo_promocion === 'PORCENTAJE' &&
       form.valor_descuento.trim() &&
@@ -132,7 +132,7 @@ export default function PromocionCreateScreen() {
     ) {
       newErrors.valor_descuento = '0-100%';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -174,8 +174,8 @@ export default function PromocionCreateScreen() {
   return (
     <NeobrutalistBackground>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <KeyboardAvoidingView 
-          style={{ flex: 1 }} 
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <View style={styles.header}>
@@ -195,7 +195,7 @@ export default function PromocionCreateScreen() {
           >
             <View style={styles.card}>
                 <Text style={styles.sectionTitle}>DETALLES DE LA OFERTA</Text>
-                
+
                 <Input
                   label="NOMBRE DE LA PROMOCIÓN *"
                   value={form.nombre}
@@ -226,10 +226,10 @@ export default function PromocionCreateScreen() {
                       ]}
                       onPress={() => setField('tipo_promocion', 'PORCENTAJE')}
                     >
-                      <MaterialCommunityIcons 
-                        name="percent" 
-                        size={18} 
-                        color={form.tipo_promocion === 'PORCENTAJE' ? '#FFF' : Colors.dark} 
+                      <MaterialCommunityIcons
+                        name="percent"
+                        size={18}
+                        color={form.tipo_promocion === 'PORCENTAJE' ? '#FFF' : Colors.dark}
                       />
                       <Text style={[styles.toggleBtnText, form.tipo_promocion === 'PORCENTAJE' && styles.toggleBtnTextActive]}>
                         PORCENTAJE
@@ -242,10 +242,10 @@ export default function PromocionCreateScreen() {
                       ]}
                       onPress={() => setField('tipo_promocion', 'MONTO')}
                     >
-                      <MaterialCommunityIcons 
-                        name="cash-multiple" 
-                        size={18} 
-                        color={form.tipo_promocion === 'MONTO' ? '#FFF' : Colors.dark} 
+                      <MaterialCommunityIcons
+                        name="cash-multiple"
+                        size={18}
+                        color={form.tipo_promocion === 'MONTO' ? '#FFF' : Colors.dark}
                       />
                       <Text style={[styles.toggleBtnText, form.tipo_promocion === 'MONTO' && styles.toggleBtnTextActive]}>
                         MONTO FIJO
@@ -309,9 +309,9 @@ export default function PromocionCreateScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
 
-        <DatePickerModal 
-          visible={showDatePicker.visible} 
-          field={showDatePicker.field} 
+        <DatePickerModal
+          visible={showDatePicker.visible}
+          field={showDatePicker.field}
           value={form[showDatePicker.field]}
           onConfirm={(field: any, value: any) => {
               setField(field, value);

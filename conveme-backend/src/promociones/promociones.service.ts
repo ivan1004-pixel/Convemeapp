@@ -13,7 +13,15 @@ export class PromocionesService {
     ) {}
 
     async create(createPromocionInput: CreatePromocionInput): Promise<Promocion> {
-        const nueva = this.promocionRepository.create(createPromocionInput);
+        const { fecha_inicio, fecha_fin, ...rest } = createPromocionInput;
+
+        const nueva = this.promocionRepository.create({
+            ...rest,
+            fecha_inicio: new Date(fecha_inicio),
+                                                      fecha_fin: new Date(fecha_fin),
+                                                      activa: rest.activa ?? true,
+        });
+
         return this.promocionRepository.save(nueva);
     }
 
@@ -22,15 +30,42 @@ export class PromocionesService {
     }
 
     async findOne(id_promocion: number): Promise<Promocion> {
-        const promocion = await this.promocionRepository.findOne({ where: { id_promocion } });
-        if (!promocion) throw new NotFoundException(`Promoción #${id_promocion} no encontrada`);
+        const promocion = await this.promocionRepository.findOne({
+            where: { id_promocion },
+        });
+        if (!promocion) {
+            throw new NotFoundException(
+                `Promoción #${id_promocion} no encontrada`,
+            );
+        }
         return promocion;
     }
 
-    async update(id_promocion: number, updatePromocionInput: UpdatePromocionInput): Promise<Promocion> {
+    async update(
+        id_promocion: number,
+        updatePromocionInput: UpdatePromocionInput,
+    ): Promise<Promocion> {
         const promocion = await this.findOne(id_promocion);
-        Object.assign(promocion, updatePromocionInput);
-        return this.promocionRepository.save(promocion);
+
+        const {
+            fecha_inicio,
+            fecha_fin,
+            ...rest
+        } = updatePromocionInput;
+
+        // Campos simples
+        Object.assign(promocion, rest);
+
+        // Fechas: solo si vienen en el input
+        if (fecha_inicio !== undefined) {
+            promocion.fecha_inicio = new Date(fecha_inicio);
+        }
+        if (fecha_fin !== undefined) {
+            promocion.fecha_fin = new Date(fecha_fin);
+        }
+
+        await this.promocionRepository.save(promocion);
+        return this.findOne(id_promocion);
     }
 
     async remove(id_promocion: number): Promise<boolean> {

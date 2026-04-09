@@ -12,43 +12,55 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getPromociones, deletePromocion } from '../../../src/services/promocion.service';
 import { usePromocionStore } from '../../../src/store/promocionStore';
 import { Colors } from '../../../src/theme/colors';
-import { Spacing } from '../../../src/theme/spacing';
-import { Badge } from '../../../src/components/ui/Badge';
+import { Typography } from '../../../src/theme/typography';
+import { Spacing, BorderRadius } from '../../../src/theme/spacing';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { ConfirmDialog } from '../../../src/components/ui/ConfirmDialog';
 import { NeobrutalistBackground } from '../../../src/components/ui/NeobrutalistBackground';
 import { Toast, useToast } from '../../../src/components/Toast';
-import { parseGraphQLError, formatDate, formatCurrency } from '../../../src/utils';
+import { parseGraphQLError, formatDate } from '../../../src/utils';
 import type { Promocion } from '../../../src/types';
+import { Badge } from '../../../src/components/ui/Badge';
+
+function getPromocionStatus(promo: Promocion): { label: string; color: string } {
+  const now = new Date();
+  const start = new Date(promo.fecha_inicio);
+  const end = new Date(promo.fecha_fin);
+
+  if (!promo.activa) return { label: 'INACTIVA', color: '#6B7280' };
+  if (now < start) return { label: 'PRÓXIMA', color: Colors.info };
+  if (now >= start && now <= end) return { label: 'ACTIVA', color: Colors.success };
+  return { label: 'VENCIDA', color: Colors.error };
+}
 
 export default function PromocionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { toast, show: showToast, hide: hideToast } = useToast();
+  const { toast, show, hide } = useToast();
   const { promociones, setPromociones, removePromocion } = usePromocionStore();
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const promocion: Promocion | undefined = promociones.find(
-    (p) => p.id_promocion === Number(id)
+    (p) => p.id_promocion === Number(id),
   );
 
-  const fetchIfNeeded = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     if (promocion) return;
     setLoading(true);
     try {
       const data = await getPromociones();
       setPromociones(data);
     } catch (err) {
-      showToast(parseGraphQLError(err), 'error');
+      show(parseGraphQLError(err), 'error');
     } finally {
       setLoading(false);
     }
-  }, [promocion, setPromociones, showToast]);
+  }, [promocion, setPromociones, show]);
 
   useEffect(() => {
-    fetchIfNeeded();
-  }, [fetchIfNeeded]);
+    fetchData();
+  }, [fetchData]);
 
   const handleDelete = useCallback(async () => {
     if (!promocion) return;
@@ -56,164 +68,307 @@ export default function PromocionDetailScreen() {
     try {
       await deletePromocion(promocion.id_promocion);
       removePromocion(promocion.id_promocion);
-      showToast('Promoción eliminada con éxito', 'success');
-      setTimeout(() => router.push('/(app)'), 1500);
+      show('Promoción eliminada correctamente', 'success');
+      setShowConfirm(false);
+      setTimeout(() => router.replace('/promociones'), 1200);
     } catch (err) {
-      showToast(parseGraphQLError(err), 'error');
+      show(parseGraphQLError(err), 'error');
+      setShowConfirm(false);
     } finally {
       setDeleting(false);
-      setShowConfirm(false);
     }
-  }, [promocion, removePromocion, showToast]);
+  }, [promocion, removePromocion, show]);
 
-  if (!promocion) {
+  if (loading || !promocion) {
     return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Detalle</Text>
-            <View style={{ width: 40 }} />
-          </View>
-          <LoadingSpinner message="Cargando..." />
-        </SafeAreaView>
-      </NeobrutalistBackground>
+      <LoadingSpinner fullScreen message="Cargando promoción..." />
     );
   }
 
-  const descuentoText =
-    promocion.valor_descuento != null
-      ? promocion.tipo_promocion === 'PORCENTAJE'
-        ? `${promocion.valor_descuento}%`
-        : formatCurrency(promocion.valor_descuento)
-      : null;
+  const status = getPromocionStatus(promocion);
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-            </TouchableOpacity>
-            <Text style={styles.title}>DETALLE PROMOCIÓN</Text>
-            <TouchableOpacity 
-                onPress={() => router.push(`/promociones/create?id=${promocion.id_promocion}`)}
-                style={styles.editBtnHeader}
-            >
-                <MaterialCommunityIcons name="pencil" size={20} color={Colors.primary} />
-            </TouchableOpacity>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.header}>
+    <TouchableOpacity
+    onPress={() => router.replace('/promociones')}
+    style={styles.backBtn}
+    >
+    <MaterialCommunityIcons
+    name="arrow-left"
+    size={24}
+    color={Colors.dark}
+    />
+    </TouchableOpacity>
+    <Text style={styles.title}>DETALLE PROMOCIÓN</Text>
+    <TouchableOpacity
+    onPress={() =>
+      router.push(
+        `/promociones/create?id=${promocion.id_promocion}`,
+      )
+    }
+    style={styles.editBtn}
+    >
+    <MaterialCommunityIcons
+    name="pencil"
+    size={20}
+    color={Colors.primary}
+    />
+    </TouchableOpacity>
+    </View>
 
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Main Card */}
-          <View style={styles.mainCard}>
-            <View style={styles.heroRow}>
-                <View style={styles.heroInfo}>
-                    <Text style={styles.heroName}>{promocion.nombre.toUpperCase()}</Text>
-                    <Text style={styles.heroTipo}>{promocion.tipo_promocion === 'PORCENTAJE' ? 'PORCENTAJE' : 'MONTO FIJO'}</Text>
-                </View>
-                <Badge
-                    text={promocion.activa ? 'ACTIVA' : 'INACTIVA'}
-                    color={promocion.activa ? 'success' : 'secondary'}
-                />
-            </View>
+    <ScrollView
+    contentContainerStyle={styles.scrollContent}
+    showsVerticalScrollIndicator={false}
+    >
+    <View style={styles.mainCard}>
+    <View style={styles.heroIcon}>
+    <MaterialCommunityIcons
+    name="sale-outline"
+    size={40}
+    color={status.color}
+    />
+    </View>
+    <Text style={styles.promoName}>
+    {promocion.nombre.toUpperCase()}
+    </Text>
+    <Badge
+    text={status.label}
+    color={
+      status.label === 'ACTIVA'
+      ? 'success'
+      : status.label === 'PRÓXIMA'
+      ? 'info'
+      : status.label === 'INACTIVA'
+      ? 'default'
+      : 'error'
+    }
+    style={{ marginTop: 10 }}
+    />
+    </View>
 
-            <View style={styles.descuentoBox}>
-                <Text style={styles.descuentoLabel}>VALOR DEL DESCUENTO</Text>
-                <Text style={styles.descuentoValue}>{descuentoText}</Text>
-            </View>
+    <Text style={styles.sectionTitle}>DETALLES</Text>
 
-            {promocion.descripcion && (
-                <View style={styles.descBox}>
-                    <Text style={styles.sectionTitle}>DESCRIPCIÓN</Text>
-                    <Text style={styles.descriptionText}>{promocion.descripcion.toUpperCase()}</Text>
-                </View>
-            )}
-          </View>
+    <View style={styles.detailsContainer}>
+    <View style={styles.detailRow}>
+    <MaterialCommunityIcons
+    name="format-list-bulleted-type"
+    size={20}
+    color={Colors.primary}
+    />
+    <View style={styles.detailInfo}>
+    <Text style={styles.detailLabel}>TIPO</Text>
+    <Text style={styles.detailValue}>
+    {promocion.tipo_promocion.toUpperCase()}
+    </Text>
+    </View>
+    </View>
 
-          {/* Details Card */}
-          <View style={styles.detailsCard}>
-            <Text style={styles.sectionTitle}>VIGENCIA Y ESTADO</Text>
-            <View style={styles.infoRow}>
-                <MaterialCommunityIcons name="calendar-range" size={20} color={Colors.primary} />
-                <View>
-                    <Text style={styles.infoLabel}>FECHA INICIO</Text>
-                    <Text style={styles.infoValue}>{promocion.fecha_inicio ? formatDate(promocion.fecha_inicio).toUpperCase() : 'NO DEFINIDA'}</Text>
-                </View>
-            </View>
-            <View style={styles.infoDivider} />
-            <View style={styles.infoRow}>
-                <MaterialCommunityIcons name="calendar-check" size={20} color={Colors.primary} />
-                <View>
-                    <Text style={styles.infoLabel}>FECHA FIN</Text>
-                    <Text style={styles.infoValue}>{promocion.fecha_fin ? formatDate(promocion.fecha_fin).toUpperCase() : 'NO DEFINIDA'}</Text>
-                </View>
-            </View>
-            <View style={styles.infoDivider} />
-            <View style={styles.infoRow}>
-                <MaterialCommunityIcons name={promocion.activa ? "check-circle" : "close-circle"} size={20} color={promocion.activa ? Colors.success : Colors.error} />
-                <View>
-                    <Text style={styles.infoLabel}>ESTADO ACTUAL</Text>
-                    <Text style={styles.infoValue}>{promocion.activa ? 'ACTIVA Y VISIBLE' : 'INACTIVA'}</Text>
-                </View>
-            </View>
-          </View>
+    <View style={styles.divider} />
 
-          <TouchableOpacity 
-            style={styles.deleteBtn} 
-            onPress={() => setShowConfirm(true)}
-            activeOpacity={0.7}
-          >
-            <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.error} />
-            <Text style={styles.deleteBtnText}>ELIMINAR PROMOCIÓN</Text>
-          </TouchableOpacity>
-        </ScrollView>
+    <View style={styles.detailRow}>
+    <MaterialCommunityIcons
+    name="calendar-range"
+    size={20}
+    color={Colors.info}
+    />
+    <View style={styles.detailInfo}>
+    <Text style={styles.detailLabel}>PERIODO</Text>
+    <Text style={styles.detailValue}>
+    {formatDate(promocion.fecha_inicio)} –{' '}
+    {formatDate(promocion.fecha_fin)}
+    </Text>
+    </View>
+    </View>
 
-        <ConfirmDialog
-          visible={showConfirm}
-          title="Eliminar promoción"
-          message={`¿Deseas eliminar "${promocion.nombre}"?`}
-          confirmText="ELIMINAR"
-          onConfirm={handleDelete}
-          onCancel={() => setShowConfirm(false)}
-          loading={deleting}
-          destructive
-        />
+    {promocion.valor_descuento != null && (
+      <>
+      <View style={styles.divider} />
+      <View style={styles.detailRow}>
+      <MaterialCommunityIcons
+      name="percent-outline"
+      size={20}
+      color={Colors.success}
+      />
+      <View style={styles.detailInfo}>
+      <Text style={styles.detailLabel}>VALOR</Text>
+      <Text style={styles.detailValue}>
+      {promocion.valor_descuento}
+      </Text>
+      </View>
+      </View>
+      </>
+    )}
 
-        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </SafeAreaView>
+    {promocion.descripcion ? (
+      <>
+      <View style={styles.divider} />
+      <View style={styles.detailRow}>
+      <MaterialCommunityIcons
+      name="text"
+      size={20}
+      color={Colors.dark}
+      />
+      <View style={styles.detailInfo}>
+      <Text style={styles.detailLabel}>DESCRIPCIÓN</Text>
+      <Text style={styles.detailDesc}>
+      {promocion.descripcion}
+      </Text>
+      </View>
+      </View>
+      </>
+    ) : null}
+    </View>
+
+    <TouchableOpacity
+    style={styles.deleteBtn}
+    onPress={() => setShowConfirm(true)}
+    >
+    <MaterialCommunityIcons
+    name="trash-can-outline"
+    size={20}
+    color={Colors.error}
+    />
+    <Text style={styles.deleteBtnText}>ELIMINAR PROMOCIÓN</Text>
+    </TouchableOpacity>
+    </ScrollView>
+
+    <ConfirmDialog
+    visible={showConfirm}
+    title="Eliminar promoción"
+    message={`¿Deseas eliminar "${promocion.nombre}"? Esta acción no se puede deshacer.`}
+    confirmText="Eliminar"
+    onConfirm={handleDelete}
+    onCancel={() => setShowConfirm(false)}
+    loading={deleting}
+    destructive
+    />
+
+    <Toast
+    visible={toast.visible}
+    type={toast.type}
+    message={toast.message}
+    onHide={hide}
+    />
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 15 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
-  title: { fontSize: 20, fontWeight: '900', color: Colors.dark },
-  editBtnHeader: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FFF', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.dark },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+  },
+  editBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: '#FFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.dark,
+  },
+  title: { fontSize: 18, fontWeight: '900', color: Colors.dark },
   scrollContent: { padding: 20, paddingBottom: 100 },
-  mainCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, marginBottom: 25 },
-  heroRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  heroInfo: { flex: 1 },
-  heroName: { fontSize: 24, fontWeight: '900', color: Colors.dark, marginBottom: 4 },
-  heroTipo: { fontSize: 10, fontWeight: '800', color: 'rgba(0,0,0,0.4)', letterSpacing: 1 },
-  descuentoBox: { backgroundColor: Colors.primary + '10', borderRadius: 16, padding: 15, alignItems: 'center', borderWidth: 1, borderColor: Colors.primary + '20', marginBottom: 20 },
-  descuentoLabel: { fontSize: 10, fontWeight: '900', color: Colors.primary, marginBottom: 5 },
-  descuentoValue: { fontSize: 32, fontWeight: '900', color: Colors.primary },
-  descBox: { borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', paddingTop: 15 },
-  sectionTitle: { fontSize: 10, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 12, letterSpacing: 1 },
-  descriptionText: { fontSize: 14, fontWeight: '700', color: 'rgba(0,0,0,0.7)', lineHeight: 20 },
-  detailsCard: { backgroundColor: '#FFF', borderRadius: 24, padding: 20, borderWidth: 3, borderColor: Colors.dark, shadowColor: Colors.dark, shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, marginBottom: 25 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 5 },
-  infoLabel: { fontSize: 9, fontWeight: '900', color: 'rgba(0,0,0,0.4)', marginBottom: 2 },
-  infoValue: { fontSize: 14, fontWeight: '800', color: Colors.dark },
-  infoDivider: { height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginVertical: 12 },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, paddingVertical: 15, gap: Spacing.sm },
-  deleteBtnText: { color: Colors.error, fontWeight: '900', fontSize: 14, letterSpacing: 0.5 },
+  mainCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 4,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 8, height: 8 },
+    shadowOpacity: 1,
+    marginBottom: 25,
+  },
+  heroIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+    marginBottom: 12,
+  },
+  promoName: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: Colors.dark,
+    textAlign: 'center',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: '900',
+    color: 'rgba(0,0,0,0.4)',
+                                 marginBottom: 15,
+                                 textTransform: 'uppercase',
+                                 letterSpacing: 1,
+  },
+  detailsContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    marginBottom: 25,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 4,
+  },
+  detailInfo: { flex: 1 },
+  detailLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: 'rgba(0,0,0,0.4)',
+                                 textTransform: 'uppercase',
+  },
+  detailValue: { fontSize: 14, fontWeight: '900', color: Colors.dark },
+  detailDesc: { fontSize: 13, fontWeight: '700', color: Colors.dark },
+  divider: {
+    height: 2,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+                                 marginVertical: 10,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    padding: 18,
+    borderRadius: 15,
+    borderWidth: 3,
+    borderColor: Colors.error,
+    backgroundColor: Colors.error + '05',
+    marginBottom: 40,
+  },
+  deleteBtnText: {
+    color: Colors.error,
+    fontWeight: '900',
+    fontSize: 14,
+    letterSpacing: 1,
+  },
 });

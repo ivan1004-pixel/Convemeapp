@@ -991,8 +991,8 @@ input CreatePromocionInput {
   descripcion: String
   tipo_promocion: String!
   valor_descuento: Float
-  fecha_inicio: DateTime!
-  fecha_fin: DateTime!
+  fecha_inicio: String!
+  fecha_fin: String!
   activa: Boolean
 }
 
@@ -1001,8 +1001,8 @@ input UpdatePromocionInput {
   descripcion: String
   tipo_promocion: String
   valor_descuento: Float
-  fecha_inicio: DateTime
-  fecha_fin: DateTime
+  fecha_inicio: String
+  fecha_fin: String
   activa: Boolean
   id_promocion: Int!
 }
