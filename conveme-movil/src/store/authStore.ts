@@ -24,6 +24,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      partialize: (state) => {
+        if (!state.usuario) return state;
+        // Excluimos foto_perfil para no guardar strings base64 enormes en SecureStore
+        const { foto_perfil, ...usuarioSinFoto } = state.usuario;
+        return {
+          ...state,
+          usuario: usuarioSinFoto as any,
+        };
+      },
       storage: createJSONStorage(() => ({
         getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,
         setItem: async (name, value) => SecureStore.setItemAsync(name, value),

@@ -26,6 +26,7 @@ export class ProductosService {
     async findAll(paginationArgs: PaginationArgs = { skip: 0, take: 20 }): Promise<Producto[]> {
         const { skip, take } = paginationArgs;
         return this.productoRepository.find({
+            where: { activo: true },
             relations: ['categoria', 'tamano'],
             skip,
             take,

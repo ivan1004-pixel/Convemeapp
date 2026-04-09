@@ -8,7 +8,7 @@ export async function registerForPushNotificationsAsync() {
   // En Expo Go (Android), expo-notifications puede romper si se importa de forma estática
   // Por eso usamos require() dinámico solo cuando es necesario
   if (isExpoGo && Platform.OS === 'android') {
-    console.warn('Push Notifications are not supported in Expo Go on Android (SDK 53+). Use a development build.');
+    console.log('Saltando registro de push: Expo Go en Android no soporta notificaciones.');
     return null;
   }
 
