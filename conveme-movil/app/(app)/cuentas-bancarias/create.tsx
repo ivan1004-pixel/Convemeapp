@@ -34,7 +34,7 @@ export default function CuentaBancariaCreateScreen() {
   const [vendedor_id, setVendedorId] = useState<number | null>(null);
   const [vendedorNombre, setVendedorNombre] = useState('SELECCIONAR VENDEDOR');
   const [showPicker, setShowPicker] = useState(false);
-  
+
   const [loading, setLoading] = useState(false);
   const [initializing, setInitializing] = useState(isEdit);
 
@@ -60,7 +60,7 @@ export default function CuentaBancariaCreateScreen() {
         setInitializing(false);
       }
     })();
-  }, [id, isEdit]);
+  }, [id, isEdit, showToast]);
 
   const handleSubmit = async () => {
     if (!banco || !titular_cuenta || !numero_cuenta || !vendedor_id) {
@@ -69,9 +69,9 @@ export default function CuentaBancariaCreateScreen() {
     }
     setLoading(true);
     try {
-      const input: any = { 
-        banco: banco.toUpperCase(), 
-        titular_cuenta: titular_cuenta.toUpperCase(), 
+      const input: any = {
+        banco: banco.toUpperCase(),
+        titular_cuenta: titular_cuenta.toUpperCase(),
         numero_cuenta,
         vendedor_id: vendedor_id,
       };
@@ -85,7 +85,7 @@ export default function CuentaBancariaCreateScreen() {
         await createCuentaBancaria(input);
         showToast('CUENTA CREADA', 'success');
       }
-      setTimeout(() => router.back(), 1500);
+      setTimeout(() => router.replace('/cuentas-bancarias'), 1500);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
     } finally {
@@ -97,100 +97,100 @@ export default function CuentaBancariaCreateScreen() {
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={{ flex: 1 }}
-        >
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>{isEdit ? 'EDITAR CUENTA' : 'NUEVA CUENTA'}</Text>
-          </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <KeyboardAvoidingView
+    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    style={{ flex: 1 }}
+    >
+    <View style={styles.header}>
+    <TouchableOpacity onPress={() => router.replace('/cuentas-bancarias')} style={styles.backBtn}>
+    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>{isEdit ? 'EDITAR CUENTA' : 'NUEVA CUENTA'}</Text>
+    </View>
 
-          <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-            <View style={styles.formCard}>
-              <Text style={styles.label}>BANCO *</Text>
-              <TextInput
-                style={styles.input}
-                value={banco}
-                onChangeText={setBanco}
-                placeholder="EJ. BBVA, SANTANDER..."
-                placeholderTextColor="rgba(0,0,0,0.3)"
-                autoCapitalize="characters"
-              />
+    <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={styles.formCard}>
+    <Text style={styles.label}>BANCO *</Text>
+    <TextInput
+    style={styles.input}
+    value={banco}
+    onChangeText={setBanco}
+    placeholder="EJ. BBVA, SANTANDER..."
+    placeholderTextColor="rgba(0,0,0,0.3)"
+    autoCapitalize="characters"
+    />
 
-              <Text style={styles.label}>TITULAR DE LA CUENTA *</Text>
-              <TextInput
-                style={styles.input}
-                value={titular_cuenta}
-                onChangeText={setTitular}
-                placeholder="NOMBRE COMPLETO"
-                placeholderTextColor="rgba(0,0,0,0.3)"
-                autoCapitalize="characters"
-              />
+    <Text style={styles.label}>TITULAR DE LA CUENTA *</Text>
+    <TextInput
+    style={styles.input}
+    value={titular_cuenta}
+    onChangeText={setTitular}
+    placeholder="NOMBRE COMPLETO"
+    placeholderTextColor="rgba(0,0,0,0.3)"
+    autoCapitalize="characters"
+    />
 
-              <Text style={styles.label}>NÚMERO DE CUENTA *</Text>
-              <TextInput
-                style={styles.input}
-                value={numero_cuenta}
-                onChangeText={setNumeroCuenta}
-                placeholder="10-16 DÍGITOS"
-                placeholderTextColor="rgba(0,0,0,0.3)"
-                keyboardType="numeric"
-              />
+    <Text style={styles.label}>NÚMERO DE CUENTA *</Text>
+    <TextInput
+    style={styles.input}
+    value={numero_cuenta}
+    onChangeText={setNumeroCuenta}
+    placeholder="10-16 DÍGITOS"
+    placeholderTextColor="rgba(0,0,0,0.3)"
+    keyboardType="numeric"
+    />
 
-              <Text style={styles.label}>CLABE INTERBANCARIA</Text>
-              <TextInput
-                style={styles.input}
-                value={clabe_interbancaria}
-                onChangeText={setClabe}
-                placeholder="18 DÍGITOS"
-                placeholderTextColor="rgba(0,0,0,0.3)"
-                keyboardType="numeric"
-                maxLength={18}
-              />
+    <Text style={styles.label}>CLABE INTERBANCARIA</Text>
+    <TextInput
+    style={styles.input}
+    value={clabe_interbancaria}
+    onChangeText={setClabe}
+    placeholder="18 DÍGITOS"
+    placeholderTextColor="rgba(0,0,0,0.3)"
+    keyboardType="numeric"
+    maxLength={18}
+    />
 
-              <Text style={styles.label}>VENDEDOR ASIGNADO *</Text>
-              <TouchableOpacity 
-                style={styles.pickerTrigger}
-                onPress={() => setShowPicker(true)}
-              >
-                <MaterialCommunityIcons name="account-tie" size={20} color={Colors.primary} />
-                <Text style={[
-                  styles.pickerText, 
-                  vendedor_id ? { color: Colors.dark } : { color: 'rgba(0,0,0,0.3)' }
-                ]}>
-                  {vendedorNombre}
-                </Text>
-                <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
-              </TouchableOpacity>
-            </View>
+    <Text style={styles.label}>VENDEDOR ASIGNADO *</Text>
+    <TouchableOpacity
+    style={styles.pickerTrigger}
+    onPress={() => setShowPicker(true)}
+    >
+    <MaterialCommunityIcons name="account-tie" size={20} color={Colors.primary} />
+    <Text style={[
+      styles.pickerText,
+      vendedor_id ? { color: Colors.dark } : { color: 'rgba(0,0,0,0.3)' }
+    ]}>
+    {vendedorNombre}
+    </Text>
+    <MaterialCommunityIcons name="chevron-down" size={20} color={Colors.dark} />
+    </TouchableOpacity>
+    </View>
 
-            <TouchableOpacity
-              style={[styles.submitButton, loading && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={loading}
-            >
-              <Text style={styles.submitText}>{loading ? 'GUARDANDO...' : isEdit ? 'ACTUALIZAR CUENTA' : 'CREAR CUENTA'}</Text>
-              {!loading && <MaterialCommunityIcons name="check-bold" size={20} color="#FFF" />}
-            </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
+    <TouchableOpacity
+    style={[styles.submitButton, loading && styles.disabledButton]}
+    onPress={handleSubmit}
+    disabled={loading}
+    >
+    <Text style={styles.submitText}>{loading ? 'GUARDANDO...' : isEdit ? 'ACTUALIZAR CUENTA' : 'CREAR CUENTA'}</Text>
+    {!loading && <MaterialCommunityIcons name="check-bold" size={20} color="#FFF" />}
+    </TouchableOpacity>
+    </ScrollView>
+    </KeyboardAvoidingView>
 
-        <VendedorPicker 
-          visible={showPicker}
-          onClose={() => setShowPicker(false)}
-          selectedId={vendedor_id ?? undefined}
-          onSelect={(v) => {
-            setVendedorId(v.id_vendedor);
-            setVendedorNombre(v.nombre_completo.toUpperCase());
-          }}
-        />
+    <VendedorPicker
+    visible={showPicker}
+    onClose={() => setShowPicker(false)}
+    selectedId={vendedor_id ?? undefined}
+    onSelect={(v) => {
+      setVendedorId(v.id_vendedor);
+      setVendedorNombre(v.nombre_completo.toUpperCase());
+    }}
+    />
 
-        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </SafeAreaView>
+    <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
@@ -287,4 +287,3 @@ const styles = StyleSheet.create({
   },
   disabledButton: { opacity: 0.7 },
 });
-

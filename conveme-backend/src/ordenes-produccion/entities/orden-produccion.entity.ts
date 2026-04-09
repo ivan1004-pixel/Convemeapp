@@ -42,6 +42,6 @@ export class OrdenProduccion {
     estado: string;
 
     @Field(() => [DetOrdenProduccion], { nullable: true })
-    @OneToMany(() => DetOrdenProduccion, detalle => detalle.orden_produccion, { cascade: true })
+    @OneToMany(() => DetOrdenProduccion, detalle => detalle.orden_produccion, { cascade: true, orphanedRowAction: 'delete' })
     detalles: DetOrdenProduccion[];
 }

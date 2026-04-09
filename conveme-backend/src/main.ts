@@ -24,7 +24,6 @@ const bootstrap = async () => {
 
   // Escuchando en el puerto 3000 como solicitó el usuario
   await app.listen(3000);
-  console.log('🚀 Backend running on http://localhost:3000/graphql');
 }
 
 bootstrap();

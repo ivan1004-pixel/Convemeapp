@@ -29,11 +29,11 @@ export default function CuentaBancariaDetailScreen() {
     if (!cuenta) {
       setLoading(true);
       getCuentasBancarias()
-        .then((data) => setCuentasBancarias(data))
-        .catch((err) => showToast(parseGraphQLError(err), 'error'))
-        .finally(() => setLoading(false));
+      .then((data) => setCuentasBancarias(data))
+      .catch((err) => showToast(parseGraphQLError(err), 'error'))
+      .finally(() => setLoading(false));
     }
-  }, []);
+  }, [cuenta, setCuentasBancarias, showToast]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -41,12 +41,13 @@ export default function CuentaBancariaDetailScreen() {
       await deleteCuentaBancaria(parseInt(id, 10));
       removeCuentaBancaria(parseInt(id, 10));
       showToast('CUENTA ELIMINADA', 'success');
-      setTimeout(() => router.push('/(app)'), 1000);
+      setShowDelete(false);
+      setTimeout(() => router.replace('/cuentas-bancarias'), 1000);
     } catch (err) {
       showToast(parseGraphQLError(err), 'error');
+      setShowDelete(false);
     } finally {
       setDeleting(false);
-      setShowDelete(false);
     }
   };
 
@@ -54,83 +55,83 @@ export default function CuentaBancariaDetailScreen() {
 
   return (
     <NeobrutalistBackground>
-      <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>DETALLE CUENTA</Text>
-        </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+    <View style={styles.header}>
+    <TouchableOpacity onPress={() => router.replace('/cuentas-bancarias')} style={styles.backBtn}>
+    <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.dark} />
+    </TouchableOpacity>
+    <Text style={styles.headerTitle}>DETALLE CUENTA</Text>
+    </View>
 
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-               <View style={styles.iconBox}>
-                  <MaterialCommunityIcons name="bank" size={32} color={Colors.success} />
-               </View>
-               <View style={{flex: 1}}>
-                  <Text style={styles.bancoTitle}>{cuenta.banco.toUpperCase()}</Text>
-                  <Text style={styles.cuentaId}>ID: {cuenta.id_cuenta}</Text>
-               </View>
-            </View>
+    <ScrollView contentContainerStyle={styles.scroll}>
+    <View style={styles.card}>
+    <View style={styles.cardHeader}>
+    <View style={styles.iconBox}>
+    <MaterialCommunityIcons name="bank" size={32} color={Colors.success} />
+    </View>
+    <View style={{flex: 1}}>
+    <Text style={styles.bancoTitle}>{cuenta.banco.toUpperCase()}</Text>
+    <Text style={styles.cuentaId}>ID: {cuenta.id_cuenta}</Text>
+    </View>
+    </View>
 
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>TITULAR</Text>
-              <Text style={styles.value}>{cuenta.titular_cuenta.toUpperCase()}</Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>NÚMERO DE CUENTA</Text>
-              <Text style={styles.value}>{cuenta.numero_cuenta}</Text>
-            </View>
-            
-            <View style={styles.detailRow}>
-              <Text style={styles.label}>CLABE INTERBANCARIA</Text>
-              <Text style={styles.value}>{cuenta.clabe_interbancaria || 'NO ESPECIFICADA'}</Text>
-            </View>
-            
-            {cuenta.vendedor && (
-              <View style={styles.detailRow}>
-                <Text style={styles.label}>VENDEDOR ASIGNADO</Text>
-                <View style={styles.vendedorBadge}>
-                    <MaterialCommunityIcons name="account-tie" size={16} color={Colors.primary} />
-                    <Text style={styles.vendedorText}>{cuenta.vendedor.nombre_completo.toUpperCase()}</Text>
-                </View>
-              </View>
-            )}
-          </View>
+    <View style={styles.detailRow}>
+    <Text style={styles.label}>TITULAR</Text>
+    <Text style={styles.value}>{cuenta.titular_cuenta.toUpperCase()}</Text>
+    </View>
 
-          <View style={styles.actions}>
-            <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: Colors.warning }]}
-                onPress={() => router.push(`/(app)/cuentas-bancarias/create?id=${id}`)}
-            >
-                <MaterialCommunityIcons name="pencil" size={20} color={Colors.dark} />
-                <Text style={[styles.actionText, { color: Colors.dark }]}>EDITAR</Text>
-            </TouchableOpacity>
+    <View style={styles.detailRow}>
+    <Text style={styles.label}>NÚMERO DE CUENTA</Text>
+    <Text style={styles.value}>{cuenta.numero_cuenta}</Text>
+    </View>
 
-            <TouchableOpacity
-                style={[styles.actionBtn, { backgroundColor: Colors.error }]}
-                onPress={() => setShowDelete(true)}
-            >
-                <MaterialCommunityIcons name="delete" size={20} color="#FFF" />
-                <Text style={[styles.actionText, { color: '#FFF' }]}>ELIMINAR</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+    <View style={styles.detailRow}>
+    <Text style={styles.label}>CLABE INTERBANCARIA</Text>
+    <Text style={styles.value}>{cuenta.clabe_interbancaria || 'NO ESPECIFICADA'}</Text>
+    </View>
 
-        <ConfirmDialog
-          visible={showDelete}
-          title="ELIMINAR CUENTA"
-          message="¿DESEAS ELIMINAR ESTA CUENTA BANCARIA?"
-          onConfirm={handleDelete}
-          onCancel={() => setShowDelete(false)}
-          loading={deleting}
-          destructive
-        />
+    {cuenta.vendedor && (
+      <View style={styles.detailRow}>
+      <Text style={styles.label}>VENDEDOR ASIGNADO</Text>
+      <View style={styles.vendedorBadge}>
+      <MaterialCommunityIcons name="account-tie" size={16} color={Colors.primary} />
+      <Text style={styles.vendedorText}>{cuenta.vendedor.nombre_completo.toUpperCase()}</Text>
+      </View>
+      </View>
+    )}
+    </View>
 
-        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
-      </SafeAreaView>
+    <View style={styles.actions}>
+    <TouchableOpacity
+    style={[styles.actionBtn, { backgroundColor: Colors.warning }]}
+    onPress={() => router.push(`/(app)/cuentas-bancarias/create?id=${id}`)}
+    >
+    <MaterialCommunityIcons name="pencil" size={20} color={Colors.dark} />
+    <Text style={[styles.actionText, { color: Colors.dark }]}>EDITAR</Text>
+    </TouchableOpacity>
+
+    <TouchableOpacity
+    style={[styles.actionBtn, { backgroundColor: Colors.error }]}
+    onPress={() => setShowDelete(true)}
+    >
+    <MaterialCommunityIcons name="delete" size={20} color="#FFF" />
+    <Text style={[styles.actionText, { color: '#FFF' }]}>ELIMINAR</Text>
+    </TouchableOpacity>
+    </View>
+    </ScrollView>
+
+    <ConfirmDialog
+    visible={showDelete}
+    title="ELIMINAR CUENTA"
+    message="¿DESEAS ELIMINAR ESTA CUENTA BANCARIA?"
+    onConfirm={handleDelete}
+    onCancel={() => setShowDelete(false)}
+    loading={deleting}
+    destructive
+    />
+
+    <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
+    </SafeAreaView>
     </NeobrutalistBackground>
   );
 }
@@ -178,7 +179,7 @@ const styles = StyleSheet.create({
     gap: 15,
     borderBottomWidth: 2,
     borderBottomColor: 'rgba(0,0,0,0.05)',
-    paddingBottom: 15,
+                                 paddingBottom: 15,
   },
   iconBox: {
     width: 60,
@@ -207,8 +208,8 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '900',
     color: 'rgba(0,0,0,0.4)',
-    letterSpacing: 1,
-    marginBottom: 4,
+                                 letterSpacing: 1,
+                                 marginBottom: 4,
   },
   value: {
     fontSize: 16,
@@ -216,41 +217,41 @@ const styles = StyleSheet.create({
     color: Colors.dark,
   },
   vendedorBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: Colors.primary + '15',
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderRadius: 8,
-      alignSelf: 'flex-start',
-      gap: 6,
-      borderWidth: 1,
-      borderColor: Colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '15',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   vendedorText: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: Colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   actions: {
-      gap: 12,
+    gap: 12,
   },
   actionBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: 15,
-      borderRadius: 12,
-      borderWidth: 3,
-      borderColor: Colors.dark,
-      gap: 8,
-      shadowColor: Colors.dark,
-      shadowOffset: { width: 4, height: 4 },
-      shadowOpacity: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    borderRadius: 12,
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    gap: 8,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
   },
   actionText: {
-      fontSize: 14,
-      fontWeight: '900',
-      letterSpacing: 1,
+    fontSize: 14,
+    fontWeight: '900',
+    letterSpacing: 1,
   },
 });

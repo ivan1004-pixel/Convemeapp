@@ -13,9 +13,9 @@ export class CategoriasService {
     ) {}
 
     async create(createCategoriaInput: CreateCategoriaInput): Promise<Categoria> {
-        // 👇 VALIDACIÓN: Buscar si ya existe (incluyendo inactivos)
+        // VALIDACIÓN: Buscar si ya existe (incluyendo inactivos)
         const existe = await this.categoriaRepository.findOne({ where: { nombre: createCategoriaInput.nombre } });
-        
+
         if (existe) {
             if (existe.activo) {
                 throw new ConflictException(`La categoría "${createCategoriaInput.nombre}" ya existe.`);
@@ -31,11 +31,9 @@ export class CategoriasService {
         return this.findOne(guardada.id_categoria);
     }
 
-    // En categorias.service.ts
     async findAll(): Promise<Categoria[]> {
-        // 👇 FILTRO: Solo activas + LÍMITE DURO de 50 + Ordenadas por las más nuevas
+        // 🟢 QUITAMOS EL FILTRO de "activo: true" para que React Native decida si las muestra.
         return this.categoriaRepository.find({
-            where: { activo: true },
             take: 50, // Límite de seguridad
             order: { id_categoria: 'DESC' } // Los últimos agregados aparecen primero
         });
@@ -48,7 +46,6 @@ export class CategoriasService {
     }
 
     async update(id_categoria: number, updateCategoriaInput: UpdateCategoriaInput): Promise<Categoria> {
-        // Validar si están intentando renombrar a algo que ya existe
         if (updateCategoriaInput.nombre) {
             const existe = await this.categoriaRepository.findOne({ where: { nombre: updateCategoriaInput.nombre } });
             if (existe && existe.id_categoria !== id_categoria) {
@@ -65,7 +62,7 @@ export class CategoriasService {
 
     async remove(id_categoria: number): Promise<Categoria> {
         const categoria = await this.findOne(id_categoria);
-        // 👇 SOFT DELETE: En lugar de .delete(), simplemente apagamos el switch
+        // SOFT DELETE: apagamos el switch
         categoria.activo = false;
         await this.categoriaRepository.save(categoria);
         return categoria;

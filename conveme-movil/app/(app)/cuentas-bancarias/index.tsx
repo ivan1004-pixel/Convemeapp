@@ -127,12 +127,21 @@ export default function CuentasBancariasScreen() {
   const filtered = useMemo(() => {
     if (!search.trim()) return cuentas;
     const q = search.toLowerCase();
-    return cuentas.filter(
-      (c) =>
-        c.banco.toLowerCase().includes(q) ||
-        c.titular_cuenta.toLowerCase().includes(q) ||
-        c.vendedor?.nombre_completo.toLowerCase().includes(q)
+    return cuentas.filter((c) => {
+      const banco = c.banco?.toLowerCase() ?? '';
+      const titular = c.titular_cuenta?.toLowerCase() ?? '';
+      const vendedor = c.vendedor?.nombre_completo?.toLowerCase() ?? '';
+      const cuentaNum = c.numero_cuenta?.toLowerCase() ?? '';
+      const clabe = c.clabe_interbancaria?.toLowerCase() ?? '';
+
+    return (
+      banco.includes(q) ||
+      titular.includes(q) ||
+      vendedor.includes(q) ||
+      cuentaNum.includes(q) ||
+      clabe.includes(q)
     );
+    });
   }, [cuentas, search]);
 
   const handleDelete = useCallback(async () => {
