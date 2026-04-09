@@ -169,11 +169,11 @@ export default function VendedorCreateScreen() {
     .map(v => v.usuario_id)
     .filter(id => id !== undefined && (isEditing ? id !== form.usuario_id : true));
 
-    // 🟢 AQUÍ ESTÁ EL CAMBIO ESTRICTO:
-    // Solo permitimos usuarios que NO tengan ningún rol (!u.rol)
-    // Agregamos una excepción para que el usuario que ya está seleccionado (al editar) sí aparezca.
+    // 🟢 AQUÍ ESTÁ EL CAMBIO:
+    // Solo permitimos usuarios que tengan ROL 2 (Vendedor)
+    // O si estamos editando, permitimos ver al usuario que ya estaba asignado
     let filtered = usuarios.filter(u =>
-    (!u.rol || (isEditing && u.id_usuario === form.usuario_id)) &&
+    (u.rol?.id_rol === 2 || (isEditing && u.id_usuario === form.usuario_id)) &&
     !assignedUserIds.includes(u.id_usuario)
     );
 
@@ -288,7 +288,7 @@ export default function VendedorCreateScreen() {
       <Pressable onPress={() => setShowUserModal(true)} style={[styles.selectorButton, errors.usuario_id && styles.selectorError]}>
       <MaterialCommunityIcons name="account-search" size={20} color={Colors.primary} />
       <Text style={[styles.selectorValue, !selectedUser && styles.selectorPlaceholder]}>
-      {selectedUser ? selectedUser.username : 'Buscar usuario sin rol...'}
+      {selectedUser ? selectedUser.username : 'Buscar usuario vendedor...'}
       </Text>
       </Pressable>
       </View>
@@ -356,14 +356,13 @@ export default function VendedorCreateScreen() {
     </View>
     </ScrollView>
 
-    {/* Modal Usuarios */}
     <Modal visible={showUserModal} animationType="slide">
     <SafeAreaView style={styles.modalBg}>
     <View style={styles.modalHeader}>
-    <Text style={styles.modalTitle}>Vincular Usuario Nuevo</Text>
+    <Text style={styles.modalTitle}>Vincular Usuario (Vendedor)</Text>
     <Pressable onPress={() => setShowUserModal(false)}><MaterialCommunityIcons name="close" size={28} color={Colors.error} /></Pressable>
     </View>
-    <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar usuario sin rol..." style={styles.modalSearch} />
+    <SearchBar value={searchQuery} onChangeText={setSearchQuery} placeholder="Buscar usuario vendedor..." style={styles.modalSearch} />
 
     {loadingData ? (
       <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
@@ -372,7 +371,7 @@ export default function VendedorCreateScreen() {
       data={filteredUsuarios}
       ListEmptyComponent={
         <Text style={{ textAlign: 'center', marginTop: 20, color: Colors.dark, fontWeight: '700' }}>
-        No hay usuarios disponibles sin rol asignado.
+        No hay usuarios con rol de Vendedor disponibles.
         </Text>
       }
       renderItem={({item}) => (
@@ -387,7 +386,6 @@ export default function VendedorCreateScreen() {
     </SafeAreaView>
     </Modal>
 
-    {/* Modal Escuela */}
     <Modal visible={showEscModal} animationType="slide">
     <SafeAreaView style={styles.modalBg}>
     <View style={styles.modalHeader}>
@@ -408,7 +406,6 @@ export default function VendedorCreateScreen() {
     </SafeAreaView>
     </Modal>
 
-    {/* Modal Municipio */}
     <Modal visible={showMunModal} animationType="slide">
     <SafeAreaView style={styles.modalBg}>
     <View style={styles.modalHeader}>
