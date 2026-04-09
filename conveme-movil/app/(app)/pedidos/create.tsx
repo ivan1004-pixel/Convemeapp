@@ -242,7 +242,7 @@ export default function PedidoCreateScreen() {
     // Objeto base del input, sanitizado y listo para enviar
     const input = {
       cliente_id: form.cliente_id,
-      vendedor_id: form.vendedor_id,
+      vendedor_id: form.vendedor_id || usuario?.id_vendedor,
       estado: form.estado,
       monto_total: Number(form.monto_total),
       anticipo: form.anticipo ? Number(form.anticipo) : undefined,

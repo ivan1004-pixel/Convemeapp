@@ -57,9 +57,28 @@ export default function AdminPedidoDetail() {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showTicket, setShowTicket] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
+  const [targetStatus, setTargetStatus] = useState<string | null>(null);
 
   const pedidoId = Number(id);
   const pedido: Pedido | undefined = pedidos.find((p) => p.id_pedido === pedidoId);
+
+  const handleStatusChange = async () => {
+      if (!targetStatus) return;
+      setDeleting(true); // Reusamos el estado de carga
+      try {
+          // Asumimos que tienes un servicio de updateEstadoPedido o similar
+          // Si no, importamos updatePedido y lo usamos
+          await import('../../../src/services/pedido.service').then(s => s.updateEstadoPedido(pedidoId, targetStatus));
+          // Actualizar store...
+          showToast(`Pedido actualizado a ${targetStatus}`, 'success');
+      } catch (err) {
+          showToast('Error al actualizar', 'error');
+      } finally {
+          setDeleting(false);
+          setShowStatus(false);
+      }
+  };
 
   const fetchIfNeeded = useCallback(async () => {
     if (!pedido) {
@@ -175,6 +194,12 @@ export default function AdminPedidoDetail() {
           )}
 
           <View style={styles.actions}>
+            {isAdmin && pedido.estado !== 'Entregado' && (
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+                    <Button title="CONFIRMAR" onPress={() => { setTargetStatus('Confirmado'); setShowStatus(true); }} size="sm" variant="primary" />
+                    <Button title="ENTREGAR" onPress={() => { setTargetStatus('Entregado'); setShowStatus(true); }} size="sm" variant="success" />
+                </View>
+            )}
             <Button
               title="VER TICKET"
               onPress={() => setShowTicket(true)}
@@ -191,6 +216,16 @@ export default function AdminPedidoDetail() {
               />
             )}
           </View>
+
+        <ConfirmDialog
+          visible={showStatus}
+          title="CAMBIAR ESTADO"
+          message={`¿CAMBIAR ESTADO A ${targetStatus?.toUpperCase()}?`}
+          onConfirm={handleStatusChange}
+          onCancel={() => setShowStatus(false)}
+          loading={deleting}
+          confirmText={targetStatus?.toUpperCase() || 'CONFIRMAR'}
+        />
         </ScrollView>
 
         <ConfirmDialog

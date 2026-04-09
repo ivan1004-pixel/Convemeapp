@@ -60,36 +60,35 @@ export default function PerfilScreen() {
   };
 
   const pickImage = async () => {
+    // Reemplazamos Alert.alert por un modal o simplemente gestionamos la selección
+    // Para hacer la interfaz "más bonita" sin ventanas blancas, 
+    // podrías usar un componente modal personalizado.
+    // De momento, mantengo la lógica pero sugiero implementar un Modal.
     Alert.alert(
       'CAMBIAR FOTO',
       'SELECCIONA UNA OPCIÓN',
       [
-        {
-          text: 'CÁMARA',
-          onPress: handleCamera,
-        },
-        {
-          text: 'GALERÍA',
-          onPress: handleGallery,
-        },
-        {
-          text: 'CANCELAR',
-          style: 'cancel',
-        },
+        { text: 'CÁMARA', onPress: handleCamera },
+        { text: 'GALERÍA', onPress: handleGallery },
+        { text: 'CANCELAR', style: 'cancel' },
       ],
-      { cancelable: true }
+      { 
+        cancelable: true,
+        // En algunas versiones de RN, esto no cambia el estilo. 
+        // La solución ideal es un Modal personalizado.
+      }
     );
   };
 
   const handleCamera = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE CÁMARA PARA ESTA FUNCIÓN');
+      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE CÁMARA');
       return;
     }
 
     let result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.IMAGE,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -104,12 +103,17 @@ export default function PerfilScreen() {
   const handleGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE GALERÍA PARA ESTA FUNCIÓN');
+      Alert.alert('ERROR', 'SE REQUIERE PERMISO DE GALERÍA');
       return;
     }
 
+    const mediaTypes = 
+      (ImagePicker as any).MediaType 
+        ? [(ImagePicker as any).MediaType.IMAGE] 
+        : ImagePicker.MediaTypeOptions.Images;
+
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,

@@ -107,6 +107,15 @@ export const getPedido = async (id: number) => {
             estado
             vendedor { id_vendedor nombre_completo }
             cliente { id_cliente nombre_completo }
+            detalles {
+                cantidad
+                precio_unitario
+                producto {
+                    id_producto
+                    nombre
+                    sku
+                }
+            }
         }
     }
     `;
