@@ -34,7 +34,7 @@ export default function PerfilScreen() {
   const [empleado, setEmpleado] = useState<Empleado | null>(null);
   const [vendedor, setVendedor] = useState<Vendedor | null>(null);
 
-  const [showPhotoPicker, setShowPhotoPicker] = useState(false); // 👈 modal de selección
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false);
 
   const username = usuario?.username ?? 'USUARIO';
   const rolId = usuario?.rol_id ?? 0;
@@ -68,19 +68,30 @@ export default function PerfilScreen() {
         setVendedor(vend || null);
       }
     } catch (error) {
-      // puedes loguear si quieres
+      // opcional: console.error(error);
     } finally {
       setLoading(false);
     }
   };
 
-  // Abre el modal personalizado de selección de foto
   const pickImage = () => {
     setShowPhotoPicker(true);
   };
 
   const closePhotoPicker = () => {
     setShowPhotoPicker(false);
+  };
+
+  const getImageMediaTypes = () => {
+    const anyPicker = ImagePicker as any;
+
+    // Si existe la API nueva, úsala como recomienda el warning
+    if (anyPicker.MediaType && anyPicker.MediaType.IMAGE) {
+      return [anyPicker.MediaType.IMAGE];
+    }
+
+    // Fallback: API vieja (la que ya tienes funcionando)
+    return ImagePicker.MediaTypeOptions.Images;
   };
 
   const handleCamera = async () => {
@@ -93,11 +104,11 @@ export default function PerfilScreen() {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 usar MediaTypeOptions
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
+      mediaTypes: getImageMediaTypes(),
+                                                       allowsEditing: true,
+                                                       aspect: [1, 1],
+                                                       quality: 0.5,
+                                                       base64: true,
     });
 
     if (!result.canceled && result.assets && result.assets[0].base64) {
@@ -115,11 +126,11 @@ export default function PerfilScreen() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 igual aquí
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
+      mediaTypes: getImageMediaTypes(),
+                                                             allowsEditing: true,
+                                                             aspect: [1, 1],
+                                                             quality: 0.5,
+                                                             base64: true,
     });
 
     if (!result.canceled && result.assets && result.assets[0].base64) {
@@ -140,7 +151,6 @@ export default function PerfilScreen() {
         base64Data,
       );
 
-      // Actualizar el store de auth
       setUsuario({
         ...usuario,
         foto_perfil: updatedUser.foto_perfil,
@@ -689,7 +699,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  // Modal selección foto
   photoPickerOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.75)',
