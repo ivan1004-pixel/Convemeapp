@@ -90,28 +90,6 @@ import { useAuth } from '../../../src/hooks/useAuth';
 export default function ProductosScreen() {
   const { isAdmin } = useAuth();
   const colorScheme = useColorScheme();
-  
-  if (!isAdmin) {
-    return (
-      <NeobrutalistBackground>
-        <SafeAreaView style={styles.container} edges={['top']}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => router.replace('/(app)')} style={styles.backBtn}>
-                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
-            </TouchableOpacity>
-          </View>
-          <EmptyState 
-            icon="shield-lock" 
-            title="ACCESO DENEGADO" 
-            message="No tienes permisos para ver esta sección." 
-            actionLabel="VOLVER AL INICIO"
-            onAction={() => router.replace('/(app)')}
-          />
-        </SafeAreaView>
-      </NeobrutalistBackground>
-    );
-  }
-
   const isDark = colorScheme === 'dark';
   const theme = isDark ? Colors.dark2 : Colors.light2;
 
@@ -147,8 +125,10 @@ export default function ProductosScreen() {
   }, [setProductos]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (isAdmin) {
+      fetchData();
+    }
+  }, [fetchData, isAdmin]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return productos;
@@ -176,6 +156,29 @@ export default function ProductosScreen() {
   }, [deleteId, removeProducto]);
 
   const deleteTarget = productos.find((p) => p.id_producto === deleteId);
+
+  // --- RENDERS CONDICIONALES (SIEMPRE DESPUÉS DE LOS HOOKS) ---
+
+  if (!isAdmin) {
+    return (
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container} edges={['top']}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.replace('/(app)')} style={styles.backBtn}>
+                <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+          </View>
+          <EmptyState 
+            icon="shield-lock" 
+            title="ACCESO DENEGADO" 
+            message="No tienes permisos para ver esta sección." 
+            actionLabel="VOLVER AL INICIO"
+            onAction={() => router.replace('/(app)')}
+          />
+        </SafeAreaView>
+      </NeobrutalistBackground>
+    );
+  }
 
   if (loading && productos.length === 0) {
     return (

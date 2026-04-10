@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Slot, router } from 'expo-router';
 import { useFonts, Galada_400Regular } from '@expo-google-fonts/galada';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,12 +11,25 @@ export default function RootLayout() {
     Galada: Galada_400Regular,
   });
   const { isAuthenticated } = useAuthStore();
+  const [isHydrated, setIsHydrated] = useState(false);
 
+  // 1. Manejar Hidratación de Zustand
   useEffect(() => {
-    // Solo proceder si el store ya se hidrató desde el almacenamiento persistente
-    if (!useAuthStore.persist.hasHydrated()) return;
+    const checkHydration = async () => {
+      // Esperar a que Zustand se hidrate
+      await useAuthStore.persist.rehydrate();
+      setIsHydrated(true);
+    };
+    checkHydration();
+  }, []);
+
+  // 2. Manejar Navegación inicial
+  useEffect(() => {
+    if (!isHydrated) return;
 
     if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync();
+      
       if (isAuthenticated) {
         console.log('[RootLayout] Authenticated, replacing to /(app)');
         router.replace('/(app)');
@@ -25,15 +38,9 @@ export default function RootLayout() {
         router.replace('/auth/splash');
       }
     }
-  }, [fontsLoaded, fontError, isAuthenticated]);
+  }, [fontsLoaded, fontError, isAuthenticated, isHydrated]);
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
-  if ((!fontsLoaded && !fontError) || !useAuthStore.persist.hasHydrated()) {
+  if (!isHydrated || (!fontsLoaded && !fontError)) {
     return null;
   }
 

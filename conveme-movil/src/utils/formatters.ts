@@ -1,3 +1,19 @@
+import { API_URL } from '../api/convemeApi';
+
+export const formatImageUri = (path?: string): string | null => {
+  if (!path) return null;
+  if (path.startsWith('data:image')) return path;
+  if (path.startsWith('http')) return path;
+  if (path.startsWith('/uploads')) {
+    return `${API_URL.replace('/graphql', '')}${path}`;
+  }
+  // Si parece base64 pero no tiene el prefijo
+  if (path.length > 100 && !path.includes('/') && !path.includes(':')) {
+    return `data:image/jpeg;base64,${path}`;
+  }
+  return path;
+};
+
 export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
 };

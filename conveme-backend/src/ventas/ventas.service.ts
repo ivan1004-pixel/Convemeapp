@@ -60,7 +60,7 @@ export class VentasService {
             relations: ['cliente', 'vendedor', 'detalles', 'detalles.producto'],
         });
         if (!venta) throw new NotFoundException(`Venta #${id_venta} no encontrada`);
-        
+
         if (venta.fecha_venta && typeof venta.fecha_venta === 'string') {
             venta.fecha_venta = new Date(venta.fecha_venta);
         }
@@ -84,7 +84,7 @@ export class VentasService {
             // Opción agresiva pero segura: eliminar detalles viejos y poner los nuevos
             // Esto evita el error "venta_id cannot be null" que lanza TypeORM al intentar desvincular
             await this.ventaRepository.manager.delete('det_ventas', { venta_id: id_venta });
-            
+
             // Asignamos los nuevos detalles (TypeORM los insertará al guardar la venta por el cascade: true)
             ventaExistente.detalles = detalles as any;
         }

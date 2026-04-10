@@ -12,8 +12,9 @@ import {
 import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import Animated, { FadeInUp } from 'react-native-reanimated';
+import Animated, { FadeInUp, FadeIn } from 'react-native-reanimated';
 import * as Calendar from 'expo-calendar';
+import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 import { useAuth } from '../../hooks/useAuth';
 import { useAuthStore } from '../../store/authStore';
@@ -27,7 +28,7 @@ import { getVendedores } from '../../services/vendedor.service';
 import { getPedidos } from '../../services/pedido.service';
 import { getCortes } from '../../services/corte.service';
 import { getEventos } from '../../services/evento.service';
-import { formatCurrency } from '../../utils';
+import { formatCurrency, formatImageUri } from '../../utils';
 import type { Evento } from '../../types';
 import { SearchBar } from '../ui/SearchBar';
 
@@ -37,6 +38,19 @@ const GRID_PADDING = 20;
 const BUTTON_WIDTH = (SCREEN_WIDTH - (GRID_PADDING * 2) - (CARD_MARGIN * 6)) / 3;
 
 type IconName = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+const DashboardPattern = () => (
+  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    <Svg width="100%" height="100%">
+      <Defs>
+        <Pattern id="dotPattern" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+          <Rect x="0" y="0" width="4" height="4" fill={Colors.dark} opacity="0.1" />
+        </Pattern>
+      </Defs>
+      <Rect width="100%" height="100%" fill="url(#dotPattern)" />
+    </Svg>
+  </View>
+);
 
 function QuickActionCard({ icon, label, onPress, color, index }: { icon: IconName; label: string; onPress: () => void; color?: string, index: number }) {
   return (
@@ -157,6 +171,7 @@ export function AdminDashboard() {
   const [historicalData, setHistoricalData] = useState<{ label: string, value: number }[]>([]);
   const [prediction, setPrediction] = useState({ value: 0, label: '' });
   const [proximosEventos, setProximosEventos] = useState<Evento[]>([]);
+  const [vendedoresData, setVendedoresData] = useState<any[]>([]);
   const [eventSearch, setEventSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -167,28 +182,76 @@ export function AdminDashboard() {
 
     setLoading(true);
     try {
-      const [ventas, cortes, pedidos, empleados, vendedores, eventos] = await Promise.all([
-        getVentas(0, 50), getCortes('', 0, 50), getPedidos(0, 50), getEmpleados(), getVendedores(), getEventos()
+      const [ventasRes, cortesRes, pedidosRes, empleadosRes, vendedoresRes, eventosRes] = await Promise.all([
+        getVentas(0, 50).catch(() => []),
+        getCortes('', 0, 50).catch(() => []),
+        getPedidos(0, 50).catch(() => []),
+        getEmpleados().catch(() => []),
+        getVendedores(0, 50).catch(() => []),
+        getEventos().catch(() => []),
       ]);
+
+      const ventas = ventasRes || [];
+      const cortes = cortesRes || [];
+      const pedidos = pedidosRes || [];
+      const vendedoresList = vendedoresRes || [];
+      const eventos = eventosRes || [];
+
       const now = new Date();
       const m = now.getMonth();
       const y = now.getFullYear();
-      const ingresosMes = ventas.filter((v: any) => new Date(v.fecha_venta).getMonth() === m && new Date(v.fecha_venta).getFullYear() === y).reduce((s: number, v: any) => s + v.monto_total, 0) +
-        cortes.filter((c: any) => new Date(c.fecha_corte).getMonth() === m && new Date(c.fecha_corte).getFullYear() === y).reduce((s: number, c: any) => s + (c.dinero_total_entregado || 0), 0);
-      setStats({ ingresosMes, pedidosPend: pedidos.filter((p: any) => p.estado === 'Pendiente').length, empleados: empleados.length, vendedores: vendedores.length });
+
+      const ingresosMes = ventas.filter((v: any) => {
+        const d = new Date(v.fecha_venta);
+        return d.getMonth() === m && d.getFullYear() === y;
+      }).reduce((s: number, v: any) => s + (Number(v.monto_total) || 0), 0) +
+      cortes.filter((c: any) => {
+        const d = new Date(c.fecha_corte);
+        return d.getMonth() === m && d.getFullYear() === y;
+      }).reduce((s: number, c: any) => s + (Number(c.dinero_total_entregado) || 0), 0);
+
+      setStats({ 
+        ingresosMes, 
+        pedidosPend: pedidos.filter((p: any) => p.estado === 'Pendiente').length, 
+        empleados: (empleadosRes || []).length, 
+        vendedores: vendedoresList.length 
+      });
+
+      // Cruzar ventas con vendedores para el resumen (sin filtrar los que tienen 0)
+      const resumen = vendedoresList.map((vend: any) => {
+        const misVentas = ventas.filter((v: any) => 
+          Number(v.vendedor?.id_vendedor) === Number(vend.id_vendedor) || 
+          Number(v.vendedor_id) === Number(vend.id_vendedor)
+        );
+        const totalVendido = misVentas.reduce((s: number, v: any) => s + (Number(v.monto_total) || 0), 0);
+        return {
+          ...vend,
+          totalVendido,
+          numVentas: misVentas.length
+        };
+      })
+      .sort((a: any, b: any) => b.totalVendido - a.totalVendido);
+
+      setVendedoresData(resumen);
+
       const futureEvents = eventos
         .filter((e: any) => new Date(e.fecha_inicio) >= now || (new Date(e.fecha_inicio) <= now && new Date(e.fecha_fin) >= now))
         .sort((a: any, b: any) => new Date(a.fecha_inicio).getTime() - new Date(b.fecha_inicio).getTime());
+      
       setProximosEventos(futureEvents);
+
+      // Gráfica de ingresos
       const revenueByMonth: Record<string, number> = {};
       [...ventas, ...cortes].forEach((item: any) => {
         const d = new Date(item.fecha_venta || item.fecha_corte);
         if (isNaN(d.getTime())) return;
         const mKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
-        revenueByMonth[mKey] = (revenueByMonth[mKey] || 0) + (item.monto_total || item.dinero_total_entregado || 0);
+        revenueByMonth[mKey] = (revenueByMonth[mKey] || 0) + (Number(item.monto_total || item.dinero_total_entregado) || 0);
       });
+
       const historical = Object.keys(revenueByMonth).sort().slice(-5).map(key => ({ label: key.split('-')[1], value: revenueByMonth[key] }));
       setHistoricalData(historical);
+
       if (historical.length > 1) {
         const regression = getLinearRegression(historical);
         const lastMonthLabel = Object.keys(revenueByMonth).sort().slice(-1)[0];
@@ -197,7 +260,11 @@ export function AdminDashboard() {
         const nextMonthLabel = (nextMonthDate.getMonth() + 1).toString().padStart(2, '0');
         setPrediction({ value: regression.predict(historical.length) > 0 ? regression.predict(historical.length) : 0, label: nextMonthLabel });
       }
-    } catch (err) { console.error(err); } finally { setLoading(false); }
+    } catch (err) { 
+      console.error('[Dashboard] Global Error:', err); 
+    } finally { 
+      setLoading(false); 
+    }
   }, []);
 
   useEffect(() => { loadStats(); }, [loadStats]);
@@ -206,42 +273,81 @@ export function AdminDashboard() {
     return proximosEventos.filter(e => e.nombre.toLowerCase().includes(eventSearch.toLowerCase()) || e.escuela?.nombre?.toLowerCase().includes(eventSearch.toLowerCase())).slice(0, 3);
   }, [proximosEventos, eventSearch]);
 
+  const profileImg = formatImageUri(usuario?.foto_perfil);
+
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}>
-      <View style={styles.dashHeader}>
-        <Animated.View entering={FadeInUp.duration(500)}>
-          <View style={styles.dashHeaderRow}>
+    <View style={styles.container}>
+      <DashboardPattern />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false} 
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={loadStats} tintColor={Colors.primary} />}
+      >
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
             <View>
               <Image source={require('../../../assets/images/logon.png')} style={styles.logoImage} contentFit="contain" />
-              <Text style={styles.greeting}>Bienvenido, {usuario?.username ?? 'Admin'}</Text>
+              <Text style={styles.greeting}>BIENVENIDO, {usuario?.username?.toUpperCase() ?? 'ADMIN'}</Text>
             </View>
-            <TouchableOpacity onPress={logout} style={styles.logoutBtn}><Text style={styles.logoutText}>SALIR</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/perfil')}>
+                <Image source={profileImg ? { uri: profileImg } : require('../../../assets/images/logon.png')} style={styles.profilePic} />
+            </TouchableOpacity>
           </View>
-        </Animated.View>
-        <View style={styles.statsRow}>
-          <StatCard index={1} icon="cash-multiple" label="Ingresos mes" value={formatCurrency(stats.ingresosMes)} color={Colors.success} />
-          <StatCard index={2} icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
-        </View>
-        <View style={styles.statsRow}>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push('/empleados')} activeOpacity={0.8}><StatCard index={3} icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} /></TouchableOpacity>
-          <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push('/vendedores')} activeOpacity={0.8}><StatCard index={4} icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} /></TouchableOpacity>
-        </View>
-      </View>
 
-      <Animated.View entering={FadeInUp.duration(500).delay(300)} style={{ paddingHorizontal: 20 }}>
-        <Text style={styles.sectionTitleList}>Calendario de Eventos</Text>
-        <SearchBar value={eventSearch} onChangeText={setEventSearch} placeholder="Buscar eventos..." style={styles.eventSearch} />
-        <View style={styles.eventsList}>
-          {filteredEventos.length > 0 ? (
-            <>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled snapToInterval={SCREEN_WIDTH - 64} decelerationRate="fast" contentContainerStyle={styles.eventsCarousel}>
-                {filteredEventos.map((evento) => (<View key={evento.id_evento} style={styles.carouselItem}><EventBadge evento={evento} /></View>))}
-              </ScrollView>
-              <TouchableOpacity onPress={() => router.push('/eventos')} style={styles.viewAllEvents}><Text style={styles.viewAllText}>VER TODOS LOS EVENTOS</Text><MaterialCommunityIcons name="arrow-right" size={14} color={Colors.primary} /></TouchableOpacity>
-            </>
+          <Animated.View entering={FadeInUp.duration(800)} style={styles.mainBalanceCard}>
+             <Text style={styles.balanceLabel}>INGRESOS TOTALES DEL MES</Text>
+             <Text style={styles.balanceValue}>{formatCurrency(stats.ingresosMes)}</Text>
+             <View style={styles.balanceFooter}>
+                <MaterialCommunityIcons name="trending-up" size={16} color="#FFF" />
+                <Text style={styles.balanceTrend}>Estadísticas generales</Text>
+             </View>
+          </Animated.View>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.statsRow}>
+            <StatCard index={2} icon="package-variant" label="Pedidos pend." value={String(stats.pedidosPend)} color={Colors.warning} />
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push('/empleados')} activeOpacity={0.8}><StatCard index={3} icon="account-group" label="Empleados" value={String(stats.empleados)} color={Colors.info} /></TouchableOpacity>
+            <TouchableOpacity style={{ flex: 1 }} onPress={() => router.push('/vendedores')} activeOpacity={0.8}><StatCard index={4} icon="account-tie" label="Vendedores" value={String(stats.vendedores)} color={Colors.primary} /></TouchableOpacity>
+          </View>
+
+          <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+            <Text style={styles.sectionTitleList}>Calendario de Eventos</Text>
+            <SearchBar value={eventSearch} onChangeText={setEventSearch} placeholder="Buscar eventos..." style={styles.eventSearch} />
+            <View style={styles.eventsList}>
+              {filteredEventos.length > 0 ? (
+                <>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} pagingEnabled snapToInterval={SCREEN_WIDTH - 64} decelerationRate="fast" contentContainerStyle={styles.eventsCarousel}>
+                    {filteredEventos.map((evento) => (<View key={evento.id_evento} style={styles.carouselItem}><EventBadge evento={evento} /></View>))}
+                  </ScrollView>
+                  <TouchableOpacity onPress={() => router.push('/eventos')} style={styles.viewAllEvents}><Text style={styles.viewAllText}>VER TODOS LOS EVENTOS</Text><MaterialCommunityIcons name="arrow-right" size={14} color={Colors.primary} /></TouchableOpacity>
+                </>
+              ) : (
+                <View style={styles.emptyEvents}><MaterialCommunityIcons name="calendar-blank" size={32} color="rgba(0,0,0,0.1)" /><Text style={styles.emptyEventsText}>No hay eventos próximos</Text><TouchableOpacity onPress={() => router.push('/eventos/create')}><Text style={styles.createEventText}>Crear un evento</Text></TouchableOpacity></View>
+              )}
+            </View>
+          </Animated.View>
+
+      <Animated.View entering={FadeInUp.duration(500).delay(350)} style={{ paddingHorizontal: 20, marginTop: 20 }}>
+        <Text style={styles.sectionTitleList}>Resumen por Vendedor</Text>
+        <View style={styles.vendedoresList}>
+          {vendedoresData.length > 0 ? (
+            vendedoresData.slice(0, 5).map((v, i) => (
+              <View key={v.id_vendedor} style={styles.vendedorRow}>
+                <View style={styles.vendedorInfo}>
+                  <Text style={styles.vendedorName} numberOfLines={1}>{v.nombre_completo}</Text>
+                  <Text style={styles.vendedorSub}>{v.numVentas} ventas este periodo</Text>
+                </View>
+                <Text style={styles.vendedorMonto}>{formatCurrency(v.totalVendido)}</Text>
+              </View>
+            ))
           ) : (
-            <View style={styles.emptyEvents}><MaterialCommunityIcons name="calendar-blank" size={32} color="rgba(0,0,0,0.1)" /><Text style={styles.emptyEventsText}>No hay eventos próximos</Text><TouchableOpacity onPress={() => router.push('/eventos/create')}><Text style={styles.createEventText}>Crear un evento</Text></TouchableOpacity></View>
+            <Text style={styles.emptyText}>No hay datos de vendedores</Text>
           )}
+          <TouchableOpacity onPress={() => router.push('/vendedores')} style={styles.viewAllEvents}>
+            <Text style={styles.viewAllText}>VER TODOS LOS VENDEDORES</Text>
+            <MaterialCommunityIcons name="arrow-right" size={14} color={Colors.primary} />
+          </TouchableOpacity>
         </View>
       </Animated.View>
 
@@ -270,18 +376,50 @@ export function AdminDashboard() {
       <Animated.View entering={FadeInUp.duration(500).delay(600)} style={{ paddingHorizontal: 20, marginTop: 30, paddingBottom: 100 }}>
         <View style={styles.predSection}><Text style={styles.predTitle}>Tendencia de Ingresos</Text><PredictionChart data={historicalData} predictedValue={prediction.value} predictedLabel={prediction.label} /></View>
       </Animated.View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.beige },
   scrollContent: { paddingBottom: 100 },
-  dashHeader: { paddingHorizontal: 20, paddingTop: 10 },
-  dashHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
-  logoImage: { width: 130, height: 35 },
-  greeting: { fontSize: 12, color: 'rgba(0,0,0,0.5)', fontWeight: '700', marginLeft: 2 },
+  header: { 
+    paddingHorizontal: 20, 
+    paddingTop: 40, 
+    paddingBottom: 30, 
+    backgroundColor: Colors.primary,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    borderWidth: 2,
+    borderColor: Colors.dark,
+    borderTopWidth: 0,
+  },
+  headerTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
+  logoImage: { width: 100, height: 30, marginBottom: 4 },
+  greeting: { fontSize: 10, color: 'rgba(255,255,255,0.7)', fontWeight: '900', letterSpacing: 0.5 },
+  profilePic: { width: 50, height: 50, borderRadius: 12, borderWidth: 3, borderColor: '#FFF' },
   logoutBtn: { backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 2, borderColor: Colors.dark },
   logoutText: { fontSize: 10, fontWeight: '900', color: Colors.primary },
+  mainBalanceCard: { 
+    backgroundColor: Colors.pink, 
+    borderRadius: 20, 
+    padding: 20, 
+    borderWidth: 3,
+    borderColor: Colors.dark,
+    shadowColor: Colors.dark,
+    shadowOffset: { width: 5, height: 5 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 5
+  },
+  balanceLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  balanceValue: { color: '#FFF', fontSize: 28, fontWeight: '900', marginVertical: 4 },
+  balanceFooter: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  balanceTrend: { color: '#FFF', fontSize: 10, fontWeight: '800' },
+
+  content: { paddingHorizontal: 20, marginTop: 10 },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: 12 },
   statCard: { flex: 1, backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 2, borderColor: Colors.dark, overflow: 'hidden' },
   statWatermark: { position: 'absolute', right: -15, bottom: -15 },
@@ -289,14 +427,21 @@ const styles = StyleSheet.create({
   statInfo: { gap: 2 },
   statValue: { fontSize: 18, fontWeight: '900', color: '#1A1A1A' },
   statLabel: { fontSize: 9, fontWeight: '800', color: 'rgba(0,0,0,0.4)', textTransform: 'uppercase' },
-  sectionTitle: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 25, marginBottom: 12, paddingHorizontal: 20, textTransform: 'uppercase', letterSpacing: 1 },
+  sectionTitle: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 25, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
   sectionTitleList: { fontSize: 14, fontWeight: '900', color: '#1A1A1A', marginTop: 15, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: GRID_PADDING - CARD_MARGIN, justifyContent: 'flex-start' },
+  actionsGrid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start' },
   animatedCardContainer: { width: BUTTON_WIDTH, margin: CARD_MARGIN },
   actionCard: { width: '100%', backgroundColor: '#FFFFFF', borderRadius: 12, paddingVertical: 15, paddingHorizontal: 5, alignItems: 'center', borderWidth: 2, borderColor: Colors.dark, borderTopWidth: 4, height: 95, justifyContent: 'center' },
   actionIconContainer: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   actionLabel: { fontSize: 8.5, fontWeight: '900', color: '#1A1A1A', textAlign: 'center', width: '100%', textTransform: 'uppercase' },
   eventSearch: { marginBottom: 12 },
+  vendedoresList: { backgroundColor: '#FFF', padding: 15, borderRadius: 20, borderWidth: 2, borderColor: Colors.dark },
+  vendedorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(0,0,0,0.05)' },
+  vendedorInfo: { flex: 1 },
+  vendedorName: { fontSize: 13, fontWeight: '900', color: Colors.dark },
+  vendedorSub: { fontSize: 10, color: 'rgba(0,0,0,0.4)', fontWeight: '700' },
+  vendedorMonto: { fontSize: 13, fontWeight: '900', color: Colors.success },
+  emptyText: { fontSize: 12, color: 'rgba(0,0,0,0.3)', textAlign: 'center', paddingVertical: 10 },
   eventsList: { backgroundColor: 'rgba(255,255,255,0.4)', padding: 12, borderRadius: 20, borderWidth: 2, borderColor: 'rgba(0,0,0,0.05)', minHeight: 80 },
   eventsCarousel: { paddingRight: 20 },
   carouselItem: { width: SCREEN_WIDTH - 64, marginRight: 12 },
