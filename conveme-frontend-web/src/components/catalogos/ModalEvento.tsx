@@ -113,7 +113,7 @@ export default function ModalEvento({ isOpen, onClose, onSave, onDelete, eventoA
             const [dataEstados, dataEscuelas] = await Promise.all([getEstados(), getEscuelas()]);
             setEstados(dataEstados);
             setEscuelas(dataEscuelas);
-        } catch (error) { console.error(error); }
+        } catch (error) {  }
     };
 
     const cargarMunicipios = async (id: number) => {
@@ -121,7 +121,7 @@ export default function ModalEvento({ isOpen, onClose, onSave, onDelete, eventoA
         try {
             const data = await getMunicipiosPorEstado(id);
             setMunicipios(data);
-        } catch (error) { console.error(error); }
+        } catch (error) {  }
         finally { setLoadingMun(false); }
     };
 
@@ -152,7 +152,7 @@ export default function ModalEvento({ isOpen, onClose, onSave, onDelete, eventoA
             setStep('success');
             setTimeout(() => { onClose(); }, 1500);
         } catch (error: any) {
-            console.error(error);
+            
             alert(error.message || 'Error al procesar el evento.');
         } finally {
             setLoading(false);

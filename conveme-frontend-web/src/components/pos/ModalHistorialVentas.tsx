@@ -74,7 +74,7 @@ export default function ModalHistorialVentas({ isOpen, onClose }: ModalHistorial
             } else {
                 setVentas(prev => [...prev, ...data]);
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {  }
         finally { setLoading(false); setLoadingMore(false); }
     };
 
@@ -96,7 +96,7 @@ export default function ModalHistorialVentas({ isOpen, onClose }: ModalHistorial
             await updateVenta({ id_venta: selectedTicket.id_venta, metodo_pago: editMetodo });
             await cargarVentas();
             setSelectedTicket({ ...selectedTicket, metodo_pago: editMetodo });
-        } catch (e) { console.error(e); }
+        } catch (e) {  }
         finally { setSavingEdit(false); }
     };
 
@@ -108,7 +108,7 @@ export default function ModalHistorialVentas({ isOpen, onClose }: ModalHistorial
             await cargarVentas();
             setDeleteStep('done');
             setTimeout(() => { closeTicketView(); }, 1500); // Se cierra solo después de borrar
-        } catch (e) { console.error(e); setDeleteStep('idle'); }
+        } catch (e) {  setDeleteStep('idle'); }
     };
 
     const formatFecha = (s: string) => {

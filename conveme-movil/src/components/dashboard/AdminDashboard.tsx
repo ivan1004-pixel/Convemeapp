@@ -130,7 +130,7 @@ function EventBadge({ evento }: { evento: Evento }) {
       showToast('¡LISTO! EL EVENTO SE GUARDÓ EN TU CALENDARIO', 'success');
     } catch (err) { 
       showToast('UPS, NO PUDIMOS GUARDAR EL EVENTO', 'error'); 
-      console.error(err); 
+       
     }
   };
 
@@ -261,7 +261,7 @@ export function AdminDashboard() {
         setPrediction({ value: regression.predict(historical.length) > 0 ? regression.predict(historical.length) : 0, label: nextMonthLabel });
       }
     } catch (err) { 
-      console.error('[Dashboard] Global Error:', err); 
+       
     } finally { 
       setLoading(false); 
     }

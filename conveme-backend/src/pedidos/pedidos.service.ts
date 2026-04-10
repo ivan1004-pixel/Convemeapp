@@ -16,7 +16,7 @@ export class PedidosService {
             private readonly notificationsService: NotificationsService,
     ) {}
 
-    async create(createPedidoInput: CreatePedidoInput): Promise<Pedido> {
+    async create(createPedidoInput: CreatePedidoInput, usuario: Usuario): Promise<Pedido> {
         // Normalizar fecha_entrega_estimada si viene como string ISO
         if (
             createPedidoInput.fecha_entrega_estimada &&
@@ -25,6 +25,11 @@ export class PedidosService {
             createPedidoInput.fecha_entrega_estimada = new Date(
                 createPedidoInput.fecha_entrega_estimada,
             ) as any;
+        }
+
+        // Si es vendedor y no mandó vendedor_id, lo seteamos nosotros
+        if (usuario.rol_id === 2 && !createPedidoInput.vendedor_id) {
+            createPedidoInput.vendedor_id = usuario.id_vendedor as number;
         }
 
         // Crear entidad a partir del input

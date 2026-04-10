@@ -65,7 +65,7 @@ export default function MisPedidos() {
                     setPedidos(prev => [...prev, ...data]);
                 }
             } catch (error) {
-                console.error("Error al cargar pedidos:", error);
+                
             } finally {
                 setLoading(false);
                 setLoadingMore(false);
@@ -79,7 +79,7 @@ export default function MisPedidos() {
                 const data = await getProductos();
                 setProductos(data);
             } catch (error) {
-                console.error("Error al cargar catálogo:", error);
+                
             } finally {
                 setLoading(false);
             }

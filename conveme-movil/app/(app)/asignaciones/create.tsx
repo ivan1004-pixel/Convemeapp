@@ -82,7 +82,7 @@ export default function AsignacionCreateScreen() {
       setVendedores(v || []);
       setProductos(p || []);
     } catch (err) {
-      console.error('Error loading data:', err);
+      
     }
   };
 

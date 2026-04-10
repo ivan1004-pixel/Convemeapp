@@ -54,7 +54,7 @@ export default function ModalAutorizacion({ isOpen, esFaltante, monto, vendedor,
 
             // 4. Revisamos si GraphQL nos regresó un error específico
             if (data.errors) {
-                console.error("Detalle del error GraphQL:", data.errors);
+                
                 throw new Error(data.errors[0].message || "Error de validación en el servidor.");
             }
 

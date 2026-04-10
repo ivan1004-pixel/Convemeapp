@@ -147,7 +147,7 @@ export default function EventoCreateScreen() {
       setEscuelas(e || []);
       setMunicipios(m || []);
     } catch (err) {
-      console.error('Error loading selectors:', err);
+      
     }
   };
 
@@ -260,7 +260,7 @@ export default function EventoCreateScreen() {
       showToast('¡LISTO! EL EVENTO SE GUARDÓ EN TU CALENDARIO', 'success');
     } catch (err) {
       showToast('UPS, NO PUDIMOS GUARDAR EL EVENTO', 'error');
-      console.error(err);
+      
     } finally {
       setRegisteringCalendar(false);
     }

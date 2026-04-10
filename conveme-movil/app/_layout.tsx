@@ -31,10 +31,10 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
       
       if (isAuthenticated) {
-        console.log('[RootLayout] Authenticated, replacing to /(app)');
+        
         router.replace('/(app)');
       } else {
-        console.log('[RootLayout] Not authenticated, replacing to /auth/splash');
+        // Log removido
         router.replace('/auth/splash');
       }
     }

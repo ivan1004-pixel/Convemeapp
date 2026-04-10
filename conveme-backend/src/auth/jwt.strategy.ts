@@ -16,6 +16,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     //  Si el token es válido, este método decodifica el payload y lo inyecta en el objeto Request para que sepamos quién está haciendo la petición.
     async validate(payload: any) {
-        return { id_usuario: payload.sub, username: payload.username, rol_id: payload.rol_id };
+        return { 
+            id_usuario: payload.sub, 
+            username: payload.username, 
+            rol_id: payload.rol_id,
+            id_vendedor: payload.id_vendedor 
+        };
     }
 }

@@ -31,7 +31,7 @@ export default function DashboardPredicciones() {
             setVentas(resVentas.data.data.prediccionVentasProximoMes);
             setDemanda(resDemanda.data.data.prediccionDemandaInventario);
         } catch (error) {
-            console.error("Error al cargar predicciones", error);
+            
         } finally {
             setLoading(false);
         }

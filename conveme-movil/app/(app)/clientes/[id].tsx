@@ -84,7 +84,7 @@ export default function ClienteDetailScreen() {
       const data = await getClientes();
       setClientes(data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoading(false);
     }

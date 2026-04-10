@@ -58,30 +58,36 @@ export default function VendedorPedidoDetail() {
   const [showTicket, setShowTicket] = useState(false);
 
   const pedidoId = Number(id);
-  const pedido: Pedido | undefined = pedidos.find((p) => 
-    p.id_pedido === pedidoId && (
-      p.vendedor?.id_vendedor === usuario?.id_vendedor || 
-      p.id_vendedor === usuario?.id_vendedor
-    )
+  const [pedido, setPedido] = useState<Pedido | undefined>(
+    pedidos.find((p) => p.id_pedido === pedidoId)
   );
+  const [error, setError] = useState(false);
 
-  const fetchIfNeeded = useCallback(async () => {
-    if (!pedido) {
-      setLoading(true);
-      try {
-        const data = await getPedidos();
-        setPedidos(data);
-      } catch (err) {
-        showToast(parseGraphQLError(err), 'error');
-      } finally {
-        setLoading(false);
+  const fetchPedido = useCallback(async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const { getPedido } = await import('../../../src/services/pedido.service');
+      const data = await getPedido(pedidoId);
+      if (data) {
+        setPedido(data);
+      } else {
+        setError(true);
+        showToast('Pedido no encontrado', 'error');
       }
+    } catch (err) {
+      setError(true);
+      showToast(parseGraphQLError(err), 'error');
+    } finally {
+      setLoading(false);
     }
-  }, [pedido, setPedidos, showToast]);
+  }, [pedidoId, showToast]);
 
   useEffect(() => {
-    fetchIfNeeded();
-  }, [fetchIfNeeded]);
+    if (!pedido && !error && !loading) {
+      fetchPedido();
+    }
+  }, [pedido, error, loading, fetchPedido]);
 
   const handleDelete = useCallback(async () => {
     setDeleting(true);
@@ -98,7 +104,7 @@ export default function VendedorPedidoDetail() {
     }
   }, [pedidoId, removePedido, showToast]);
 
-  if (loading || !pedido) {
+  if (loading) {
     return (
       <NeobrutalistBackground>
         <SafeAreaView style={styles.container}>
@@ -111,6 +117,30 @@ export default function VendedorPedidoDetail() {
           </View>
           <LoadingSpinner fullScreen message="CARGANDO..." />
         </SafeAreaView>
+      </NeobrutalistBackground>
+    );
+  }
+
+  if (error || !pedido) {
+    return (
+      <NeobrutalistBackground>
+        <SafeAreaView style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity onPress={() => router.push('/(app)')} style={styles.backBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color={Colors.primary} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>ERROR</Text>
+            <View style={styles.headerPlaceholder} />
+          </View>
+          <EmptyState
+            icon="alert-circle-outline"
+            title="PEDIDO NO ENCONTRADO"
+            message="No se encontró el pedido o no tienes permiso para verlo."
+            actionLabel="VOLVER"
+            onAction={() => router.back()}
+          />
+        </SafeAreaView>
+        <Toast visible={toast.visible} type={toast.type} message={toast.message} onHide={hideToast} />
       </NeobrutalistBackground>
     );
   }

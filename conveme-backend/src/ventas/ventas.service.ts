@@ -14,10 +14,15 @@ export class VentasService {
         private readonly ventaRepository: Repository<Venta>,
     ) {}
 
-    async create(createVentaInput: CreateVentaInput): Promise<Venta> {
+    async create(createVentaInput: CreateVentaInput, usuario: Usuario): Promise<Venta> {
         // Validación: Una venta no puede estar vacía
         if (!createVentaInput.detalles || createVentaInput.detalles.length === 0) {
             throw new BadRequestException('La venta debe tener al menos un producto (detalle).');
+        }
+
+        // Si es vendedor y no mandó vendedor_id, lo seteamos nosotros
+        if (usuario.rol_id === 2 && !createVentaInput.vendedor_id) {
+            createVentaInput.vendedor_id = usuario.id_vendedor as number;
         }
 
         // Ya no sobreescribimos el monto_total, respetamos el que envía el POS

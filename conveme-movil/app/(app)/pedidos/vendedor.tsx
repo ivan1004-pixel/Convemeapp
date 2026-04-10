@@ -99,7 +99,7 @@ export default function VendedorPedidosScreen() {
         setPedidos([...pedidos, ...data]);
       }
     } catch (err) {
-      console.error(parseGraphQLError(err));
+      
     } finally {
       setLoading(false);
       setLoadingMore(false);

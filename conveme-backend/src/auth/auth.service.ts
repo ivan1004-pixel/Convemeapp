@@ -28,18 +28,21 @@ export class AuthService {
             throw new UnauthorizedException('Credenciales inválidas');
         }
 
-        // 3. Creamos el payload del JWT (los datos que irán dentro del token)
-        const payload = {
-            sub: usuario.id_usuario, // 'sub' es el estándar para el ID del sujeto
-            username: usuario.username,
-            rol_id: usuario.rol_id
-        };
-
         // Si es vendedor (rol_id === 2), buscamos su id_vendedor
+        let id_vendedor: number | undefined;
         if (usuario.rol_id === 2) {
             const vendedor = await this.usuariosService.findVendedorByUsuario(usuario.id_usuario);
-            usuario.id_vendedor = vendedor?.id_vendedor;
+            id_vendedor = vendedor?.id_vendedor;
+            usuario.id_vendedor = id_vendedor;
         }
+
+        // 3. Creamos el payload del JWT (los datos que irán dentro del token)
+        const payload = {
+            sub: usuario.id_usuario,
+            username: usuario.username,
+            rol_id: usuario.rol_id,
+            id_vendedor: id_vendedor,
+        };
 
         // 4. Firmamos el token y retornamos la respuesta
         return {

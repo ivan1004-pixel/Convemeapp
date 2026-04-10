@@ -77,7 +77,7 @@ export default function EmpleadoCreateScreen() {
       const data = await getMunicipios();
       setMunicipios(data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoadingMunicipios(false);
     }
@@ -89,7 +89,7 @@ export default function EmpleadoCreateScreen() {
       const data = await getUsuarios();
       setUsuarios(data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoadingUsuarios(false);
     }

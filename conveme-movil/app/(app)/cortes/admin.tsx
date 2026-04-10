@@ -52,7 +52,7 @@ function CorteCard({
       `nos vemos nomancherito`;
       await Share.share({ message });
     } catch (error) {
-      console.error(error);
+      
     }
   };
 

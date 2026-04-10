@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Comprobante } from './comprobante.entity';
 import { CreateComprobanteInput } from './create-comprobante.input';
+import { Usuario } from '../usuarios/usuario.entity';
 
 @Injectable()
 export class ComprobantesService {
@@ -11,13 +12,23 @@ export class ComprobantesService {
         private readonly comprobanteRepository: Repository<Comprobante>,
     ) {}
 
-    async create(createComprobanteInput: CreateComprobanteInput): Promise<Comprobante> {
+    async create(createComprobanteInput: CreateComprobanteInput, usuario: Usuario): Promise<Comprobante> {
+        // Si es vendedor y no mandó vendedor_id, lo seteamos nosotros
+        if (usuario.rol_id === 2 && !createComprobanteInput.vendedor_id) {
+            createComprobanteInput.vendedor_id = usuario.id_vendedor as number;
+        }
+
         const nuevo = this.comprobanteRepository.create(createComprobanteInput);
         const guardado = await this.comprobanteRepository.save(nuevo);
         return this.findOne(guardado.id_comprobante);
     }
 
-    async findAll(): Promise<Comprobante[]> {
+    async findAll(usuario: Usuario): Promise<Comprobante[]> {
+        // Si es vendedor, filtramos por su id_vendedor
+        if (usuario.rol_id === 2 && usuario.id_vendedor) {
+            return this.findByVendedor(usuario.id_vendedor as number);
+        }
+
         // 👇 LÍMITE DURO: Los 50 comprobantes más recientes en todo el ERP (Vista Admin)
         return this.comprobanteRepository.find({
             relations: ['vendedor', 'admin'],

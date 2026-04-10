@@ -174,7 +174,7 @@ export default function Catalogos() {
     };
 
     /* ══ CARGAR Y GUARDAR DATOS ══ */
-    const cargarEscuelas = async () => { setLoadingDatos(true); try { setDatosEscuelas(await getEscuelas()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarEscuelas = async () => { setLoadingDatos(true); try { setDatosEscuelas(await getEscuelas()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarEscuela = async (data: any) => {
         try {
             if (escuelaEditando) { await updateEscuela({ id_escuela: escuelaEditando.id_escuela, ...data }); } else { await createEscuela(data); }
@@ -182,7 +182,7 @@ export default function Catalogos() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarVendedores = async () => { setLoadingDatos(true); try { setDatosVendedores(await getVendedores()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarVendedores = async () => { setLoadingDatos(true); try { setDatosVendedores(await getVendedores()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarVendedor = async (data: any) => {
         try {
             if (vendedorEditando) { await updateVendedor({ id_vendedor: vendedorEditando.id_vendedor, ...data }); } else { await createVendedor(data); }
@@ -190,7 +190,7 @@ export default function Catalogos() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarCuentas = async () => { setLoadingDatos(true); try { setDatosCuentas(await getCuentasBancarias()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarCuentas = async () => { setLoadingDatos(true); try { setDatosCuentas(await getCuentasBancarias()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarCuenta = async (data: any) => {
         try {
             if (cuentaEditando) { await updateCuentaBancaria({ id_cuenta: cuentaEditando.id_cuenta, ...data }); } else { await createCuentaBancaria(data); }
@@ -198,7 +198,7 @@ export default function Catalogos() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarEventos = async () => { setLoadingDatos(true); try { setDatosEventos(await getEventos()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarEventos = async () => { setLoadingDatos(true); try { setDatosEventos(await getEventos()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarEvento = async (data: any) => {
         try {
             if (eventoEditando) { await updateEvento({ id_evento: eventoEditando.id_evento, ...data }); } else { await createEvento(data); }
@@ -206,7 +206,7 @@ export default function Catalogos() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarEmpleados = async () => { setLoadingDatos(true); try { setDatosEmpleados(await getEmpleados()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarEmpleados = async () => { setLoadingDatos(true); try { setDatosEmpleados(await getEmpleados()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarEmpleado = async (data: any) => {
         try {
             if (empleadoEditando) { await updateEmpleado({ id_empleado: empleadoEditando.id_empleado, ...data }); } else { await createEmpleado(data); }

@@ -77,7 +77,7 @@ export default function POS() {
             setClientes(clis);
             setPromociones(promos.filter((p: any) => p.activa));
         } catch (error) {
-            console.error("Error cargando catálogos POS", error);
+            
         } finally {
             setLoading(false);
         }

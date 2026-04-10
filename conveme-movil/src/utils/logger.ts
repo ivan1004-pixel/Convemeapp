@@ -1,16 +1,16 @@
-const isDev = __DEV__;
+const isDev = false; // Disabled logging
 
 export const logger = {
   info: (message: string, ...args: unknown[]) => {
-    if (isDev) console.info(`[ConVeMe] ${message}`, ...args);
+    // if (isDev) 
   },
   error: (message: string, ...args: unknown[]) => {
-    if (isDev) console.error(`[ConVeMe ERROR] ${message}`, ...args);
+    // if (isDev) 
   },
   warn: (message: string, ...args: unknown[]) => {
-    if (isDev) console.warn(`[ConVeMe WARN] ${message}`, ...args);
+    // if (isDev) 
   },
   debug: (message: string, ...args: unknown[]) => {
-    if (isDev) console.debug(`[ConVeMe DEBUG] ${message}`, ...args);
+    // if (isDev) 
   },
 };

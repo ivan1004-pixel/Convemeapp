@@ -169,7 +169,7 @@ export default function ModalAsignacion({ isOpen, onClose, onSuccess, asigAEdita
             const { data } = await convemeApi.post('', { query });
             setVendedores(data.data.vendedores || []);
             setProductos((data.data.productos || []).filter((p: any) => p.activo));
-        } catch (e) { console.error(e); }
+        } catch (e) {  }
         finally { setLoadingData(false); }
     };
 

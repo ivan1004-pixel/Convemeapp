@@ -225,7 +225,7 @@ export default function VentaCreateScreen() {
           const results = await buscarClientes(searchClient);
           setClientes(results);
         } catch (err) {
-          console.error(err);
+          
         } finally {
           setLoadingClients(false);
         }

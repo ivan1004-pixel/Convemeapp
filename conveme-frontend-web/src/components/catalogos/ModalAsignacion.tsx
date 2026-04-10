@@ -44,7 +44,7 @@ export default function ModalAsignacion({ isOpen, onClose, onSuccess, asigAEdita
                     const query = `query { buscarVendedores(termino: "${searchTermVend}") { id_vendedor nombre_completo } }`;
                     const { data } = await convemeApi.post('', { query });
                     setVendedoresOptions(data.data.buscarVendedores || []);
-                } catch (error) { console.error(error); }
+                } catch (error) {  }
                 finally { setSearchingVend(false); }
             }
         }, 400);
@@ -59,7 +59,7 @@ export default function ModalAsignacion({ isOpen, onClose, onSuccess, asigAEdita
                 const query = `query { buscarProductos(termino: "${searchTermProd}") { id_producto nombre sku precio_unitario activo } }`;
                 const { data } = await convemeApi.post('', { query });
                 setProductosOptions(data.data.buscarProductos || []);
-            } catch (error) { console.error(error); }
+            } catch (error) {  }
             finally { setSearchingProd(false); }
         }, 400);
         return () => clearTimeout(delay);

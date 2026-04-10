@@ -18,10 +18,10 @@ export const useAuth = () => {
    */
   const login = async (username: string, password_raw: string) => {
     setIsLoading(true);
-    console.log('Intentando login móvil para:', username);
+    
     try {
       const result = await loginService(username, password_raw);
-      console.log('Login exitoso, usuario:', result.usuario.username);
+      
       
       // Aseguramos que el token esté en SecureStore para el interceptor ANTES de navegar
       const SecureStore = require('expo-secure-store');
@@ -32,12 +32,12 @@ export const useAuth = () => {
       // 👇 Si es vendedor, obtener su id_vendedor
       let vendedorData = null;
       if (result.usuario.rol_id === ROLE_VENDEDOR) {
-        console.log('Obteniendo datos de vendedor para ID:', result.usuario.id_usuario);
+        
         try {
           vendedorData = await getVendedorByUsuarioId(result.usuario.id_usuario);
-          console.log('Datos de vendedor cargados:', vendedorData?.id_vendedor);
+          
         } catch (err) {
-          console.error('Error al obtener datos del vendedor:', err);
+          
         }
       }
       
@@ -48,15 +48,15 @@ export const useAuth = () => {
       });
       
       // Redirect based on role
-      console.log('Redirigiendo a (app)...');
+      
       router.replace('/(app)');
     } catch (error: any) {
-      console.error('Error fatal en login:', error);
+      
       if (error.response) {
-        console.error('Data del error:', error.response.data);
-        console.error('Status del error:', error.response.status);
+        
+        
       } else if (error.request) {
-        console.error('No hubo respuesta del servidor (Error de red). Verifica la IP en convemeApi.ts');
+        
       }
       throw error;
     } finally {

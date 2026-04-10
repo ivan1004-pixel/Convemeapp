@@ -79,13 +79,13 @@ export default function CreateUser() {
 
         const cargarEmpleados = async () => {
             setLoadingData(true);
-            try { setEmpleados(await getEmpleados()); } catch (e) { console.error(e); }
+            try { setEmpleados(await getEmpleados()); } catch (e) {  }
             setLoadingData(false);
         };
 
         const cargarVendedores = async () => {
             setLoadingData(true);
-            try { setVendedores(await getVendedores()); } catch (e) { console.error(e); }
+            try { setVendedores(await getVendedores()); } catch (e) {  }
             setLoadingData(false);
         };
 

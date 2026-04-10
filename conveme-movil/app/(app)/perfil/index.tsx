@@ -34,7 +34,7 @@ export default function PerfilScreen() {
   const [empleado, setEmpleado] = useState<Empleado | null>(null);
   const [vendedor, setVendedor] = useState<Vendedor | null>(null);
 
-  const [showPhotoPicker, setShowPhotoPicker] = useState(false); // 👈 nuevo modal de selección
+  const [showPhotoPicker, setShowPhotoPicker] = useState(false); // 👈 modal de selección
 
   const username = usuario?.username ?? 'USUARIO';
   const rolId = usuario?.rol_id ?? 0;
@@ -68,7 +68,7 @@ export default function PerfilScreen() {
         setVendedor(vend || null);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      // puedes loguear si quieres
     } finally {
       setLoading(false);
     }
@@ -88,16 +88,12 @@ export default function PerfilScreen() {
 
     const { status } = await Camera.requestCameraPermissionsAsync();
     if (status !== 'granted') {
-      // Si quieres, esto también se puede pasar a un modal neobrutalista
       alert('SE REQUIERE PERMISO DE CÁMARA');
       return;
     }
 
-    let result = await ImagePicker.launchCameraAsync({
-      mediaTypes:
-      (ImagePicker as any).MediaType
-      ? [(ImagePicker as any).MediaType.IMAGE]
-      : ImagePicker.MediaTypeOptions.Images,
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 usar MediaTypeOptions
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -114,18 +110,12 @@ export default function PerfilScreen() {
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      // También se puede cambiar a modal propio si lo prefieres
       alert('SE REQUIERE PERMISO DE GALERÍA');
       return;
     }
 
-    const mediaTypes =
-    (ImagePicker as any).MediaType
-    ? [(ImagePicker as any).MediaType.IMAGE]
-    : ImagePicker.MediaTypeOptions.Images;
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes,
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images, // 👈 igual aquí
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.5,
@@ -158,7 +148,6 @@ export default function PerfilScreen() {
 
       alert('FOTO DE PERFIL ACTUALIZADA');
     } catch (error) {
-      console.error('Error uploading image:', error);
       alert('NO SE PUDO ACTUALIZAR LA FOTO');
     } finally {
       setUploading(false);

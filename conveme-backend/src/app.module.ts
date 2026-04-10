@@ -60,7 +60,7 @@ import { UploadController } from './common/controllers/upload.controller';
       password: 'bs$QIq4ngOjY',
       database: 'db_conveme',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+      synchronize: false,
     }),
     UsuariosModule,
     AuthModule,

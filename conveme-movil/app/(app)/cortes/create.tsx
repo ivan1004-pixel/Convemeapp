@@ -136,7 +136,7 @@ export default function CorteCreateScreen() {
       setVendedores(v || []);
       setAsignaciones(a || []);
     } catch (err) {
-      console.error('Error loading data:', err);
+      
     }
   };
 

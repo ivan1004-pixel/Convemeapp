@@ -48,7 +48,7 @@ export default function DetalleMesScreen() {
       });
       setVentas(esteMesV);
       setCortes(esteMesC);
-    } catch (err) { console.error(err); } 
+    } catch (err) {  } 
     finally { setLoading(false); }
   }, []);
 

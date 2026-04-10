@@ -13,9 +13,13 @@ import { Usuario } from '../usuarios/usuario.entity';
 export class VentasResolver {
     constructor(private readonly ventasService: VentasService) {}
 
+    @UseGuards(JwtAuthGuard)
     @Mutation(() => Venta)
-    createVenta(@Args('createVentaInput') createVentaInput: CreateVentaInput) {
-        return this.ventasService.create(createVentaInput);
+    createVenta(
+        @Args('createVentaInput') createVentaInput: CreateVentaInput,
+        @GetUsuario() usuario: Usuario,
+    ) {
+        return this.ventasService.create(createVentaInput, usuario);
     }
 
     @UseGuards(JwtAuthGuard)

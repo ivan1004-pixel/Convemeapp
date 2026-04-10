@@ -13,9 +13,13 @@ import { Usuario } from '../usuarios/usuario.entity';
 export class PedidosResolver {
     constructor(private readonly pedidosService: PedidosService) {}
 
+    @UseGuards(JwtAuthGuard)
     @Mutation(() => Pedido)
-    createPedido(@Args('createPedidoInput') createPedidoInput: CreatePedidoInput) {
-        return this.pedidosService.create(createPedidoInput);
+    createPedido(
+        @Args('createPedidoInput') createPedidoInput: CreatePedidoInput,
+        @GetUsuario() usuario: Usuario,
+    ) {
+        return this.pedidosService.create(createPedidoInput, usuario);
     }
 
     @UseGuards(JwtAuthGuard)

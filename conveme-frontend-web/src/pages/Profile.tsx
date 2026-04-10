@@ -65,7 +65,7 @@ export default function Profile() {
                 }
             }
         } catch (e) {
-            console.error('Error al cargar datos personales', e);
+            
             setErrorMsg('No se encontraron datos personales asociados a esta cuenta.');
         } finally {
             setLoading(false);
@@ -89,7 +89,7 @@ export default function Profile() {
             };
             reader.readAsDataURL(file);
         } catch (err) {
-            console.error('Error al subir la imagen', err);
+            
             setErrorMsg('No se pudo subir la imagen.');
             setUploading(false);
         }

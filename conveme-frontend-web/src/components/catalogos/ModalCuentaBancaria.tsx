@@ -58,7 +58,7 @@ export default function ModalCuentaBancaria({ isOpen, onClose, onSave, onDelete,
             const data = await getVendedores();
             setVendedoresLista(data);
         } catch (error) {
-            console.error('Error cargando vendedores:', error);
+            
         }
     };
 
@@ -87,7 +87,7 @@ export default function ModalCuentaBancaria({ isOpen, onClose, onSave, onDelete,
             setStep('success');
             setTimeout(() => { onClose(); }, 1500);
         } catch (error: any) {
-            console.error(error);
+            
             alert(error.message || 'Error al procesar la cuenta bancaria.');
         } finally {
             setLoading(false);

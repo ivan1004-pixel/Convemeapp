@@ -229,7 +229,7 @@ export default function ModalOrdenProduccion({
             setProductos(dataProd);
             setEmpleados(dataEmp);
             setInsumos(dataIns);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
     };
 
     /* ── Dinamic Rows Handlers ── */

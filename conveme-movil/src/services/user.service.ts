@@ -85,7 +85,7 @@ export const updateUserService = async (
     });
 
     if (data.errors) {
-        console.log('updateUsuario errors:', JSON.stringify(data.errors, null, 2));
+        
         const error = data.errors[0];
         let msg = error.message;
 

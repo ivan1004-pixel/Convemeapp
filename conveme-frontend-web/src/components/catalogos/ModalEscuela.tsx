@@ -72,8 +72,8 @@ export default function ModalEscuela({
         setSearchMun(''); setShowMunDrop(false); setShowEstadoDrop(false); setMunicipios([]);
     };
 
-    const cargarEstados    = async () => { try { setEstados(await getEstados()); } catch(e) { console.error(e); } };
-    const cargarMunicipios = async (id: number) => { try { setMunicipios(await getMunicipiosPorEstado(id)); } catch(e) { console.error(e); } };
+    const cargarEstados    = async () => { try { setEstados(await getEstados()); } catch(e) {  } };
+    const cargarMunicipios = async (id: number) => { try { setMunicipios(await getMunicipiosPorEstado(id)); } catch(e) {  } };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,7 +83,7 @@ export default function ModalEscuela({
             await onSave({ nombre, siglas, municipio_id: Number(municipioId) });
             setStep('success');
             setTimeout(() => { onClose(); setStep('form'); }, 2200);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 
@@ -94,7 +94,7 @@ export default function ModalEscuela({
             await onDelete();
             setStep('success-delete');
             setTimeout(() => { onClose(); setStep('form'); }, 2000);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 

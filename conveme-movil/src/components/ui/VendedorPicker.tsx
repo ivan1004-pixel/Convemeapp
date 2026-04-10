@@ -43,7 +43,7 @@ export const VendedorPicker: React.FC<VendedorPickerProps> = ({
       const data = await getVendedores();
       setVendedores(data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoading(false);
     }

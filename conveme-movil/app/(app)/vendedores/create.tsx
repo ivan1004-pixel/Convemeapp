@@ -157,7 +157,7 @@ export default function VendedorCreateScreen() {
         setVendedoresList(dataV.data.vendedores);
       }
     } catch (err) {
-      console.error(err);
+      
       showToast('Error al cargar opciones', 'error');
     } finally {
       setLoadingData(false);

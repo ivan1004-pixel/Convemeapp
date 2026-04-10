@@ -133,7 +133,7 @@ export default function Inventario() {
     };
 
     /* ══ CARGAR Y GUARDAR DATOS ══ */
-    const cargarCategorias = async () => { setLoadingDatos(true); try { setDatosCategorias(await getCategorias()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarCategorias = async () => { setLoadingDatos(true); try { setDatosCategorias(await getCategorias()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarCategoria = async (data: any) => {
         try {
             if (categoriaEditando) { await updateCategoria({ id_categoria: categoriaEditando.id_categoria, ...data }); } else { await createCategoria(data); }
@@ -141,7 +141,7 @@ export default function Inventario() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarProductos = async () => { setLoadingDatos(true); try { setDatosProductos(await getProductos()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarProductos = async () => { setLoadingDatos(true); try { setDatosProductos(await getProductos()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarProducto = async (data: any) => {
         try {
             if (productoEditando) { await updateProducto({ id_producto: productoEditando.id_producto, ...data }); } else { await createProducto(data); }
@@ -149,7 +149,7 @@ export default function Inventario() {
         } catch (err: any) { throw err; }
     };
 
-    const cargarTamanos = async () => { setLoadingDatos(true); try { setDatosTamanos(await getTamanos()); } catch (err) { console.error(err); } finally { setLoadingDatos(false); } };
+    const cargarTamanos = async () => { setLoadingDatos(true); try { setDatosTamanos(await getTamanos()); } catch (err) {  } finally { setLoadingDatos(false); } };
     const handleGuardarTamano = async (data: any) => {
         try {
             if (tamanoEditando) { await updateTamano({ id_tamano: tamanoEditando.id_tamano, ...data }); } else { await createTamano(data); }

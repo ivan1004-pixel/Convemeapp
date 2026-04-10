@@ -270,12 +270,12 @@ export default function ModalEmpleado({
             ]);
             setEstados(dataEstados);
             setUsuariosLista(dataUsuarios);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
     };
 
     const cargarMunicipios = async (id: number) => {
         try { setMunicipios(await getMunicipiosPorEstado(id)); }
-        catch (err) { console.error(err); }
+        catch (err) {  }
     };
 
     /* ── Validate ── */

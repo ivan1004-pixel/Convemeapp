@@ -19,24 +19,28 @@ export const useAuthStore = create<AuthState>()(
       usuario: null,
       isAuthenticated: false,
       setToken: (token) => set({ token, isAuthenticated: true }),
-              setUsuario: (usuario) => set({ usuario }),
-              logout: () => set({ token: null, usuario: null, isAuthenticated: false }),
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        // 🟢 Guardamos el token
-        token: state.token,
-        // 🟢 Guardamos el estado de autenticación
-        isAuthenticated: state.isAuthenticated,
-        // 🟢 Guardamos TODO el usuario (incluyendo el link de foto_perfil y el rol)
-        usuario: state.usuario,
-      }),
-      storage: createJSONStorage(() => ({
-        getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,
-                                        setItem: async (name, value) => SecureStore.setItemAsync(name, value),
-                                        removeItem: async (name) => SecureStore.deleteItemAsync(name),
-      })),
-    },
+  setUsuario: (usuario) => set({ usuario }),
+  logout: () => set({ token: null, usuario: null, isAuthenticated: false }),
+}),
+{
+  name: 'auth-storage',
+  partialize: (state) => ({
+    // 🟢 Guardamos el token
+    token: state.token,
+    // 🟢 Guardamos el estado de autenticación
+    isAuthenticated: state.isAuthenticated,
+    // 🟢 Guardamos el usuario pero EXCLUIMOS la foto_perfil
+    // porque en Base64 supera el límite de 2048 bytes de SecureStore
+    usuario: state.usuario ? {
+      ...state.usuario,
+      foto_perfil: undefined // No persistimos la imagen base64 pesada
+    } : null,
+  }),
+  storage: createJSONStorage(() => ({
+    getItem: async (name) => (await SecureStore.getItemAsync(name)) ?? null,
+    setItem: async (name, value) => SecureStore.setItemAsync(name, value),
+    removeItem: async (name) => SecureStore.deleteItemAsync(name),
+  })),
+},
   ),
 );

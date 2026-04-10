@@ -24,7 +24,7 @@ export default function DashboardVendedor() {
                     localStorage.setItem('id_vendedor', vendedor.id_vendedor.toString());
                 }
             } catch (error) {
-                console.error("Error al vincular perfil de vendedor", error);
+                
             }
         };
 

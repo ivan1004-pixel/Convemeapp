@@ -72,7 +72,7 @@ export default function Catalogos() {
 
     // 👇 Función temporal para guardar (Simula el Axios)
     const handleGuardarEscuela = async (data: any) => {
-        console.log("Datos de la escuela:", data);
+        // Log removido
         await new Promise(resolve => setTimeout(resolve, 1000));
         alert(`¡${data.nombre} guardada exitosamente! (Simulado)`);
     };

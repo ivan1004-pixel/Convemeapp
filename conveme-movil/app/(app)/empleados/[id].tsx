@@ -76,7 +76,7 @@ export default function EmpleadoDetailScreen() {
       const data = await getEmpleados();
       setEmpleados(data);
     } catch (err) {
-      console.error(err);
+      
     } finally {
       setLoading(false);
     }

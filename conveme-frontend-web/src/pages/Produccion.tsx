@@ -131,7 +131,7 @@ export default function Produccion() {
             const res = await getOrdenesProduccion();
             setDatosOrdenes(res);
         } catch (err) {
-            console.error(err);
+            
             showToast("Error al cargar órdenes", "error");
         } finally {
             setLoadingDatos(false);
@@ -155,7 +155,7 @@ export default function Produccion() {
             const res = await getInsumos();
             setDatosInsumos(res);
         } catch (err) {
-            console.error(err);
+            
             showToast("Error al cargar insumos", "error");
         } finally {
             setLoadingDatos(false);

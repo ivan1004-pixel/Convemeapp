@@ -45,7 +45,7 @@ export default function ModalCategoria({
             await onSave({ nombre: nombre.trim() });
             setStep('success');
             setTimeout(() => { onClose(); setStep('form'); }, 2200);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 
@@ -56,7 +56,7 @@ export default function ModalCategoria({
             await onDelete();
             setStep('success-delete');
             setTimeout(() => { onClose(); setStep('form'); }, 2000);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 

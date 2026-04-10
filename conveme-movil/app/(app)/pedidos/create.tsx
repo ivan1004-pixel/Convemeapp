@@ -175,7 +175,7 @@ export default function PedidoCreateScreen() {
         }
       }
     } catch (err) {
-      console.error('Error loading data:', err);
+      
     } finally {
       setLoading(false);
     }

@@ -54,7 +54,7 @@ convemeApi.interceptors.request.use(async (config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     } else {
-        console.log('[API] No token found for request - URL:', config.url);
+        
     }
     return config;
 });
@@ -63,7 +63,7 @@ convemeApi.interceptors.response.use(
   (response) => {
     // Si la respuesta es 200 pero tiene errores de GraphQL con mensaje 'Unauthorized'
     if (response.data?.errors && response.data.errors.some((e: any) => e.message === 'Unauthorized')) {
-      console.warn('[API] Unauthorized detected in GraphQL body');
+      
       handleForceLogout();
       return Promise.reject(new Error('Unauthorized'));
     }
@@ -76,7 +76,7 @@ convemeApi.interceptors.response.use(
       (error.message === 'Unauthorized');
 
     if (isUnauthorized) {
-      console.log('[API] Session expired or invalid, forcing logout...');
+      
       handleForceLogout();
     }
     return Promise.reject(error);
@@ -94,7 +94,7 @@ async function handleForceLogout() {
         // Solo procedemos si realmente estamos autenticados en el store
         // para evitar limpiar estados que ya están limpios y disparar re-renders innecesarios
         if (state.isAuthenticated || state.token) {
-            console.log('[API] Forcing logout: clearing tokens and state');
+            
             
             // Limpiamos la clave individual
             await SecureStore.deleteItemAsync('token');
@@ -102,12 +102,12 @@ async function handleForceLogout() {
             // El logout del store debería limpiar también el auth-storage (vía persistencia)
             state.logout();
             
-            console.log('[API] Logout forced successfully');
+            
         } else {
-            console.log('[API] Logout skipped: user is not authenticated');
+            
         }
     } catch (e) {
-        console.error('[API] Error in force logout:', e);
+        
     } finally {
         // Permitir re-intentar logout después de un tiempo si fuera necesario
         setTimeout(() => { isLoggingOut = false; }, 5000);

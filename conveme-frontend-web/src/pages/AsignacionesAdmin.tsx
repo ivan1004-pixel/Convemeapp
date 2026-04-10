@@ -87,7 +87,7 @@ export default function CortesAdmin() {
             const [cortesData, asigs] = await Promise.all([getCortes(), getAsignaciones()]);
             setCortes(cortesData);
             setAsignaciones(asigs);
-        } catch (error) { console.error(error); }
+        } catch (error) {  }
         finally { setLoading(false); }
     };
 
@@ -135,7 +135,7 @@ export default function CortesAdmin() {
             setIsModalCorteOpen(false);
             cargarDatos();
             setActionModal({ isOpen: true, type: 'success', title: 'Corte Exitoso', subtitle: 'La cuenta ha sido liquidada.' });
-        } catch (e) { console.error(e); }
+        } catch (e) {  }
         finally { setGuardandoCorte(false); }
     };
 

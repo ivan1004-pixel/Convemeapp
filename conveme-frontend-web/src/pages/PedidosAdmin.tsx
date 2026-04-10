@@ -48,7 +48,7 @@ export default function PedidosAdmin() {
                 setPedidos(prev => [...prev, ...data]);
             }
         } catch (error) {
-            console.error(error);
+            
         } finally {
             setLoading(false);
             setLoadingMore(false);

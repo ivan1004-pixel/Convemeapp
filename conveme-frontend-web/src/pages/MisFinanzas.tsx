@@ -22,7 +22,7 @@ export default function MisFinanzas() {
                 const data = await getCortesPorVendedor(vendedorId);
                 setComprobantes(data);
             } catch (error) {
-                console.error("Error al cargar historial de finanzas:", error);
+                
             } finally {
                 setLoading(false);
             }

@@ -65,7 +65,7 @@ export default function ModalProducto({
             const [dataCat, dataTam] = await Promise.all([getCategorias(), getTamanos()]);
             setCategorias(dataCat);
             setTamanos(dataTam);
-        } catch (error) { console.error(error); }
+        } catch (error) {  }
     };
 
     const limpiarFormulario = () => {
@@ -92,7 +92,7 @@ export default function ModalProducto({
             setStep('success');
             setTimeout(() => { onClose(); setStep('form'); }, 2200);
         } catch (error: any) {
-            console.error(error);
+            
         } finally {
             setLoading(false);
         }
@@ -105,7 +105,7 @@ export default function ModalProducto({
             await onDelete();
             setStep('success-delete');
             setTimeout(() => { onClose(); setStep('form'); }, 2000);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 

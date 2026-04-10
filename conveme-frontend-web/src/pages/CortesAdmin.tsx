@@ -83,7 +83,7 @@ export default function CortesAdmin() {
                 else setAsignaciones(prev => [...prev, ...data]);
             }
         } catch (error) {
-            console.error(error);
+            
         } finally {
             setLoading(false);
             setLoadingMore(false);

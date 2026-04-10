@@ -44,7 +44,7 @@ export default function ModalTamano({
             await onSave({ descripcion: descripcion.trim() });
             setStep('success');
             setTimeout(() => { onClose(); setStep('form'); }, 2200);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 
@@ -55,7 +55,7 @@ export default function ModalTamano({
             await onDelete();
             setStep('success-delete');
             setTimeout(() => { onClose(); setStep('form'); }, 2000);
-        } catch (err) { console.error(err); }
+        } catch (err) {  }
         finally { setLoading(false); }
     };
 

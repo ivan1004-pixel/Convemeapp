@@ -63,7 +63,7 @@ export default function ModalCorte({ isOpen, onClose, onSuccess, corteAEditar }:
         try {
             const asigs = await getAsignaciones();
             setAsignacionesActivas(asigs.filter((a: any) => a.estado === 'Activa'));
-        } catch (error) { console.error(error); }
+        } catch (error) {  }
     };
 
     const handleSeleccionarAsignacion = (asig: any) => {

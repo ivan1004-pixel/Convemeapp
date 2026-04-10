@@ -15,6 +15,8 @@ export class NotificationsService {
     };
 
     try {
+      // Notificaciones desactivadas por solicitud del usuario
+      /*
       await axios.post('https://exp.host/--/api/v2/push/send', message, {
         headers: {
           'Accept': 'application/json',
@@ -22,8 +24,9 @@ export class NotificationsService {
           'Content-Type': 'application/json',
         },
       });
+      */
     } catch (error) {
-      console.error('Error sending push notification:', error);
+      // Notification failure is silent
     }
   }
 }
